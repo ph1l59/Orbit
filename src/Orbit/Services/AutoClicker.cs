@@ -6,8 +6,7 @@ namespace Orbit.Services;
 
 /// <summary>
 /// High-precision auto clicker (up to ~1000 clicks per second).
-/// Clicks where the mouse is, at a fixed spot, or – experimental – directly into
-/// Roblox windows in the background (also when they are minimized or not focused).
+/// Clicks where the mouse is or at a fixed spot on the screen.
 /// </summary>
 public sealed class AutoClicker
 {
@@ -62,23 +61,10 @@ public sealed class AutoClicker
             var interval = Stopwatch.Frequency / (double)o.Cps;
             var watch = Stopwatch.StartNew();
             double next = 0;
-            var windows = new List<IntPtr>();
-            long windowsCheckedAt = -10_000;
 
             while (!_stop)
             {
-                if (o.Target == "background")
-                {
-                    // Refresh the list of Roblox windows once a second.
-                    if (Environment.TickCount64 - windowsCheckedAt > 1000)
-                    {
-                        windows = Native.RobloxWindows();
-                        windowsCheckedAt = Environment.TickCount64;
-                    }
-                    foreach (var hwnd in windows)
-                        Native.PostClick(hwnd, o.Button, o.X, o.Y);
-                }
-                else if (!o.RobloxOnly || Native.IsRobloxForeground())
+                if (!o.RobloxOnly || Native.IsRobloxForeground())
                 {
                     if (o.Target == "fixed") Native.SetCursorPos(o.X, o.Y);
                     Native.Click(o.Button);
@@ -117,25 +103,9 @@ public sealed class AutoClicker
         [DllImport("user32.dll")] public static extern uint GetWindowThreadProcessId(IntPtr hWnd, out uint processId);
         [DllImport("user32.dll")] public static extern short GetAsyncKeyState(int vKey);
         [DllImport("user32.dll", SetLastError = true)] private static extern uint SendInput(uint count, INPUT[] inputs, int size);
-        [DllImport("user32.dll")] private static extern bool PostMessage(IntPtr hWnd, uint msg, IntPtr wParam, IntPtr lParam);
-        [DllImport("user32.dll")] private static extern bool GetClientRect(IntPtr hWnd, out RECT rect);
-        [DllImport("user32.dll")] private static extern bool ScreenToClient(IntPtr hWnd, ref POINT point);
-        [DllImport("user32.dll")] private static extern bool IsIconic(IntPtr hWnd);
-        [DllImport("user32.dll")] private static extern bool GetWindowPlacement(IntPtr hWnd, ref WINDOWPLACEMENT placement);
 
         [StructLayout(LayoutKind.Sequential)]
         public struct POINT { public int X; public int Y; }
-
-        [StructLayout(LayoutKind.Sequential)]
-        private struct RECT { public int Left, Top, Right, Bottom; }
-
-        [StructLayout(LayoutKind.Sequential)]
-        private struct WINDOWPLACEMENT
-        {
-            public int length, flags, showCmd;
-            public POINT minPosition, maxPosition;
-            public RECT normalPosition;
-        }
 
         [StructLayout(LayoutKind.Sequential)]
         private struct MOUSEINPUT
@@ -166,52 +136,6 @@ public sealed class AutoClicker
                 new INPUT { type = 0, mi = new MOUSEINPUT { dwFlags = up } },
             };
             SendInput(2, inputs, Marshal.SizeOf<INPUT>());
-        }
-
-        /// <summary>Sends a click straight to a window without moving the mouse or focusing it.</summary>
-        public static void PostClick(IntPtr hwnd, string button, int screenX, int screenY)
-        {
-            int x, y;
-            if (screenX != 0 || screenY != 0)
-            {
-                var p = new POINT { X = screenX, Y = screenY };
-                ScreenToClient(hwnd, ref p);
-                (x, y) = (p.X, p.Y);
-            }
-            else if (!IsIconic(hwnd) && GetClientRect(hwnd, out var rect) && rect.Right > 0)
-            {
-                (x, y) = (rect.Right / 2, rect.Bottom / 2);
-            }
-            else
-            {
-                var placement = new WINDOWPLACEMENT { length = Marshal.SizeOf<WINDOWPLACEMENT>() };
-                GetWindowPlacement(hwnd, ref placement);
-                var r = placement.normalPosition;
-                (x, y) = (Math.Max(1, (r.Right - r.Left) / 2), Math.Max(1, (r.Bottom - r.Top) / 2));
-            }
-
-            var lParam = (IntPtr)((y << 16) | (x & 0xFFFF));
-            var (downMsg, upMsg, flag) = button switch
-            {
-                "right" => (0x0204u, 0x0205u, 0x0002),
-                "middle" => (0x0207u, 0x0208u, 0x0010),
-                _ => (0x0201u, 0x0202u, 0x0001),
-            };
-            PostMessage(hwnd, 0x0200, IntPtr.Zero, lParam); // WM_MOUSEMOVE
-            PostMessage(hwnd, downMsg, (IntPtr)flag, lParam);
-            PostMessage(hwnd, upMsg, IntPtr.Zero, lParam);
-        }
-
-        public static List<IntPtr> RobloxWindows()
-        {
-            var result = new List<IntPtr>();
-            foreach (var p in RobloxPaths.RunningClients())
-            {
-                try { if (p.MainWindowHandle != IntPtr.Zero) result.Add(p.MainWindowHandle); }
-                catch { /* exited */ }
-                finally { p.Dispose(); }
-            }
-            return result;
         }
 
         private static uint _robloxPid;

@@ -83,7 +83,7 @@ public sealed class AppSettings
     /// <summary>Seconds to wait after pressing Start.</summary>
     public int ClickerStartDelay { get; set; } = 3;
     public bool ClickerRobloxOnly { get; set; }
-    /// <summary>cursor | fixed | background</summary>
+    /// <summary>cursor | fixed</summary>
     public string ClickerTarget { get; set; } = "cursor";
     public int ClickerX { get; set; }
     public int ClickerY { get; set; }

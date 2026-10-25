@@ -17,7 +17,7 @@
     <Authors>Floshiii</Authors>
     <Copyright>Copyright (c) 2026 Floshiii</Copyright>
     <Description>Roblox account manager, multi-instance launcher and FPS/graphics tweaks in one app.</Description>
-    <Version>2.2.0</Version>
+    <Version>2.2.1</Version>
 
     <!-- Single .exe -->
     <RuntimeIdentifier>win-x64</RuntimeIdentifier>

@@ -101,7 +101,7 @@
 
                 <TextBlock Text="// WHERE TO CLICK" Style="{StaticResource Section}"/>
 
-                <Border Style="{StaticResource Row}" Tag="Click target|background minimized roblox window fixed position">
+                <Border Style="{StaticResource Row}" Tag="Click target|fixed position mouse">
                     <StackPanel>
                         <DockPanel>
                             <ComboBox x:Name="TargetCombo" DockPanel.Dock="Right" MinWidth="260" SelectionChanged="Changed"/>

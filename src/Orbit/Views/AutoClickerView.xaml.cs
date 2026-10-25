@@ -22,7 +22,6 @@ public partial class AutoClickerView : UserControl, IPage
         {
             new("Where the mouse is", "cursor"),
             new("Fixed position on screen", "fixed"),
-            new("Roblox in the background (experimental)", "background"),
         };
 
         AutoClicker.Instance.RunningChanged += _ => Dispatcher.InvokeAsync(UpdateState);
@@ -36,6 +35,7 @@ public partial class AutoClickerView : UserControl, IPage
     {
         _loading = true;
         var s = AppState.Settings;
+        if (s.ClickerTarget is not ("cursor" or "fixed")) s.ClickerTarget = "cursor";
         CpsSlider.Value = Math.Clamp(s.ClickerCps, 1, 1000);
         Option.Select(ButtonCombo, s.ClickerButton);
         Option.Select(ModeCombo, s.ClickerMode);
@@ -104,17 +104,14 @@ public partial class AutoClickerView : UserControl, IPage
         TargetDesc.Text = s.ClickerTarget switch
         {
             "fixed" => "Always clicks the same spot on your screen. The mouse jumps there for every click.",
-            "background" => "Sends clicks straight into every open Roblox window – also when it's minimized or another window is in front. " +
-                            "Doesn't move your mouse. Experimental: some games ignore clicks they get this way.",
             _ => "Clicks wherever your mouse currently is.",
         };
         PositionPanel.Visibility = s.ClickerTarget == "cursor" ? Visibility.Collapsed : Visibility.Visible;
-        RobloxOnlyRow.Visibility = s.ClickerTarget == "background" ? Visibility.Collapsed : Visibility.Visible;
 
         var hasPos = s.ClickerX != 0 || s.ClickerY != 0;
         PositionText.Text = hasPos
             ? $"POSITION · X {s.ClickerX} · Y {s.ClickerY}"
-            : s.ClickerTarget == "background" ? "NO POSITION · CLICKS THE CENTER OF THE ROBLOX WINDOW" : "NO POSITION PICKED YET";
+            : "NO POSITION PICKED YET";
         ClearPosButton.IsEnabled = hasPos;
     }
 
