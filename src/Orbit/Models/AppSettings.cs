@@ -17,6 +17,12 @@ public sealed class AppSettings
     public string LastPlace { get; set; } = "";
     public string LastServer { get; set; } = "";
 
+    // ===== Create accounts =====
+    /// <summary>Birthday filled into Roblox's sign-up form (entered once, used for every new account).</summary>
+    public DateTime? SignupBirthday { get; set; }
+    /// <summary>male | female | none</summary>
+    public string SignupGender { get; set; } = "none";
+
     // ===== Bootstrapper =====
     /// <summary>Orbit installs and updates its own copy of Roblox (like Fishstrap).</summary>
     public bool UseManagedInstall { get; set; } = true;

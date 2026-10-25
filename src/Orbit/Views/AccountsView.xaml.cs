@@ -109,13 +109,72 @@ public partial class AccountsView : UserControl
 
     private void Add_Click(object sender, RoutedEventArgs e) => _ = AddAccountAsync(signup: false);
 
-    private void Create_Click(object sender, RoutedEventArgs e) => _ = AddAccountAsync(signup: true);
+    private void Create_Click(object sender, RoutedEventArgs e) => _ = CreateAccountsAsync();
 
     private async Task AddAccountAsync(bool signup)
     {
         var login = new LoginWindow(signup) { Owner = Owner };
         if (login.ShowDialog() != true || login.Result is not { } user) return;
 
+        StoreAccount(user);
+        await AppState.RefreshAvatarsAsync();
+        await Integrations.RefreshPresenceAsync();
+    }
+
+    /// <summary>
+    /// "Create account": birthday + gender once, then a list of Username:Password lines.
+    /// Each account gets its own sign-up window with the form filled in; the user clicks Sign Up
+    /// and solves any check, then the next one opens.
+    /// </summary>
+    private async Task CreateAccountsAsync()
+    {
+        var setup = new CreateAccountsWindow { Owner = Owner };
+        if (setup.ShowDialog() != true || setup.Options is not { } options || setup.Entries.Count == 0) return;
+
+        var entries = setup.Entries;
+        var created = new List<string>();
+        var skipped = new List<string>();
+
+        for (var i = 0; i < entries.Count; i++)
+        {
+            var entry = entries[i];
+            var window = new LoginWindow(entry, options, i + 1, entries.Count) { Owner = Owner };
+
+            if (window.ShowDialog() == true && window.Result is { } user)
+            {
+                StoreAccount(user);
+                created.Add(user.Username);
+                continue;
+            }
+
+            skipped.Add(entry.Username);
+            var remaining = entries.Count - i - 1;
+            if (remaining > 0 && !Dialog.Confirm(Owner, "Account skipped",
+                    $"\"{entry.Username}\" wasn't created. Continue with the next account? ({remaining} left)",
+                    "Continue"))
+            {
+                skipped.AddRange(entries.Skip(i + 1).Select(en => en.Username));
+                break;
+            }
+        }
+
+        if (created.Count > 0)
+        {
+            await AppState.RefreshAvatarsAsync();
+            await Integrations.RefreshPresenceAsync();
+        }
+
+        if (entries.Count > 1 || skipped.Count > 0)
+        {
+            var text = created.Count == 1 ? "1 account created" : $"{created.Count} accounts created";
+            if (skipped.Count > 0) text += $", {skipped.Count} skipped: " + string.Join(", ", skipped);
+            Dialog.Info(Owner, "Create accounts", text + ".");
+        }
+    }
+
+    /// <summary>Adds a freshly logged-in account, or updates it if it's already in the list.</summary>
+    private static void StoreAccount(Account user)
+    {
         var existing = AppState.Accounts.FirstOrDefault(a => a.UserId == user.UserId);
         if (existing != null)
         {
@@ -130,8 +189,6 @@ public partial class AccountsView : UserControl
         }
 
         AppState.SaveAccounts();
-        await AppState.RefreshAvatarsAsync();
-        await Integrations.RefreshPresenceAsync();
     }
 
     // ---------- Launch ----------

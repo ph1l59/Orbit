@@ -130,7 +130,7 @@
                     </StackPanel>
                 </Button>
                 <Button DockPanel.Dock="Right" Click="Create_Click" VerticalAlignment="Bottom" Margin="0,0,8,0"
-                        Tag="Create account|sign up register new roblox account">
+                        Tag="Create account|sign up register new roblox accounts list birthday gender">
                     <StackPanel Orientation="Horizontal">
                         <TextBlock Text="&#xE8FA;" Style="{StaticResource Icon}" FontSize="12"/>
                         <TextBlock Text="Create account" Margin="8,0,0,0"/>

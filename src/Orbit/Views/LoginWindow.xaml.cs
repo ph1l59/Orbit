@@ -1,5 +1,7 @@
 using System.Diagnostics;
+using System.Globalization;
 using System.IO;
+using System.Text.Json;
 using System.Windows;
 using System.Windows.Threading;
 using Microsoft.Web.WebView2.Core;
@@ -23,6 +25,8 @@ public partial class LoginWindow : Window
     private bool _checking;
     private bool _finished;
     private readonly bool _signup;
+    private readonly string? _fillScript;
+    private bool _filling;
 
     /// <param name="signup">True = show Roblox's sign-up page to create a new account.</param>
     public LoginWindow(bool signup = false)
@@ -38,7 +42,101 @@ public partial class LoginWindow : Window
         }
         Web.DefaultBackgroundColor = System.Drawing.Color.FromArgb(10, 9, 13);
         Loaded += OnLoaded;
-        _poll.Tick += async (_, _) => await CheckForLoginAsync();
+        _poll.Tick += async (_, _) =>
+        {
+            await FillFormAsync();
+            await CheckForLoginAsync();
+        };
+    }
+
+    /// <summary>
+    /// Sign-up page with the form filled in for one entry of a "Create accounts" list.
+    /// Orbit only fills the fields – the user still clicks Sign Up and solves any check themselves.
+    /// </summary>
+    public LoginWindow(SignupEntry entry, SignupOptions options, int index, int total) : this(signup: true)
+    {
+        _fillScript = BuildFillScript(entry, options);
+        HeaderCrumb.Text = total > 1 ? $"ORBIT // CREATE ACCOUNT {index} OF {total}" : "ORBIT // CREATE ACCOUNT";
+        HeaderTitle.Text = entry.Username;
+        StatusText.Text = "Orbit fills in the form for you. Check it, click Sign Up and solve the check if Roblox shows one – " +
+                          "the account is added automatically. Close this window to skip it.";
+    }
+
+    private static string BuildFillScript(SignupEntry entry, SignupOptions options)
+    {
+        var b = options.Birthday;
+        var monthName = CultureInfo.InvariantCulture.DateTimeFormat.GetMonthName(b.Month);
+        var data = new
+        {
+            username = entry.Username,
+            password = entry.Password,
+            gender = options.Gender,
+            // Every way Roblox has labelled the dropdown options so far (value or visible text).
+            month = new[] { monthName, monthName[..3], b.Month.ToString(), b.Month.ToString("00") },
+            day = new[] { b.Day.ToString(), b.Day.ToString("00") },
+            year = new[] { b.Year.ToString() },
+        };
+
+        // Fills each field once (so later edits by the user are kept) and never submits the form.
+        return "(" + FillFunction + ")(" + JsonSerializer.Serialize(data) + ");";
+    }
+
+    private const string FillFunction = """
+        function (d) {
+          const done = window.__orbitFill || (window.__orbitFill = {});
+          const q = (s) => document.querySelector(s);
+          const setValue = (el, v) => {
+            const proto = el.tagName === 'SELECT' ? HTMLSelectElement.prototype : HTMLInputElement.prototype;
+            Object.getOwnPropertyDescriptor(proto, 'value').set.call(el, v); // works with React-controlled fields
+            el.dispatchEvent(new Event('input', { bubbles: true }));
+            el.dispatchEvent(new Event('change', { bubbles: true }));
+            el.dispatchEvent(new Event('blur', { bubbles: true }));
+          };
+          const pick = (el, wanted) => {
+            const w = wanted.map((x) => String(x).toLowerCase());
+            for (const o of el.options) {
+              if (w.includes(String(o.value).trim().toLowerCase()) || w.includes(String(o.text).trim().toLowerCase())) {
+                setValue(el, o.value);
+                return true;
+              }
+            }
+            return false;
+          };
+          const fillSelect = (key, sel, wanted) => {
+            if (done[key]) return;
+            const el = q(sel);
+            if (el && el.options.length > 1) done[key] = pick(el, wanted);
+          };
+          const fillInput = (key, sel, v) => {
+            if (done[key]) return;
+            const el = q(sel);
+            if (el) { setValue(el, v); done[key] = true; }
+          };
+
+          fillSelect('month', '#MonthDropdown, select[name="birthdayMonth"], select[aria-label="Month"]', d.month);
+          fillSelect('day', '#DayDropdown, select[name="birthdayDay"], select[aria-label="Day"]', d.day);
+          fillSelect('year', '#YearDropdown, select[name="birthdayYear"], select[aria-label="Year"]', d.year);
+          fillInput('username', '#signup-username, input[name="signupUsername"]', d.username);
+          fillInput('password', '#signup-password, input[name="signupPassword"]', d.password);
+
+          if (!done.gender && d.gender !== 'none') {
+            const btn = d.gender === 'male'
+              ? q('#MaleButton, button[aria-label="Male"], button[title="Male"]')
+              : q('#FemaleButton, button[aria-label="Female"], button[title="Female"]');
+            if (btn) { btn.click(); done.gender = true; }
+          }
+          return JSON.stringify(done);
+        }
+        """;
+
+    /// <summary>Runs the fill script; safe to call repeatedly (fields that are already filled are skipped).</summary>
+    private async Task FillFormAsync()
+    {
+        if (_fillScript == null || _filling || _finished || Web.CoreWebView2 == null) return;
+        _filling = true;
+        try { await Web.CoreWebView2.ExecuteScriptAsync(_fillScript); }
+        catch { /* page still loading – the timer tries again */ }
+        finally { _filling = false; }
     }
 
     private async void OnLoaded(object sender, RoutedEventArgs e)
@@ -50,7 +148,11 @@ public partial class LoginWindow : Window
             await Web.EnsureCoreWebView2Async(environment);
 
             Web.CoreWebView2.Settings.AreDevToolsEnabled = false;
-            Web.CoreWebView2.NavigationCompleted += async (_, _) => await CheckForLoginAsync();
+            Web.CoreWebView2.NavigationCompleted += async (_, _) =>
+            {
+                await FillFormAsync();
+                await CheckForLoginAsync();
+            };
             Web.CoreWebView2.NewWindowRequested += (_, args) =>
             {
                 // Keep popups (e.g. "forgot password") inside this window.

@@ -187,6 +187,30 @@ public static class RobloxApi
             u.GetProperty("displayName").GetString() ?? username);
     }
 
+    /// <summary>
+    /// Asks Roblox whether a username can be used for a new account.
+    /// Returns (true, …) if it's free, (false, reason) if not, or null if Roblox couldn't be reached.
+    /// </summary>
+    public static async Task<(bool Valid, string Message)?> ValidateUsernameAsync(string username, DateTime birthday)
+    {
+        try
+        {
+            var url = "https://auth.roblox.com/v1/usernames/validate" +
+                      "?request.username=" + Uri.EscapeDataString(username) +
+                      "&request.birthday=" + Uri.EscapeDataString(birthday.ToString("yyyy-MM-dd") + "T00:00:00.000Z") +
+                      "&request.context=Signup";
+            using var doc = await GetJsonAsync(url).ConfigureAwait(false);
+            if (doc == null || !doc.RootElement.TryGetProperty("code", out var code)) return null;
+
+            var message = doc.RootElement.TryGetProperty("message", out var m) ? m.GetString() ?? "" : "";
+            return (code.GetInt32() == 0, message);
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
     // ---------------- Joining ----------------
 
     /// <summary>Resolves a "roblox.com/share?code=...&amp;type=Server" link to a private server.</summary>

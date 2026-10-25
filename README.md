@@ -14,6 +14,7 @@
 ## Features
 
 - **Accounts** – add accounts by logging in on the real roblox.com page. Orbit only keeps the login cookie, encrypted with Windows DPAPI. Avatars and a live online/offline dot for every account.
+- **Create accounts** – pick a birthday and gender once, list `Username:Password` lines, and Orbit fills in Roblox's sign-up page for each one in turn. Names and passwords are checked first; you click Sign Up and solve any check yourself, and every new account lands in your list automatically.
 - **Join anything** – place ID or game link, plus an optional *server link*: private server links, share links (`roblox.com/share?code=…`), share codes or Job IDs.
 - **Launch several accounts** one after another, with **Multi-Roblox** to keep them all open.
 - **Global Settings** – Roblox's in-game settings (graphics quality, framerate limit, transparency, font size, mouse sensitivity, …) with a read-only lock.
