@@ -117,6 +117,7 @@ public static class WindowTitles
 
     private static IntPtr _smallIcon, _bigIcon;
     private static bool _iconsTried;
+    private static string _iconTag = "";
 
     /// <summary>Loads Assets\roblox-window.ico (16 px for the title bar/taskbar, 32 px for Alt+Tab).</summary>
     private static void LoadIcons()
@@ -137,16 +138,34 @@ public static class WindowTitles
 
             _smallIcon = IconFromIco(ico, 16);
             _bigIcon = IconFromIco(ico, 32);
-            Log($"icons loaded: small={_smallIcon} big={_bigIcon}");
+
+            // Content hash in the filename and the AppUserModel.ID means Windows' Shell Icon Cache
+            // never serves stale pixels after we ship a new icon: the taskbar sees a fresh identity.
+            _iconTag = Convert.ToHexString(System.Security.Cryptography.SHA1.HashData(ico)).Substring(0, 10).ToLowerInvariant();
 
             // Lets the taskbar find the icon by file too (see SetTaskbarIdentity).
-            _iconFile = Path.Combine(AppPaths.DataDir, "roblox-window.ico");
+            _iconFile = Path.Combine(AppPaths.DataDir, $"roblox-window.{_iconTag}.ico");
             File.WriteAllBytes(_iconFile, ico);
+            CleanOldIconFiles(_iconFile);
+
+            Log($"icons loaded: small={_smallIcon} big={_bigIcon} tag={_iconTag}");
         }
         catch (Exception ex)
         {
             Log("loading icons failed: " + ex.Message);
         }
+    }
+
+    /// <summary>Deletes previously written roblox-window*.ico files (old hashes and the pre-hash name).</summary>
+    private static void CleanOldIconFiles(string keep)
+    {
+        try
+        {
+            foreach (var f in Directory.EnumerateFiles(AppPaths.DataDir, "roblox-window*.ico"))
+                if (!string.Equals(f, keep, StringComparison.OrdinalIgnoreCase))
+                    try { File.Delete(f); } catch { /* ignore */ }
+        }
+        catch { /* ignore */ }
     }
 
     /// <summary>Makes an icon handle from the .ico frame that fits <paramref name="size"/> best.</summary>
@@ -184,7 +203,9 @@ public static class WindowTitles
         // instead of the window's. Giving the window an id of its own makes the taskbar use our icon.
         if (IdentitySet.Add(hwnd))
         {
-            var ok = SetTaskbarIdentity(hwnd, $"Orbit.Roblox.{userId}", _iconFile);
+            // AUMID carries the icon tag so Windows treats each icon version as a new identity
+            // and never caches an old icon against this window's taskbar button.
+            var ok = SetTaskbarIdentity(hwnd, $"Orbit.Roblox.{userId}.{_iconTag}", _iconFile);
             Log($"window {hwnd}: taskbar identity {(ok ? "set" : "failed")}");
         }
 
