@@ -31,6 +31,18 @@ public static class Updater
         }
     }
 
+    /// <summary>Version as shown in the app, e.g. "2.5.1-beta" (from &lt;Version&gt; in Orbit.csproj).</summary>
+    public static string DisplayVersion
+    {
+        get
+        {
+            var info = Assembly.GetExecutingAssembly().GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion;
+            if (string.IsNullOrWhiteSpace(info)) return CurrentVersion.ToString();
+            var plus = info.IndexOf('+'); // the build may append "+<commit>"
+            return plus >= 0 ? info[..plus] : info;
+        }
+    }
+
     private static string? ExePath => Environment.ProcessPath;
     private static string OldExePath(string exe) => Path.Combine(Path.GetDirectoryName(exe)!, "Orbit.old.exe");
     private static string NewExePath(string exe) => Path.Combine(Path.GetDirectoryName(exe)!, "Orbit.new.exe");

@@ -46,8 +46,7 @@ public partial class MainWindow : Window
     {
         InitializeComponent();
 
-        var version = Assembly.GetExecutingAssembly().GetName().Version;
-        if (version != null) VersionText.Text = $"v{version.Major}.{version.Minor}.{version.Build}";
+        VersionText.Text = "v" + Updater.DisplayVersion;
 
         foreach (var page in PageList.Where(p => p.InNav))
             Nav.Items.Add(new ListBoxItem { Tag = page.Key, Content = NavContent(page) });
@@ -256,7 +255,7 @@ public partial class MainWindow : Window
 
         _update = update;
         UpdateTitle.Text = $"Orbit v{update.Version}";
-        UpdateText.Text = $"A new version is ready. You're on v{Updater.CurrentVersion}.";
+        UpdateText.Text = $"A new version is ready. You're on v{Updater.DisplayVersion}.";
         ShowUpdateCard(true);
     }
 

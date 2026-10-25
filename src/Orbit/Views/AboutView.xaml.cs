@@ -13,8 +13,7 @@ public partial class AboutView : UserControl
     public AboutView()
     {
         InitializeComponent();
-        var version = Assembly.GetExecutingAssembly().GetName().Version;
-        if (version != null) VersionText.Text = $"VERSION {version.Major}.{version.Minor}.{version.Build}";
+        VersionText.Text = "VERSION " + Updater.DisplayVersion.ToUpperInvariant();
         UpdatesToggle.IsChecked = AppState.Settings.CheckForUpdates;
     }
 
