@@ -42,7 +42,7 @@ Requires the [.NET 8 SDK](https://dotnet.microsoft.com/download/dotnet/8.0) on W
 dotnet publish src/Orbit/Orbit.csproj -c Release -o publish
 ```
 
-The finished `Orbit.exe` is in the `publish` folder. Every push to `main` is also built automatically by GitHub Actions, and pushing a tag like `v1.0.0` creates a release with the `.exe` attached.
+The finished `Orbit.exe` is in the `publish` folder. Every push to `main` is also built automatically by GitHub Actions, and publishing a GitHub release attaches the freshly built `Orbit.exe` to it.
 
 ## License
 
