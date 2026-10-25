@@ -23,19 +23,20 @@
 | **Accounts** | Log in on the real roblox.com page. Orbit only keeps the login cookie, encrypted with Windows DPAPI. Every account shows its avatar and whether it's online. |
 | **Create accounts** | Set birthday and gender once, paste a list of `Username:Password`, and Orbit fills out the sign up page for each one. You click Sign Up yourself. |
 | **Joining** | Place ID, game link, private server link, share link, share code or Job ID. Orbit figures it out. |
-| **Multi-Roblox** | Launch several accounts in a row and keep them all open. |
+| **Multi-Roblox** | Launch several accounts in a row and keep them all open. Close every Roblox window at once with one button. |
 | **Game settings** | Graphics quality, FPS limit, transparency, font size, mouse sensitivity and more. Can be locked so Roblox doesn't reset them. |
 | **FastFlags** | Presets for mesh detail, MSAA, textures, rendering mode and more, plus a full editor with JSON import and export. |
 | **Mods** | Custom cursor, custom font and a mods folder that mirrors Roblox's files. Originals get backed up. |
 | **Bootstrapper** | Orbit installs and updates its own copy of Roblox and can take over the Play button on the website. Includes a cleaner for cache, logs and old versions. |
 | **Integrations** | Discord Rich Presence, server location, activity tracking and programs that start and stop with Roblox. |
 | **Auto clicker** | 1 to 1000 CPS, hotkey (toggle or hold), click limit, Roblox only mode. |
+| **Updates** | When a new version is out, a notice slides in. One click downloads it, checks it and restarts Orbit. |
 
 Can't find a setting? There's a search bar in the sidebar.
 
 ## Download
 
-Get `Orbit.exe` from the **[latest release](../../releases/latest)** and run it. No installer needed.
+Get `Orbit.exe` from the **[latest release](../../releases/latest)** and run it. No installer needed. After that, Orbit keeps itself up to date.
 
 Windows might show a SmartScreen warning the first time, because the app isn't code signed. Click **More info**, then **Run anyway**. All the code is right here if you want to check it.
 
