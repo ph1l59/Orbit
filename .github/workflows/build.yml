@@ -7,6 +7,11 @@ on:
     types: [ published ]
   pull_request:
   workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Attach Orbit.exe to this existing release tag (optional)'
+        required: false
+        default: ''
 
 permissions:
   contents: write
@@ -32,8 +37,8 @@ jobs:
           path: publish/Orbit.exe
 
       - name: Attach Orbit.exe to the release
-        if: github.event_name == 'release'
+        if: github.event_name == 'release' || inputs.tag != ''
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: ${{ github.event.release.tag_name }}
+          tag_name: ${{ github.event.release.tag_name || inputs.tag }}
           files: publish/Orbit.exe
