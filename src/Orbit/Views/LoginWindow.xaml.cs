@@ -77,7 +77,7 @@ public partial class LoginWindow : Window
             year = new[] { b.Year.ToString() },
         };
 
-        // Fills each field once (so later edits by the user are kept) and never submits the form.
+        // Keeps the fields filled (but never overwrites what the user typed) and never submits the form.
         return "(" + FillFunction + ")(" + JsonSerializer.Serialize(data) + ");";
     }
 
@@ -85,6 +85,16 @@ public partial class LoginWindow : Window
         function (d) {
           const done = window.__orbitFill || (window.__orbitFill = {});
           const q = (s) => document.querySelector(s);
+
+          // Remember fields the user changed by hand, so Orbit never overwrites them.
+          // (Events Orbit fires itself are not "trusted", real typing/clicking is.)
+          const watch = (el) => {
+            if (el.dataset.orbitWatch) return;
+            el.dataset.orbitWatch = '1';
+            const mark = (e) => { if (e.isTrusted) el.dataset.orbitUser = '1'; };
+            el.addEventListener('input', mark);
+            el.addEventListener('change', mark);
+          };
           const setValue = (el, v) => {
             const proto = el.tagName === 'SELECT' ? HTMLSelectElement.prototype : HTMLInputElement.prototype;
             Object.getOwnPropertyDescriptor(proto, 'value').set.call(el, v); // works with React-controlled fields
@@ -92,44 +102,59 @@ public partial class LoginWindow : Window
             el.dispatchEvent(new Event('change', { bubbles: true }));
             el.dispatchEvent(new Event('blur', { bubbles: true }));
           };
-          const pick = (el, wanted) => {
-            const w = wanted.map((x) => String(x).toLowerCase());
-            for (const o of el.options) {
-              if (w.includes(String(o.value).trim().toLowerCase()) || w.includes(String(o.text).trim().toLowerCase())) {
-                setValue(el, o.value);
-                return true;
-              }
+          const find = (selectors) => {
+            for (const s of selectors) {
+              const el = q(s);
+              if (el && el.offsetParent !== null) return el; // visible only
             }
-            return false;
-          };
-          const fillSelect = (key, sel, wanted) => {
-            if (done[key]) return;
-            const el = q(sel);
-            if (el && el.options.length > 1) done[key] = pick(el, wanted);
-          };
-          const fillInput = (key, sel, v) => {
-            if (done[key]) return;
-            const el = q(sel);
-            if (el) { setValue(el, v); done[key] = true; }
+            return null;
           };
 
-          fillSelect('month', '#MonthDropdown, select[name="birthdayMonth"], select[aria-label="Month"]', d.month);
-          fillSelect('day', '#DayDropdown, select[name="birthdayDay"], select[aria-label="Day"]', d.day);
-          fillSelect('year', '#YearDropdown, select[name="birthdayYear"], select[aria-label="Year"]', d.year);
-          fillInput('username', '#signup-username, input[name="signupUsername"]', d.username);
-          fillInput('password', '#signup-password, input[name="signupPassword"]', d.password);
+          // Called on every tick: (re)fills a field while it doesn't hold the wanted value,
+          // e.g. when Roblox clears the username after the birthday changes.
+          const fillSelect = (key, selectors, wanted) => {
+            const el = find(selectors);
+            if (!el || el.options.length < 2) return;
+            watch(el);
+            if (el.dataset.orbitUser) { done[key] = true; return; }
+            const w = wanted.map((x) => String(x).toLowerCase());
+            const match = [...el.options].find((o) =>
+              w.includes(String(o.value).trim().toLowerCase()) || w.includes(String(o.text).trim().toLowerCase()));
+            if (!match) return;
+            if (el.value !== match.value) setValue(el, match.value);
+            done[key] = true;
+          };
+          const fillInput = (key, selectors, v) => {
+            const el = find(selectors);
+            if (!el) return;
+            watch(el);
+            if (el.dataset.orbitUser) { done[key] = true; return; }
+            if (el.value !== v) setValue(el, v);
+            done[key] = true;
+          };
+
+          fillSelect('month', ['#MonthDropdown', 'select[name="birthdayMonth"]', 'select[aria-label="Month" i]', 'select[id*="month" i]'], d.month);
+          fillSelect('day', ['#DayDropdown', 'select[name="birthdayDay"]', 'select[aria-label="Day" i]', 'select[id*="day" i]'], d.day);
+          fillSelect('year', ['#YearDropdown', 'select[name="birthdayYear"]', 'select[aria-label="Year" i]', 'select[id*="year" i]'], d.year);
+          fillInput('username', [
+            '#signup-username', 'input[name="signupUsername"]', 'input[id*="username" i]', 'input[name*="username" i]',
+            'input[autocomplete="username"]', 'input[placeholder*="real name" i]', 'input[placeholder*="username" i]',
+          ], d.username);
+          fillInput('password', [
+            '#signup-password', 'input[name="signupPassword"]', 'input[id*="password" i]', 'input[type="password"]',
+          ], d.password);
 
           if (!done.gender && d.gender !== 'none') {
             const btn = d.gender === 'male'
-              ? q('#MaleButton, button[aria-label="Male"], button[title="Male"]')
-              : q('#FemaleButton, button[aria-label="Female"], button[title="Female"]');
+              ? find(['#MaleButton', 'button[id$="-MaleButton"]', 'button[aria-label="Male" i]', 'button[title="Male" i]'])
+              : find(['#FemaleButton', 'button[id$="FemaleButton"]', 'button[aria-label="Female" i]', 'button[title="Female" i]']);
             if (btn) { btn.click(); done.gender = true; }
           }
           return JSON.stringify(done);
         }
         """;
 
-    /// <summary>Runs the fill script; safe to call repeatedly (fields that are already filled are skipped).</summary>
+    /// <summary>Runs the fill script; safe to call repeatedly (it only touches fields that lost their value and the user hasn't edited).</summary>
     private async Task FillFormAsync()
     {
         if (_fillScript == null || _filling || _finished || Web.CoreWebView2 == null) return;
