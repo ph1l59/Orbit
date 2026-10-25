@@ -1,56 +1,68 @@
 <p align="center">
-  <img src="docs/logo.png" width="120" alt="Orbit logo">
+  <img src="docs/logo.png" width="110" alt="Orbit">
 </p>
 
 <h1 align="center">Orbit</h1>
-<p align="center"><b>by Floshiii</b></p>
 
 <p align="center">
-  Your Roblox launcher: accounts, multi-instance, FastFlags, mods, integrations and an auto clicker – in one app.
+  A Roblox launcher for Windows that handles your accounts, runs several clients at once and lets you tune the game.
 </p>
 
----
+<p align="center">
+  <a href="../../releases/latest"><img src="https://img.shields.io/github/v/release/ph1l59/Orbit?color=a855f7&label=download" alt="Download"></a>
+  <img src="https://img.shields.io/badge/windows-10%20%7C%2011-a855f7" alt="Windows 10 | 11">
+  <img src="https://img.shields.io/github/license/ph1l59/Orbit?color=a855f7" alt="License">
+</p>
 
-## Features
+<br>
 
-- **Accounts** – add accounts by logging in on the real roblox.com page. Orbit only keeps the login cookie, encrypted with Windows DPAPI. Avatars and a live online/offline dot for every account.
-- **Create accounts** – pick a birthday and gender once, list `Username:Password` lines, and Orbit fills in Roblox's sign-up page for each one in turn. Names and passwords are checked first; you click Sign Up and solve any check yourself, and every new account lands in your list automatically.
-- **Join anything** – place ID or game link, plus an optional *server link*: private server links, share links (`roblox.com/share?code=…`), share codes or Job IDs.
-- **Launch several accounts** one after another, with **Multi-Roblox** to keep them all open.
-- **Global Settings** – Roblox's in-game settings (graphics quality, framerate limit, transparency, font size, mouse sensitivity, …) with a read-only lock.
-- **FastFlags** – presets for mesh detail, MSAA, FRM quality, rendering mode, textures and more, plus a full Fast Flag editor with JSON import/export. Only allowlisted flags are used.
-- **Mods** – a mods folder that mirrors Roblox's files (originals are backed up and restored), custom cursor, custom font and Windows compatibility settings.
-- **Bootstrapper** – Orbit installs and updates its own copy of Roblox, can be the default launcher for the Play button on roblox.com, and includes a cleaner for cache, logs and old versions.
-- **Integrations** – activity tracking, server location notifications, Discord Rich Presence and programs that start/stop with Roblox.
-- **Auto Clicker** – 1–1000 clicks per second, global hotkey (toggle or hold), click limit, Roblox-only mode and fixed position.
-- **Search** – find any setting from the sidebar.
+## What it does
+
+| | |
+|---|---|
+| **Accounts** | Log in on the real roblox.com page. Orbit only keeps the login cookie, encrypted with Windows DPAPI. Every account shows its avatar and whether it's online. |
+| **Create accounts** | Set birthday and gender once, paste a list of `Username:Password`, and Orbit fills out the sign up page for each one. You click Sign Up yourself. |
+| **Joining** | Place ID, game link, private server link, share link, share code or Job ID. Orbit figures it out. |
+| **Multi-Roblox** | Launch several accounts in a row and keep them all open. |
+| **Game settings** | Graphics quality, FPS limit, transparency, font size, mouse sensitivity and more. Can be locked so Roblox doesn't reset them. |
+| **FastFlags** | Presets for mesh detail, MSAA, textures, rendering mode and more, plus a full editor with JSON import and export. |
+| **Mods** | Custom cursor, custom font and a mods folder that mirrors Roblox's files. Originals get backed up. |
+| **Bootstrapper** | Orbit installs and updates its own copy of Roblox and can take over the Play button on the website. Includes a cleaner for cache, logs and old versions. |
+| **Integrations** | Discord Rich Presence, server location, activity tracking and programs that start and stop with Roblox. |
+| **Auto clicker** | 1 to 1000 CPS, hotkey (toggle or hold), click limit, Roblox only mode. |
+
+Can't find a setting? There's a search bar in the sidebar.
 
 ## Download
 
-Grab `Orbit.exe` from the [latest release](../../releases/latest) and run it. Windows 10 or 11 (64-bit).
+Get `Orbit.exe` from the **[latest release](../../releases/latest)** and run it. No installer needed.
 
-Because the app isn't code-signed, Windows SmartScreen may warn you the first time. Click **More info → Run anyway**. The full source is right here.
+Windows might show a SmartScreen warning the first time, because the app isn't code signed. Click **More info**, then **Run anyway**. All the code is right here if you want to check it.
 
 ## Good to know
 
-- **FastFlag allowlist:** since September 2025 Roblox only accepts FastFlags from its official allowlist; other flags are ignored.
-- **Multi-Roblox and the auto clicker are at your own risk.** Roblox doesn't officially support several clients, and some games forbid alt accounts or macros.
-- **Discord Rich Presence** needs a (free) Discord application – paste its ID under Integrations.
-- **Never share** your `accounts.dat`, your `.ROBLOSECURITY` cookie or "rbx-player" links with anyone.
-- Settings, mods and accounts live in `%AppData%\Orbit`; Orbit's Roblox install in `%LocalAppData%\Orbit`.
+**FastFlags:** Since September 2025 Roblox only accepts flags from its official allowlist. Orbit only uses those.
 
-## Build it yourself
+**Multi-Roblox and auto clicker:** Use at your own risk. Roblox doesn't officially support multiple clients and some games don't allow alts or macros.
 
-Requires the [.NET 8 SDK](https://dotnet.microsoft.com/download/dotnet/8.0) on Windows.
+**Discord:** Rich Presence needs a free Discord application. Paste its ID under Integrations.
+
+**Stay safe:** Never share your `accounts.dat`, your `.ROBLOSECURITY` cookie or `rbx-player` links with anyone.
+
+**Where things are:** Settings, mods and accounts are in `%AppData%\Orbit`, Orbit's Roblox install is in `%LocalAppData%\Orbit`.
+
+## Building
+
+You need the [.NET 8 SDK](https://dotnet.microsoft.com/download/dotnet/8.0) on Windows.
 
 ```powershell
 dotnet publish src/Orbit/Orbit.csproj -c Release -o publish
 ```
 
-Every push to `main` is built by GitHub Actions, and publishing a GitHub release attaches the freshly built `Orbit.exe` to it.
+GitHub Actions builds every push to `main`. When a release is published, the fresh `Orbit.exe` gets attached automatically.
 
 ## License
 
-[GNU GPL v3.0](LICENSE) © Floshiii
+[GPL v3.0](LICENSE) · made by Floshiii
 
-Inspired by Bloxstrap, Fishstrap and Roblox Account Manager. Orbit is not affiliated with, endorsed by or associated with Roblox Corporation.
+Orbit is not affiliated with or endorsed by Roblox Corporation.
