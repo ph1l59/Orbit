@@ -6,7 +6,7 @@ using Orbit.Models;
 namespace Orbit.Services;
 
 /// <summary>What to join: a place, optionally a specific server or a private server.</summary>
-public sealed record JoinTarget(long PlaceId, string? JobId, string? LinkCode, string? ShareCode)
+public sealed record JoinTarget(long PlaceId, string? JobId, string? LinkCode, string? ShareCode, long FollowUserId = 0)
 {
     private static readonly Regex GuidRegex =
         new(@"[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}", RegexOptions.Compiled);
@@ -76,6 +76,8 @@ public sealed record JoinTarget(long PlaceId, string? JobId, string? LinkCode, s
 
         return true;
     }
+
+    public static JoinTarget Follow(long userId) => new(0, null, null, null, userId);
 
     public static JoinTarget? Parse(string? placeInput, string? serverInput, out string error)
     {
@@ -154,7 +156,13 @@ public static class RobloxLauncher
         var attempt = Guid.NewGuid().ToString();
 
         string launcherUrl;
-        if (linkCode != null)
+        if (target.FollowUserId > 0)
+        {
+            launcherUrl = "https://assetgame.roblox.com/game/PlaceLauncher.ashx?request=RequestFollowUser" +
+                          $"&browserTrackerId={tracker}&userId={target.FollowUserId}" +
+                          $"&joinAttemptId={attempt}&joinAttemptOrigin=followUser";
+        }
+        else if (linkCode != null)
         {
             launcherUrl = "https://assetgame.roblox.com/game/PlaceLauncher.ashx?request=RequestPrivateGame" +
                           $"&browserTrackerId={tracker}&placeId={placeId}&accessCode=&linkCode={Uri.EscapeDataString(linkCode)}" +

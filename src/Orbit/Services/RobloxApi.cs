@@ -12,7 +12,7 @@ public sealed record PrivateServerInvite(long PlaceId, string LinkCode);
 
 public sealed record UserPresence(long UserId, int Type, string Location);
 
-public sealed record GameInfo(long UniverseId, string Name, string Creator, string? IconUrl);
+public sealed record GameInfo(long UniverseId, string Name, string Creator, string? IconUrl, long Playing);
 
 public sealed class RobloxApiException(string message) : Exception(message);
 
@@ -171,6 +171,22 @@ public static class RobloxApi
         return result;
     }
 
+    /// <summary>Looks up a user by username. Returns null if nobody has that name.</summary>
+    public static async Task<RobloxUser?> GetUserByNameAsync(string username)
+    {
+        var body = JsonSerializer.Serialize(new { usernames = new[] { username }, excludeBannedUsers = true });
+        using var response = await SendAsync(
+            () => Request(HttpMethod.Post, "https://users.roblox.com/v1/usernames/users", body), null).ConfigureAwait(false);
+        if (!response.IsSuccessStatusCode) return null;
+
+        using var doc = JsonDocument.Parse(await response.Content.ReadAsStringAsync().ConfigureAwait(false));
+        var data = doc.RootElement.GetProperty("data");
+        if (data.GetArrayLength() == 0) return null;
+        var u = data[0];
+        return new RobloxUser(u.GetProperty("id").GetInt64(), u.GetProperty("name").GetString() ?? username,
+            u.GetProperty("displayName").GetString() ?? username);
+    }
+
     // ---------------- Joining ----------------
 
     /// <summary>Resolves a "roblox.com/share?code=...&amp;type=Server" link to a private server.</summary>
@@ -209,6 +225,7 @@ public static class RobloxApi
             var universeId = uid.GetInt64();
 
             string name = "Roblox", creator = "";
+            long playing = 0;
             using (var gameDoc = await GetJsonAsync($"https://games.roblox.com/v1/games?universeIds={universeId}").ConfigureAwait(false))
             {
                 var data = gameDoc?.RootElement.GetProperty("data");
@@ -217,6 +234,8 @@ public static class RobloxApi
                     name = arr[0].GetProperty("name").GetString() ?? name;
                     if (arr[0].TryGetProperty("creator", out var c) && c.TryGetProperty("name", out var cn))
                         creator = cn.GetString() ?? "";
+                    if (arr[0].TryGetProperty("playing", out var pl) && pl.ValueKind == JsonValueKind.Number)
+                        playing = pl.GetInt64();
                 }
             }
 
@@ -230,7 +249,7 @@ public static class RobloxApi
                     icon = img.GetString();
             }
 
-            var info = new GameInfo(universeId, name, creator, icon);
+            var info = new GameInfo(universeId, name, creator, icon, playing);
             GameCache[placeId] = info;
             return info;
         }

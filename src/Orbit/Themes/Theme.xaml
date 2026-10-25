@@ -348,20 +348,25 @@
         <Setter Property="FontSize" Value="13"/>
         <Setter Property="MinHeight" Value="34"/>
         <Setter Property="VerticalContentAlignment" Value="Center"/>
-        <Setter Property="Padding" Value="8,0"/>
+        <Setter Property="HorizontalContentAlignment" Value="Left"/>
+        <Setter Property="Padding" Value="10,0"/>
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="TextBox">
                     <Border x:Name="bd" Background="{StaticResource InputBrush}" BorderBrush="{StaticResource LineStrongBrush}"
                             BorderThickness="1" CornerRadius="7">
                         <Grid>
-                            <ScrollViewer x:Name="PART_ContentHost" Margin="{TemplateBinding Padding}"
+                            <!-- TextBox applies Padding to its text itself, so the host gets no margin. -->
+                            <ScrollViewer x:Name="PART_ContentHost" Focusable="False"
                                           VerticalAlignment="{TemplateBinding VerticalContentAlignment}"/>
-                            <TextBlock x:Name="placeholder" Margin="11,0" IsHitTestVisible="False" Visibility="Collapsed"
-                                       VerticalAlignment="{TemplateBinding VerticalContentAlignment}"
-                                       Foreground="{StaticResource FaintBrush}" FontSize="{TemplateBinding FontSize}"
-                                       FontFamily="{TemplateBinding FontFamily}" TextTrimming="CharacterEllipsis"
-                                       Text="{Binding Tag, RelativeSource={RelativeSource TemplatedParent}}"/>
+                            <Border Padding="{TemplateBinding Padding}" IsHitTestVisible="False">
+                                <TextBlock x:Name="placeholder" Margin="2,0,0,0" Visibility="Collapsed"
+                                           VerticalAlignment="{TemplateBinding VerticalContentAlignment}"
+                                           HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                           Foreground="{StaticResource FaintBrush}" FontSize="{TemplateBinding FontSize}"
+                                           FontFamily="{TemplateBinding FontFamily}" TextTrimming="CharacterEllipsis"
+                                           Text="{Binding Tag, RelativeSource={RelativeSource TemplatedParent}}"/>
+                            </Border>
                         </Grid>
                     </Border>
                     <ControlTemplate.Triggers>
@@ -386,6 +391,8 @@
     <Style x:Key="NumberBox" TargetType="TextBox" BasedOn="{StaticResource {x:Type TextBox}}">
         <Setter Property="FontFamily" Value="{StaticResource MonoFont}"/>
         <Setter Property="TextAlignment" Value="Center"/>
+        <Setter Property="HorizontalContentAlignment" Value="Center"/>
+        <Setter Property="Padding" Value="4,0"/>
         <Setter Property="Width" Value="64"/>
     </Style>
 
@@ -439,6 +446,32 @@
                             <Setter TargetName="box" Property="Background" Value="{StaticResource SignalBrush}"/>
                             <Setter TargetName="box" Property="BorderBrush" Value="{StaticResource SignalBrush}"/>
                             <Setter TargetName="mark" Property="Visibility" Value="Visible"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- ============ Segmented control (RadioButtons) ============ -->
+    <Style x:Key="Segment" TargetType="RadioButton">
+        <Setter Property="Foreground" Value="{StaticResource DimBrush}"/>
+        <Setter Property="Cursor" Value="Hand"/>
+        <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+        <Setter Property="FontSize" Value="12.5"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="RadioButton">
+                    <Border x:Name="bd" Background="Transparent" CornerRadius="6" Padding="10,7">
+                        <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter Property="Foreground" Value="{StaticResource TextBrush}"/>
+                        </Trigger>
+                        <Trigger Property="IsChecked" Value="True">
+                            <Setter TargetName="bd" Property="Background" Value="{StaticResource SignalTintHoverBrush}"/>
+                            <Setter Property="Foreground" Value="{StaticResource SignalLightBrush}"/>
                         </Trigger>
                     </ControlTemplate.Triggers>
                 </ControlTemplate>

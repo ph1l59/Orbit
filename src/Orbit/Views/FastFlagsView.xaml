@@ -9,7 +9,7 @@
         </Grid.RowDefinitions>
 
         <StackPanel Margin="0,0,0,8">
-            <TextBlock Text="ORBIT / 03 / FASTFLAGS" Style="{StaticResource Crumb}"/>
+            <TextBlock Text="ORBIT / FASTFLAGS" Style="{StaticResource Crumb}"/>
             <TextBlock Style="{StaticResource PageTitle}">
                 <Run Text="Fast"/><Run Text="Flags" Foreground="{StaticResource AccentTextBrush}"/>
             </TextBlock>

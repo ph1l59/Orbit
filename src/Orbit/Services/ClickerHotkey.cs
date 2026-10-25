@@ -1,100 +1,93 @@
-using System.Runtime.InteropServices;
-using System.Windows;
-using System.Windows.Interop;
+using System.Windows.Input;
 
 namespace Orbit.Services;
 
-/// <summary>Global hotkey for the auto clicker (works while Roblox has focus).</summary>
+/// <summary>
+/// Global hotkey for the auto clicker. Polls the key state, so it works everywhere
+/// (also while Roblox is focused) and supports mouse buttons 4/5 too.
+/// </summary>
 public static class ClickerHotkey
 {
-    private const int HotkeyId = 0x0B17;
-    private const int WM_HOTKEY = 0x0312;
-    private const uint MOD_NOREPEAT = 0x4000;
+    private static Thread? _thread;
+    private static volatile bool _stop;
 
-    [DllImport("user32.dll")] private static extern bool RegisterHotKey(IntPtr hWnd, int id, uint modifiers, uint vk);
-    [DllImport("user32.dll")] private static extern bool UnregisterHotKey(IntPtr hWnd, int id);
+    /// <summary>True while the user is choosing a new hotkey.</summary>
+    public static volatile bool Suspended;
 
-    private static HwndSource? _source;
-    private static Thread? _holdThread;
-    private static volatile bool _holdStop;
+    public const int ModCtrl = 1, ModAlt = 2, ModShift = 4;
 
-    public static readonly string[] Keys =
-        { "F1", "F2", "F3", "F4", "F5", "F6", "F7", "F8", "F9", "F10", "F11", "F12" };
-
-    public static uint VirtualKey(string name)
-        => name.Length > 1 && name[0] == 'F' && int.TryParse(name[1..], out var n) && n is >= 1 and <= 12
-            ? (uint)(0x70 + n - 1)
-            : 0x75; // F6
-
-    public static void Attach(Window window)
+    public static void Start()
     {
-        var handle = new WindowInteropHelper(window).Handle;
-        _source = HwndSource.FromHwnd(handle);
-        _source?.AddHook(WndProc);
-        Apply();
+        if (_thread is { IsAlive: true }) return;
+        _stop = false;
+        _thread = new Thread(Loop) { IsBackground = true, Name = "Orbit hotkey" };
+        _thread.Start();
     }
 
-    /// <summary>Re-registers the hotkey after the settings changed. Returns false if the key is taken.</summary>
-    public static bool Apply()
+    public static void Stop() => _stop = true;
+
+    private static bool Down(int vk) => (AutoClicker.Native.GetAsyncKeyState(vk) & 0x8000) != 0;
+
+    private static bool IsPressed(int vk, int mods)
     {
-        var s = AppState.Settings;
-        StopHoldWatcher();
-        if (_source == null) return false;
-
-        UnregisterHotKey(_source.Handle, HotkeyId);
-        var vk = VirtualKey(s.ClickerHotkey);
-
-        if (s.ClickerMode == "hold")
-        {
-            StartHoldWatcher(vk);
-            return true;
-        }
-
-        return RegisterHotKey(_source.Handle, HotkeyId, MOD_NOREPEAT, vk);
+        if (vk == 0 || !Down(vk)) return false;
+        if (Down(0x11) != ((mods & ModCtrl) != 0)) return false;  // Ctrl
+        if (Down(0x12) != ((mods & ModAlt) != 0)) return false;   // Alt
+        if (Down(0x10) != ((mods & ModShift) != 0)) return false; // Shift
+        return true;
     }
 
-    public static void Detach()
+    private static void Loop()
     {
-        StopHoldWatcher();
-        if (_source != null)
+        var wasDown = false;
+        while (!_stop)
         {
-            UnregisterHotKey(_source.Handle, HotkeyId);
-            _source.RemoveHook(WndProc);
-            _source = null;
-        }
-    }
-
-    private static IntPtr WndProc(IntPtr hwnd, int msg, IntPtr wParam, IntPtr lParam, ref bool handled)
-    {
-        if (msg == WM_HOTKEY && wParam.ToInt32() == HotkeyId)
-        {
-            AutoClicker.Instance.Toggle(AppState.Settings);
-            handled = true;
-        }
-        return IntPtr.Zero;
-    }
-
-    private static void StartHoldWatcher(uint vk)
-    {
-        _holdStop = false;
-        _holdThread = new Thread(() =>
-        {
-            while (!_holdStop)
+            Thread.Sleep(8);
+            if (Suspended)
             {
-                var down = (AutoClicker.Native.GetAsyncKeyState((int)vk) & 0x8000) != 0;
-                var clicker = AutoClicker.Instance;
-                if (down && !clicker.IsRunning) clicker.Start(AppState.Settings);
-                else if (!down && clicker.IsRunning) clicker.Stop();
-                Thread.Sleep(10);
+                wasDown = true; // ignore the key that was just assigned
+                continue;
             }
-        })
-        { IsBackground = true, Name = "Orbit hotkey" };
-        _holdThread.Start();
+
+            var s = AppState.Settings;
+            var clicker = AutoClicker.Instance;
+            var down = IsPressed(s.ClickerHotkeyVk, s.ClickerHotkeyMods);
+
+            if (s.ClickerMode == "hold")
+            {
+                if (down && !clicker.IsRunning) clicker.Start(s);
+                else if (!down && clicker.IsRunning) clicker.Stop();
+            }
+            else if (down && !wasDown)
+            {
+                clicker.Toggle(s);
+            }
+
+            wasDown = down;
+        }
     }
 
-    private static void StopHoldWatcher()
+    /// <summary>Human readable name, e.g. "Ctrl + F6" or "Mouse 4".</summary>
+    public static string Describe(int vk, int mods)
     {
-        _holdStop = true;
-        _holdThread = null;
+        var parts = new List<string>();
+        if ((mods & ModCtrl) != 0) parts.Add("Ctrl");
+        if ((mods & ModAlt) != 0) parts.Add("Alt");
+        if ((mods & ModShift) != 0) parts.Add("Shift");
+        parts.Add(KeyName(vk));
+        return string.Join(" + ", parts);
     }
+
+    private static string KeyName(int vk) => vk switch
+    {
+        0x04 => "Middle mouse",
+        0x05 => "Mouse 4",
+        0x06 => "Mouse 5",
+        _ => KeyInterop.KeyFromVirtualKey(vk) switch
+        {
+            Key.None => $"Key {vk}",
+            var k when k >= Key.D0 && k <= Key.D9 => ((int)(k - Key.D0)).ToString(),
+            var k => k.ToString(),
+        },
+    };
 }

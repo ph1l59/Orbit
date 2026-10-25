@@ -9,7 +9,7 @@
         </Grid.RowDefinitions>
 
         <StackPanel Margin="0,0,0,8">
-            <TextBlock Text="ORBIT / 04 / MODS" Style="{StaticResource Crumb}"/>
+            <TextBlock Text="ORBIT / MODS" Style="{StaticResource Crumb}"/>
             <TextBlock Style="{StaticResource PageTitle}">
                 <Run Text="Client"/> <Run Text="mods" Foreground="{StaticResource AccentTextBrush}"/>
             </TextBlock>

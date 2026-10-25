@@ -45,9 +45,8 @@ public partial class MainWindow : Window
         var version = Assembly.GetExecutingAssembly().GetName().Version;
         if (version != null) VersionText.Text = $"v{version.Major}.{version.Minor}.{version.Build}";
 
-        var number = 1;
         foreach (var page in PageList.Where(p => p.InNav))
-            Nav.Items.Add(new ListBoxItem { Tag = page.Key, Content = NavContent(page, number++) });
+            Nav.Items.Add(new ListBoxItem { Tag = page.Key, Content = NavContent(page) });
 
         foreach (var page in PageList)
             _pages[page.Key] = page.Create();
@@ -62,7 +61,7 @@ public partial class MainWindow : Window
 
         Loaded += async (_, _) =>
         {
-            ClickerHotkey.Attach(this);
+            ClickerHotkey.Start();
             Integrations.Start(Dispatcher);
             await AppState.RefreshAvatarsAsync();
         };
@@ -70,17 +69,9 @@ public partial class MainWindow : Window
         Nav.SelectedIndex = 0;
     }
 
-    private static UIElement NavContent(PageInfo page, int number)
+    private static UIElement NavContent(PageInfo page)
     {
         var dock = new DockPanel();
-        var index = new TextBlock
-        {
-            Text = number.ToString("00"),
-            Style = (Style)Application.Current.FindResource("Crumb"),
-            VerticalAlignment = VerticalAlignment.Center,
-        };
-        DockPanel.SetDock(index, Dock.Right);
-        dock.Children.Add(index);
         dock.Children.Add(new TextBlock { Text = page.Glyph, Style = (Style)Application.Current.FindResource("Icon"), Width = 22 });
         dock.Children.Add(new TextBlock { Text = page.Title, Margin = new Thickness(8, 0, 0, 0), FontSize = 13.5, VerticalAlignment = VerticalAlignment.Center });
         return dock;
@@ -240,7 +231,7 @@ public partial class MainWindow : Window
     protected override void OnClosed(EventArgs e)
     {
         AppState.MultiInstanceChanged -= UpdateMultiStatus;
-        ClickerHotkey.Detach();
+        ClickerHotkey.Stop();
         AutoClicker.Instance.Stop();
         Integrations.Stop();
         base.OnClosed(e);

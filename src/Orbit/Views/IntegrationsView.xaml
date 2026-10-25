@@ -8,7 +8,7 @@
         </Grid.RowDefinitions>
 
         <StackPanel Margin="0,0,0,8">
-            <TextBlock Text="ORBIT / 06 / INTEGRATIONS" Style="{StaticResource Crumb}"/>
+            <TextBlock Text="ORBIT / INTEGRATIONS" Style="{StaticResource Crumb}"/>
             <TextBlock Style="{StaticResource PageTitle}">
                 <Run Text="Integra"/><Run Text="tions" Foreground="{StaticResource AccentTextBrush}"/>
             </TextBlock>

@@ -8,11 +8,10 @@
         <local:NotEmptyToVisibilityConverter x:Key="NotEmpty"/>
 
         <ContextMenu x:Key="AccountMenu">
+            <MenuItem Header="Open browser (logged in)" Click="Menu_Browser_Click"/>
             <MenuItem Header="Set alias…" Click="Menu_Alias_Click"/>
-            <MenuItem Header="Open profile in browser" Click="Menu_Profile_Click"/>
+            <MenuItem Header="Open profile page" Click="Menu_Profile_Click"/>
             <MenuItem Header="Check login" Click="Menu_Check_Click"/>
-            <MenuItem Header="Move up" Click="Menu_Up_Click"/>
-            <MenuItem Header="Move down" Click="Menu_Down_Click"/>
             <MenuItem Header="Remove" Click="Menu_Remove_Click" Foreground="{StaticResource DangerBrush}"/>
         </ContextMenu>
 
@@ -49,12 +48,24 @@
             <Grid>
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
                     <ColumnDefinition Width="*"/>
                     <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
 
+                <!-- Drag handle -->
+                <Border Background="Transparent" Cursor="SizeNS" Width="22" Margin="-6,-6,8,-6" ToolTip="Drag to reorder"
+                        PreviewMouseLeftButtonDown="Grip_MouseDown" MouseMove="Grip_MouseMove" PreviewMouseLeftButtonUp="Grip_MouseUp">
+                    <TextBlock Text="&#xE76F;" FontFamily="{StaticResource IconFont}" FontSize="14" HorizontalAlignment="Center"
+                               VerticalAlignment="Center" Foreground="{StaticResource FaintBrush}" RenderTransformOrigin="0.5,0.5">
+                        <TextBlock.RenderTransform>
+                            <RotateTransform Angle="90"/>
+                        </TextBlock.RenderTransform>
+                    </TextBlock>
+                </Border>
+
                 <!-- Avatar with online dot -->
-                <Grid Width="48" Height="48">
+                <Grid Grid.Column="1" Width="48" Height="48">
                     <Ellipse Fill="{StaticResource Raised2Brush}"/>
                     <TextBlock Text="{Binding Initial}" HorizontalAlignment="Center" VerticalAlignment="Center"
                                FontSize="18" FontWeight="SemiBold" Foreground="{StaticResource SignalLightBrush}"/>
@@ -68,7 +79,7 @@
                              ToolTip="{Binding PresenceText}"/>
                 </Grid>
 
-                <StackPanel Grid.Column="1" Margin="14,0,10,0" VerticalAlignment="Center">
+                <StackPanel Grid.Column="2" Margin="14,0,10,0" VerticalAlignment="Center">
                     <StackPanel Orientation="Horizontal">
                         <TextBlock Text="{Binding Title}" FontSize="14.5" FontWeight="SemiBold"/>
                         <TextBlock Text="{Binding Subtitle}" Margin="8,0,0,0" FontSize="12.5" VerticalAlignment="Bottom"
@@ -83,7 +94,7 @@
                                TextWrapping="Wrap" Visibility="{Binding Status, Converter={StaticResource NotEmpty}}"/>
                 </StackPanel>
 
-                <CheckBox Grid.Column="2" Style="{StaticResource CheckSquare}" VerticalAlignment="Center" IsHitTestVisible="False"
+                <CheckBox Grid.Column="3" Style="{StaticResource CheckSquare}" VerticalAlignment="Center" IsHitTestVisible="False"
                           IsChecked="{Binding IsSelected, Mode=OneWay}"/>
             </Grid>
             <DataTemplate.Triggers>
@@ -119,7 +130,7 @@
                     </StackPanel>
                 </Button>
                 <StackPanel>
-                    <TextBlock Text="ORBIT / 01 / ACCOUNTS" Style="{StaticResource Crumb}"/>
+                    <TextBlock Text="ORBIT / ACCOUNTS" Style="{StaticResource Crumb}"/>
                     <TextBlock Style="{StaticResource PageTitle}">
                         <Run Text="Your"/> <Run Text="accounts" Foreground="{StaticResource AccentTextBrush}"/>
                     </TextBlock>
@@ -130,6 +141,13 @@
             <DockPanel Grid.Row="1" Margin="0,0,0,14">
                 <Button DockPanel.Dock="Right" Content="Clear" Margin="8,0,0,0" Click="SelectNone_Click"/>
                 <Button DockPanel.Dock="Right" Content="Select all" Margin="8,0,0,0" Click="SelectAll_Click"/>
+                <Button DockPanel.Dock="Right" Margin="8,0,0,0" Click="Browser_Click" Tag="Open browser|logged in website account"
+                        ToolTip="Open roblox.com logged in as the selected account">
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Text="&#xE774;" Style="{StaticResource Icon}" FontSize="12"/>
+                        <TextBlock Text="Open browser" Margin="8,0,0,0"/>
+                    </StackPanel>
+                </Button>
                 <TextBox x:Name="SearchBox" Tag="Filter accounts…" TextChanged="Search_TextChanged"/>
             </DockPanel>
 
@@ -161,17 +179,66 @@
         </Grid>
 
         <!-- ================= Join panel ================= -->
-        <StackPanel Grid.Column="2" Margin="0,22,0,0">
-            <Border Style="{StaticResource Panel}" Padding="20" Tag="Join game|server link place id private server share link job id launch">
+        <ScrollViewer Grid.Column="2" VerticalScrollBarVisibility="Auto" Padding="0,0,6,0">
+        <StackPanel Margin="0,22,0,0">
+            <Border Style="{StaticResource Panel}" Padding="20" Tag="Join game|server link place id private server share link job id launch follow user">
                 <StackPanel>
                     <TextBlock Text="LAUNCH" Style="{StaticResource Crumb}" Foreground="{StaticResource SignalLightBrush}"/>
-                    <TextBlock Text="Join a game" FontFamily="{StaticResource DisplayFont}" FontSize="20" FontWeight="Bold" Margin="0,4,0,0"/>
+                    <TextBlock x:Name="PanelTitle" Text="Join a game" FontFamily="{StaticResource DisplayFont}" FontSize="20" FontWeight="Bold" Margin="0,4,0,0"/>
 
-                    <TextBlock Text="PLACE ID OR GAME LINK" Style="{StaticResource Label}" Margin="0,18,0,6"/>
-                    <TextBox x:Name="PlaceBox" Tag="920587237 or roblox.com/games/…"/>
+                    <Border Background="{StaticResource InputBrush}" BorderBrush="{StaticResource LineBrush}" BorderThickness="1"
+                            CornerRadius="8" Padding="3" Margin="0,14,0,0">
+                        <UniformGrid Columns="2">
+                            <RadioButton x:Name="GameMode" Style="{StaticResource Segment}" Content="Join game" IsChecked="True" Checked="Mode_Changed"/>
+                            <RadioButton x:Name="FollowMode" Style="{StaticResource Segment}" Content="Follow user" Checked="Mode_Changed"/>
+                        </UniformGrid>
+                    </Border>
 
-                    <TextBlock Text="SERVER LINK (OPTIONAL)" Style="{StaticResource Label}" Margin="0,14,0,6"/>
-                    <TextBox x:Name="ServerBox" Tag="Private server / share link or Job ID"/>
+                    <!-- Join game -->
+                    <StackPanel x:Name="GamePanel">
+                        <Border x:Name="GameCard" Background="{StaticResource RaisedBrush}" BorderBrush="{StaticResource LineBrush}" BorderThickness="1"
+                                CornerRadius="10" Padding="10" Margin="0,14,0,0" Visibility="Collapsed">
+                            <DockPanel>
+                                <Border x:Name="GameImage" Width="58" Height="58" CornerRadius="8" Background="{StaticResource Raised2Brush}"/>
+                                <StackPanel Margin="12,0,0,0" VerticalAlignment="Center">
+                                    <TextBlock x:Name="GameName" FontSize="14" FontWeight="SemiBold" TextTrimming="CharacterEllipsis"/>
+                                    <TextBlock x:Name="GameCreator" Style="{StaticResource RowDesc}" Margin="0,2,0,0" TextTrimming="CharacterEllipsis"/>
+                                    <TextBlock x:Name="GameMeta" Style="{StaticResource Crumb}" Margin="0,4,0,0"/>
+                                </StackPanel>
+                            </DockPanel>
+                        </Border>
+
+                        <TextBlock Text="PLACE ID OR GAME LINK" Style="{StaticResource Label}" Margin="0,14,0,6"/>
+                        <TextBox x:Name="PlaceBox" Tag="920587237 or roblox.com/games/…" TextChanged="Join_TextChanged"/>
+
+                        <TextBlock Text="SERVER LINK (OPTIONAL)" Style="{StaticResource Label}" Margin="0,14,0,6"/>
+                        <TextBox x:Name="ServerBox" Tag="Private server / share link or Job ID" TextChanged="Join_TextChanged"/>
+                    </StackPanel>
+
+                    <!-- Follow user -->
+                    <StackPanel x:Name="FollowPanel" Visibility="Collapsed">
+                        <Border x:Name="UserCard" Background="{StaticResource RaisedBrush}" BorderBrush="{StaticResource LineBrush}" BorderThickness="1"
+                                CornerRadius="10" Padding="10" Margin="0,14,0,0" Visibility="Collapsed">
+                            <DockPanel>
+                                <Grid Width="52" Height="52">
+                                    <Ellipse Fill="{StaticResource Raised2Brush}"/>
+                                    <Ellipse x:Name="UserImage"/>
+                                    <Ellipse x:Name="UserDot" Width="14" Height="14" HorizontalAlignment="Right" VerticalAlignment="Bottom"
+                                             Fill="{StaticResource FaintBrush}" Stroke="{StaticResource RaisedBrush}" StrokeThickness="3"/>
+                                </Grid>
+                                <StackPanel Margin="12,0,0,0" VerticalAlignment="Center">
+                                    <TextBlock x:Name="UserName" FontSize="14" FontWeight="SemiBold" TextTrimming="CharacterEllipsis"/>
+                                    <TextBlock x:Name="UserHandle" Style="{StaticResource RowDesc}" Margin="0,2,0,0"/>
+                                    <TextBlock x:Name="UserPresence" Style="{StaticResource Crumb}" Margin="0,4,0,0" TextTrimming="CharacterEllipsis"/>
+                                </StackPanel>
+                            </DockPanel>
+                        </Border>
+
+                        <TextBlock Text="USERNAME" Style="{StaticResource Label}" Margin="0,14,0,6"/>
+                        <TextBox x:Name="FollowBox" Tag="Username of the player to join" TextChanged="Follow_TextChanged"/>
+                        <TextBlock Style="{StaticResource RowDesc}" Margin="0,8,0,0"
+                                   Text="Joins the server the player is in. Works if their privacy settings allow others to join them."/>
+                    </StackPanel>
 
                     <Button x:Name="LaunchButton" Style="{StaticResource SolidButton}" Height="44" Margin="0,20,0,0"
                             HorizontalAlignment="Stretch" Click="Launch_Click">
@@ -190,10 +257,11 @@
                 <StackPanel>
                     <TextBlock Text="HOW IT WORKS" Style="{StaticResource Crumb}"/>
                     <TextBlock Style="{StaticResource RowDesc}" Margin="0,8,0,0" LineHeight="20"
-                               Text="1 · Click accounts on the left to select them.&#x0a;2 · Paste a game link or place ID.&#x0a;3 · Optional: paste a private server or share link.&#x0a;4 · Launch – several accounts start one after another."/>
-                    <TextBlock Style="{StaticResource RowDesc}" Margin="0,10,0,0" Text="Right-click an account for more options. The dot shows if it's online."/>
+                               Text="1 · Click accounts on the left to select them.&#x0a;2 · Paste a game link – or follow a player.&#x0a;3 · Optional: paste a private server or share link.&#x0a;4 · Launch – several accounts start one after another."/>
+                    <TextBlock Style="{StaticResource RowDesc}" Margin="0,10,0,0" Text="Drag the handle on the left of a card to reorder. Right-click for more options. Green dot = online."/>
                 </StackPanel>
             </Border>
         </StackPanel>
+        </ScrollViewer>
     </Grid>
 </UserControl>

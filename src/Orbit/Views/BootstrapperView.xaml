@@ -8,7 +8,7 @@
         </Grid.RowDefinitions>
 
         <StackPanel Margin="0,0,0,8">
-            <TextBlock Text="ORBIT / 05 / BOOTSTRAPPER" Style="{StaticResource Crumb}"/>
+            <TextBlock Text="ORBIT / BOOTSTRAPPER" Style="{StaticResource Crumb}"/>
             <TextBlock Style="{StaticResource PageTitle}">
                 <Run Text="Boot"/><Run Text="strapper" Foreground="{StaticResource AccentTextBrush}"/>
             </TextBlock>

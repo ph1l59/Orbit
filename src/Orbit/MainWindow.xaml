@@ -38,10 +38,10 @@
 
                     <!-- Search -->
                     <Grid DockPanel.Dock="Top" Margin="0,0,0,16">
-                        <TextBox x:Name="SearchBox" Tag="Search settings…" Padding="30,0,8,0"
+                        <TextBox x:Name="SearchBox" Tag="Search" Padding="10,0,34,0"
                                  TextChanged="Search_TextChanged" PreviewKeyDown="Search_PreviewKeyDown"/>
-                        <TextBlock Text="&#xE721;" Style="{StaticResource Icon}" FontSize="12" Margin="11,0,0,0"
-                                   HorizontalAlignment="Left" Foreground="{StaticResource FaintBrush}" IsHitTestVisible="False"/>
+                        <TextBlock Text="&#xE721;" Style="{StaticResource Icon}" FontSize="12" Margin="0,0,12,0"
+                                   HorizontalAlignment="Right" Foreground="{StaticResource FaintBrush}" IsHitTestVisible="False"/>
                     </Grid>
 
                     <!-- Bottom: multi-roblox + about -->

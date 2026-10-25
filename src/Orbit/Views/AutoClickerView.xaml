@@ -10,14 +10,14 @@
         </Grid.RowDefinitions>
 
         <StackPanel Margin="0,0,0,8">
-            <TextBlock Text="ORBIT / 07 / AUTO CLICKER" Style="{StaticResource Crumb}"/>
+            <TextBlock Text="ORBIT / AUTO CLICKER" Style="{StaticResource Crumb}"/>
             <TextBlock Style="{StaticResource PageTitle}">
                 <Run Text="Auto"/> <Run Text="clicker" Foreground="{StaticResource AccentTextBrush}"/>
             </TextBlock>
-            <TextBlock Style="{StaticResource PageDesc}" Text="A fast, precise auto clicker with a global hotkey – works while Roblox has focus. Some games don't allow macros, so check the rules."/>
+            <TextBlock Style="{StaticResource PageDesc}" Text="Fast and precise, with a global hotkey. Some games don't allow macros – check the rules first."/>
         </StackPanel>
 
-        <!-- Status card -->
+        <!-- Status -->
         <Border Grid.Row="1" Style="{StaticResource Panel}" Margin="0,14,0,4" Padding="22,18">
             <DockPanel>
                 <Button x:Name="StartButton" DockPanel.Dock="Right" Style="{StaticResource SolidButton}" Height="46" MinWidth="170"
@@ -26,12 +26,12 @@
                 </Button>
                 <StackPanel Orientation="Horizontal">
                     <Grid Width="54" Height="54" Margin="0,0,18,0">
+                        <Ellipse x:Name="StateGlow" Fill="{StaticResource OkBrush}" Opacity="0"/>
                         <Ellipse x:Name="StateRing" Stroke="{StaticResource LineStrongBrush}" StrokeThickness="2"/>
-                        <Ellipse x:Name="StateDot" Width="14" Height="14" Fill="{StaticResource FaintBrush}"/>
+                        <Ellipse x:Name="StateDot" Width="16" Height="16" Fill="{StaticResource FaintBrush}"/>
                     </Grid>
                     <StackPanel VerticalAlignment="Center">
-                        <TextBlock x:Name="StateText" Text="STOPPED" Style="{StaticResource Crumb}"/>
-                        <TextBlock x:Name="ClicksText" Text="0 clicks" FontFamily="{StaticResource DisplayFont}" FontSize="26" FontWeight="Bold"/>
+                        <TextBlock x:Name="StateText" Text="Inactive" FontFamily="{StaticResource DisplayFont}" FontSize="26" FontWeight="Bold"/>
                         <TextBlock x:Name="HotkeyHint" Style="{StaticResource RowDesc}" Text="Press F6 to start / stop"/>
                     </StackPanel>
                 </StackPanel>
@@ -40,6 +40,41 @@
 
         <ScrollViewer Grid.Row="2" VerticalScrollBarVisibility="Auto" Padding="0,0,10,0">
             <StackPanel>
+                <TextBlock Text="// HOTKEY" Style="{StaticResource Section}"/>
+
+                <Border Style="{StaticResource Row}" Tag="Hotkey|shortcut key bind">
+                    <DockPanel>
+                        <Button x:Name="HotkeyButton" DockPanel.Dock="Right" MinWidth="170" Style="{StaticResource PrimaryButton}"
+                                Click="Hotkey_Click" PreviewKeyDown="Hotkey_KeyDown" PreviewMouseDown="Hotkey_MouseDown"
+                                LostKeyboardFocus="Hotkey_LostFocus" FontFamily="{StaticResource MonoFont}"/>
+                        <StackPanel Style="{StaticResource RowText}">
+                            <TextBlock Style="{StaticResource RowTitle}" Text="Hotkey"/>
+                            <TextBlock x:Name="HotkeyDesc" Style="{StaticResource RowDesc}"
+                                       Text="Click the button, then press the key you want (Ctrl/Alt/Shift combos and mouse buttons 4/5 work). Esc cancels."/>
+                        </StackPanel>
+                    </DockPanel>
+                </Border>
+
+                <Border Style="{StaticResource Row}" Tag="Hotkey mode|toggle hold">
+                    <DockPanel>
+                        <ComboBox x:Name="ModeCombo" DockPanel.Dock="Right" SelectionChanged="Changed"/>
+                        <StackPanel Style="{StaticResource RowText}">
+                            <TextBlock Style="{StaticResource RowTitle}" Text="Hotkey mode"/>
+                            <TextBlock Style="{StaticResource RowDesc}" Text="Toggle: press once to start, again to stop. Hold: clicks only while the key is held down."/>
+                        </StackPanel>
+                    </DockPanel>
+                </Border>
+
+                <Border Style="{StaticResource Row}" Tag="Start delay|cooldown countdown seconds">
+                    <DockPanel>
+                        <local:NumberSlider x:Name="DelaySlider" DockPanel.Dock="Right" Minimum="0" Maximum="10" Step="1" ValueChanged="Changed"/>
+                        <StackPanel Style="{StaticResource RowText}">
+                            <TextBlock Style="{StaticResource RowTitle}" Text="Start delay"/>
+                            <TextBlock Style="{StaticResource RowDesc}" Text="Seconds to wait after pressing Start, so you can switch to Roblox. The hotkey always starts instantly."/>
+                        </StackPanel>
+                    </DockPanel>
+                </Border>
+
                 <TextBlock Text="// CLICKING" Style="{StaticResource Section}"/>
 
                 <Border Style="{StaticResource Row}" Tag="Clicks per second|cps speed rate interval">
@@ -47,7 +82,7 @@
                         <local:NumberSlider x:Name="CpsSlider" DockPanel.Dock="Right" Minimum="1" Maximum="1000" Step="1" ValueChanged="Changed"/>
                         <StackPanel Style="{StaticResource RowText}">
                             <TextBlock Style="{StaticResource RowTitle}" Text="Clicks per second"/>
-                            <TextBlock Style="{StaticResource RowDesc}" Text="1 to 1000. Type the exact number into the box for high values."/>
+                            <TextBlock Style="{StaticResource RowDesc}" Text="1 to 1000. Type the exact number into the box for precise values."/>
                         </StackPanel>
                     </DockPanel>
                 </Border>
@@ -83,47 +118,31 @@
                     </DockPanel>
                 </Border>
 
-                <TextBlock Text="// HOTKEY" Style="{StaticResource Section}"/>
+                <TextBlock Text="// WHERE TO CLICK" Style="{StaticResource Section}"/>
 
-                <Border Style="{StaticResource Row}" Tag="Hotkey|shortcut key f6">
-                    <DockPanel>
-                        <ComboBox x:Name="HotkeyCombo" DockPanel.Dock="Right" SelectionChanged="Changed"/>
-                        <StackPanel Style="{StaticResource RowText}">
-                            <TextBlock Style="{StaticResource RowTitle}" Text="Hotkey"/>
-                            <TextBlock x:Name="HotkeyDesc" Style="{StaticResource RowDesc}" Text="Works everywhere, also while Roblox is focused."/>
-                        </StackPanel>
-                    </DockPanel>
+                <Border Style="{StaticResource Row}" Tag="Click target|background minimized roblox window fixed position">
+                    <StackPanel>
+                        <DockPanel>
+                            <ComboBox x:Name="TargetCombo" DockPanel.Dock="Right" MinWidth="260" SelectionChanged="Changed"/>
+                            <StackPanel Style="{StaticResource RowText}">
+                                <TextBlock Style="{StaticResource RowTitle}" Text="Click target"/>
+                                <TextBlock x:Name="TargetDesc" Style="{StaticResource RowDesc}"/>
+                            </StackPanel>
+                        </DockPanel>
+                        <DockPanel x:Name="PositionPanel" Margin="0,12,0,0">
+                            <Button x:Name="PickButton" DockPanel.Dock="Right" Content="Pick position" Click="Pick_Click"/>
+                            <Button x:Name="ClearPosButton" DockPanel.Dock="Right" Content="Clear" Margin="0,0,8,0" Click="ClearPos_Click"/>
+                            <TextBlock x:Name="PositionText" Style="{StaticResource Crumb}" VerticalAlignment="Center"/>
+                        </DockPanel>
+                    </StackPanel>
                 </Border>
 
-                <Border Style="{StaticResource Row}" Tag="Hotkey mode|toggle hold">
-                    <DockPanel>
-                        <ComboBox x:Name="ModeCombo" DockPanel.Dock="Right" SelectionChanged="Changed"/>
-                        <StackPanel Style="{StaticResource RowText}">
-                            <TextBlock Style="{StaticResource RowTitle}" Text="Hotkey mode"/>
-                            <TextBlock Style="{StaticResource RowDesc}" Text="Toggle: press once to start, again to stop. Hold: clicks only while the key is held down."/>
-                        </StackPanel>
-                    </DockPanel>
-                </Border>
-
-                <TextBlock Text="// WHERE" Style="{StaticResource Section}"/>
-
-                <Border Style="{StaticResource Row}" Tag="Only click in Roblox|roblox window focus">
+                <Border x:Name="RobloxOnlyRow" Style="{StaticResource Row}" Tag="Only click in Roblox|roblox window focus">
                     <DockPanel>
                         <CheckBox x:Name="RobloxOnlyToggle" DockPanel.Dock="Right" Style="{StaticResource Toggle}" Click="Changed"/>
                         <StackPanel Style="{StaticResource RowText}">
                             <TextBlock Style="{StaticResource RowTitle}" Text="Only click in Roblox"/>
                             <TextBlock Style="{StaticResource RowDesc}" Text="Pauses automatically while another window is in front."/>
-                        </StackPanel>
-                    </DockPanel>
-                </Border>
-
-                <Border Style="{StaticResource Row}" Tag="Fixed position|click location coordinates">
-                    <DockPanel>
-                        <CheckBox x:Name="FixedToggle" DockPanel.Dock="Right" Style="{StaticResource Toggle}" Click="Changed" Margin="12,0,0,0"/>
-                        <Button x:Name="PickButton" DockPanel.Dock="Right" Content="Pick position" Click="Pick_Click" VerticalAlignment="Center"/>
-                        <StackPanel Style="{StaticResource RowText}">
-                            <TextBlock Style="{StaticResource RowTitle}" Text="Fixed position"/>
-                            <TextBlock x:Name="PositionText" Style="{StaticResource RowDesc}" Text="Always click at the same spot instead of where the mouse is."/>
                         </StackPanel>
                     </DockPanel>
                 </Border>

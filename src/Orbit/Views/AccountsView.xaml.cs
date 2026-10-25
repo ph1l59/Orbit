@@ -4,6 +4,10 @@ using System.Diagnostics;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
+using System.Windows.Input;
+using System.Windows.Media;
+using System.Windows.Media.Imaging;
+using System.Windows.Threading;
 using Orbit.Models;
 using Orbit.Services;
 
@@ -13,6 +17,10 @@ public partial class AccountsView : UserControl
 {
     private readonly ICollectionView _view;
     private bool _launching;
+    private readonly DispatcherTimer _previewTimer = new() { Interval = TimeSpan.FromMilliseconds(450) };
+    private readonly DispatcherTimer _followTimer = new() { Interval = TimeSpan.FromMilliseconds(450) };
+    private RobloxUser? _followUser;
+    private int _previewVersion;
 
     public AccountsView()
     {
@@ -28,6 +36,10 @@ public partial class AccountsView : UserControl
         AppState.Accounts.CollectionChanged += OnAccountsChanged;
         foreach (var account in AppState.Accounts) account.PropertyChanged += OnAccountPropertyChanged;
         UpdateCounts();
+
+        _previewTimer.Tick += async (_, _) => { _previewTimer.Stop(); await UpdateGamePreviewAsync(); };
+        _followTimer.Tick += async (_, _) => { _followTimer.Stop(); await UpdateFollowPreviewAsync(); };
+        _previewTimer.Start();
     }
 
     private Window Owner => Window.GetWindow(this)!;
@@ -130,11 +142,33 @@ public partial class AccountsView : UserControl
             return;
         }
 
-        var target = JoinTarget.Parse(PlaceBox.Text, ServerBox.Text, out var error);
-        if (target == null)
+        JoinTarget? target;
+        if (FollowMode.IsChecked == true)
         {
-            ShowStatus(error, true);
-            return;
+            var name = FollowBox.Text.Trim();
+            if (name.Length == 0)
+            {
+                ShowStatus("Enter the username of the player you want to join.", true);
+                return;
+            }
+            var user = _followUser != null && _followUser.Name.Equals(name, StringComparison.OrdinalIgnoreCase)
+                ? _followUser
+                : await RobloxApi.GetUserByNameAsync(name);
+            if (user == null)
+            {
+                ShowStatus($"There's no Roblox user called \"{name}\".", true);
+                return;
+            }
+            target = JoinTarget.Follow(user.Id);
+        }
+        else
+        {
+            target = JoinTarget.Parse(PlaceBox.Text, ServerBox.Text, out var error);
+            if (target == null)
+            {
+                ShowStatus(error, true);
+                return;
+            }
         }
 
         if (!MultiInstance.IsActive)
@@ -293,17 +327,216 @@ public partial class AccountsView : UserControl
         }
     }
 
-    private void Menu_Up_Click(object sender, RoutedEventArgs e) => Move(AccountFrom(sender), -1);
-    private void Menu_Down_Click(object sender, RoutedEventArgs e) => Move(AccountFrom(sender), +1);
+    // ---------- Open browser ----------
 
-    private static void Move(Account? account, int direction)
+    private void Menu_Browser_Click(object sender, RoutedEventArgs e)
     {
-        if (account == null) return;
-        var index = AppState.Accounts.IndexOf(account);
-        var newIndex = index + direction;
-        if (index < 0 || newIndex < 0 || newIndex >= AppState.Accounts.Count) return;
-        AppState.Accounts.Move(index, newIndex);
+        if (AccountFrom(sender) is { } account) new BrowserWindow(account).Show();
+    }
+
+    private void Browser_Click(object sender, RoutedEventArgs e)
+    {
+        var selected = AppState.Accounts.Where(a => a.IsSelected).ToList();
+        if (selected.Count == 0)
+        {
+            ShowStatus("Select an account first, then click Open browser.", true);
+            return;
+        }
+        foreach (var account in selected.Take(4)) new BrowserWindow(account).Show();
+    }
+
+    // ---------- Drag to reorder ----------
+
+    private Account? _dragging;
+    private ListBoxItem? _dragContainer;
+
+    private void Grip_MouseDown(object sender, MouseButtonEventArgs e)
+    {
+        if (sender is not FrameworkElement grip || grip.DataContext is not Account account) return;
+        _dragging = account;
+        _dragContainer = AccountList.ItemContainerGenerator.ContainerFromItem(account) as ListBoxItem;
+        if (_dragContainer != null) _dragContainer.Opacity = 0.55;
+        grip.CaptureMouse();
+        e.Handled = true; // don't toggle the selection
+    }
+
+    private void Grip_MouseMove(object sender, MouseEventArgs e)
+    {
+        if (_dragging == null || e.LeftButton != MouseButtonState.Pressed) return;
+        var y = e.GetPosition(AccountList).Y;
+
+        foreach (var item in _view.Cast<Account>())
+        {
+            if (item == _dragging) continue;
+            if (AccountList.ItemContainerGenerator.ContainerFromItem(item) is not ListBoxItem container) continue;
+
+            var top = container.TranslatePoint(new Point(0, 0), AccountList).Y;
+            if (y < top || y > top + container.ActualHeight) continue;
+
+            var from = AppState.Accounts.IndexOf(_dragging);
+            var to = AppState.Accounts.IndexOf(item);
+            var middle = top + container.ActualHeight / 2;
+            // Only swap once the pointer passes the middle of the neighbouring card (prevents flicker).
+            if ((to > from && y > middle) || (to < from && y < middle))
+                AppState.Accounts.Move(from, to);
+            break;
+        }
+    }
+
+    private void Grip_MouseUp(object sender, MouseButtonEventArgs e)
+    {
+        if (_dragging == null) return;
+        (sender as UIElement)?.ReleaseMouseCapture();
+        if (_dragContainer != null) _dragContainer.Opacity = 1;
+        _dragging = null;
+        _dragContainer = null;
         AppState.SaveAccounts();
+        e.Handled = true;
+    }
+
+    // ---------- Join mode & previews ----------
+
+    private void Mode_Changed(object sender, RoutedEventArgs e)
+    {
+        if (GamePanel == null || FollowPanel == null) return; // during InitializeComponent
+        var follow = FollowMode.IsChecked == true;
+        GamePanel.Visibility = follow ? Visibility.Collapsed : Visibility.Visible;
+        FollowPanel.Visibility = follow ? Visibility.Visible : Visibility.Collapsed;
+        PanelTitle.Text = follow ? "Follow a player" : "Join a game";
+    }
+
+    private void Join_TextChanged(object sender, TextChangedEventArgs e)
+    {
+        _previewTimer.Stop();
+        _previewTimer.Start();
+    }
+
+    private void Follow_TextChanged(object sender, TextChangedEventArgs e)
+    {
+        _followTimer.Stop();
+        _followTimer.Start();
+    }
+
+    private static ImageBrush? ImageFrom(string? url)
+    {
+        if (string.IsNullOrEmpty(url)) return null;
+        try
+        {
+            var bitmap = new BitmapImage();
+            bitmap.BeginInit();
+            bitmap.UriSource = new Uri(url);
+            bitmap.DecodePixelWidth = 120;
+            bitmap.EndInit();
+            return new ImageBrush(bitmap) { Stretch = Stretch.UniformToFill };
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
+    private async Task UpdateGamePreviewAsync()
+    {
+        var version = ++_previewVersion;
+        var target = JoinTarget.Parse(PlaceBox.Text, ServerBox.Text, out _);
+        if (target == null)
+        {
+            GameCard.Visibility = Visibility.Collapsed;
+            return;
+        }
+
+        var placeId = target.PlaceId;
+        if (target.ShareCode != null && AppState.Accounts.FirstOrDefault() is { } account)
+        {
+            try { placeId = (await RobloxApi.ResolveServerShareLinkAsync(account.Cookie, target.ShareCode)).PlaceId; }
+            catch { /* keep the place id from the first box */ }
+        }
+        if (placeId <= 0 || version != _previewVersion)
+        {
+            if (placeId <= 0) GameCard.Visibility = Visibility.Collapsed;
+            return;
+        }
+
+        var game = await RobloxApi.GetGameInfoAsync(placeId);
+        if (version != _previewVersion) return;
+        if (game == null)
+        {
+            GameCard.Visibility = Visibility.Collapsed;
+            return;
+        }
+
+        GameName.Text = game.Name;
+        GameCreator.Text = string.IsNullOrEmpty(game.Creator) ? "" : "by " + game.Creator;
+        var server = target.ShareCode != null || target.LinkCode != null ? "PRIVATE SERVER"
+            : target.JobId != null ? "SPECIFIC SERVER" : "ANY SERVER";
+        GameMeta.Text = $"{game.Playing:N0} PLAYING  ·  {server}";
+        GameImage.Background = ImageFrom(game.IconUrl) ?? (Brush)FindResource("Raised2Brush");
+        GameCard.Visibility = Visibility.Visible;
+    }
+
+    private async Task UpdateFollowPreviewAsync()
+    {
+        var name = FollowBox.Text.Trim();
+        _followUser = null;
+        if (name.Length < 3)
+        {
+            UserCard.Visibility = Visibility.Collapsed;
+            return;
+        }
+
+        RobloxUser? user;
+        try { user = await RobloxApi.GetUserByNameAsync(name); }
+        catch { user = null; }
+        if (name != FollowBox.Text.Trim()) return;
+
+        if (user == null)
+        {
+            UserCard.Visibility = Visibility.Visible;
+            UserName.Text = "User not found";
+            UserHandle.Text = "@" + name;
+            UserPresence.Text = "";
+            UserImage.Fill = null;
+            UserDot.Fill = (Brush)FindResource("FaintBrush");
+            return;
+        }
+
+        _followUser = user;
+        UserName.Text = user.DisplayName;
+        UserHandle.Text = "@" + user.Name;
+        UserPresence.Text = "CHECKING…";
+        UserCard.Visibility = Visibility.Visible;
+
+        try
+        {
+            var shots = await RobloxApi.GetHeadshotsAsync(new[] { user.Id });
+            UserImage.Fill = shots.TryGetValue(user.Id, out var url) ? ImageFrom(url) : null;
+        }
+        catch { /* cosmetic */ }
+
+        var cookieAccount = AppState.Accounts.FirstOrDefault();
+        if (cookieAccount == null)
+        {
+            UserPresence.Text = "ADD AN ACCOUNT TO SEE THE STATUS";
+            return;
+        }
+
+        try
+        {
+            var presence = (await RobloxApi.GetPresenceAsync(cookieAccount.Cookie, new[] { user.Id })).FirstOrDefault();
+            var type = presence?.Type ?? 0;
+            UserPresence.Text = type switch
+            {
+                2 => string.IsNullOrEmpty(presence!.Location) ? "IN GAME" : "IN GAME · " + presence.Location.ToUpperInvariant(),
+                1 => "ONLINE · NOT IN A GAME",
+                3 => "IN STUDIO",
+                _ => "OFFLINE",
+            };
+            UserDot.Fill = (Brush)FindResource(type > 0 ? "OkBrush" : "FaintBrush");
+        }
+        catch
+        {
+            UserPresence.Text = "";
+        }
     }
 
     private void Menu_Remove_Click(object sender, RoutedEventArgs e)
