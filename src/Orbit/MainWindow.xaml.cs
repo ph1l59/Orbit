@@ -35,9 +35,10 @@ public partial class MainWindow : Window
     };
 
     private readonly Dictionary<string, UserControl> _pages = new();
-    private readonly DispatcherTimer _updateTimer = new() { Interval = TimeSpan.FromHours(4) };
+    private readonly DispatcherTimer _updateTimer = new() { Interval = TimeSpan.FromMinutes(15) };
     private UpdateInfo? _update;
-    private bool _updateDismissed;
+    /// <summary>Version the user clicked "Not Now" on – only a newer one shows the notice again (until restart).</summary>
+    private Version? _dismissedVersion;
     private bool _updating;
     private readonly List<SearchHit> _index = new();
     private bool _switching;
@@ -248,15 +249,22 @@ public partial class MainWindow : Window
 
     private async Task CheckForUpdateAsync()
     {
-        if (!AppState.Settings.CheckForUpdates || _updateDismissed || _updating || _update != null) return;
+        if (!AppState.Settings.CheckForUpdates || _updating) return;
 
         var update = await Updater.CheckAsync();
-        if (update == null || !AppState.Settings.CheckForUpdates || _updateDismissed) return;
+        if (update == null || !AppState.Settings.CheckForUpdates || _updating) return;
 
+        // Same version the user already said "Not Now" to (or an older one): stay quiet.
+        if (_dismissedVersion != null && update.Version <= _dismissedVersion) return;
+        // The notice already shows this version.
+        if (_update != null && update.Version <= _update.Version) return;
+
+        var wasShowing = _update != null;
         _update = update;
         UpdateTitle.Text = $"Orbit v{update.Version}";
         UpdateText.Text = $"A new version is ready. You're on v{Updater.DisplayVersion}.";
-        ShowUpdateCard(true);
+        UpdateNowButton.Content = "Update Now";
+        if (!wasShowing) ShowUpdateCard(true); // already visible: just show the newer version
     }
 
     private void ShowUpdateCard(bool show)
@@ -278,8 +286,9 @@ public partial class MainWindow : Window
 
     private void UpdateLater_Click(object sender, RoutedEventArgs e)
     {
-        // Gone until Orbit is started again.
-        _updateDismissed = true;
+        // This version stays hidden until Orbit is restarted; a newer release shows the notice again.
+        _dismissedVersion = _update?.Version;
+        _update = null;
         ShowUpdateCard(false);
     }
 
