@@ -34,6 +34,17 @@
                     </StackPanel>
                 </Border>
 
+                <Border Style="{StaticResource Row}" Tag="Close all Roblox instances|kill quit stop every roblox window">
+                    <DockPanel>
+                        <Button x:Name="CloseAllButton" DockPanel.Dock="Right" Style="{StaticResource DangerButton}" Content="Close all"
+                                VerticalAlignment="Center" Click="CloseAll_Click"/>
+                        <StackPanel Style="{StaticResource RowText}">
+                            <TextBlock Style="{StaticResource RowTitle}" Text="Close all Roblox instances"/>
+                            <TextBlock x:Name="RunningText" Style="{StaticResource RowDesc}" Text="No Roblox instances running."/>
+                        </StackPanel>
+                    </DockPanel>
+                </Border>
+
                 <Border Style="{StaticResource Row}" Tag="Prompt to confirm when launching another Roblox instance|confirm close">
                     <DockPanel>
                         <CheckBox x:Name="ConfirmToggle" DockPanel.Dock="Right" Style="{StaticResource Toggle}" Click="Changed"/>

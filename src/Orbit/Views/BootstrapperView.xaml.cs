@@ -9,6 +9,7 @@ public partial class BootstrapperView : UserControl, IPage
 {
     private bool _loading = true;
     private bool _busy;
+    private readonly System.Windows.Threading.DispatcherTimer _runningTimer = new() { Interval = TimeSpan.FromSeconds(2) };
 
     public BootstrapperView()
     {
@@ -26,6 +27,43 @@ public partial class BootstrapperView : UserControl, IPage
 
         AppState.MultiInstanceChanged += () => Dispatcher.InvokeAsync(Load);
         Load();
+
+        // Keep the "N running" count live while this page is visible.
+        _runningTimer.Tick += (_, _) => UpdateRunningText();
+        IsVisibleChanged += (_, _) =>
+        {
+            if (IsVisible) { UpdateRunningText(); _runningTimer.Start(); }
+            else _runningTimer.Stop();
+        };
+    }
+
+    private int UpdateRunningText()
+    {
+        var count = RobloxPaths.RunningCount();
+        RunningText.Text = count switch
+        {
+            0 => "No Roblox instances running.",
+            1 => "1 instance running. Closes every open Roblox window at once.",
+            _ => $"{count} instances running. Closes every open Roblox window at once.",
+        };
+        CloseAllButton.IsEnabled = count > 0;
+        return count;
+    }
+
+    private void CloseAll_Click(object sender, RoutedEventArgs e)
+    {
+        var count = UpdateRunningText();
+        if (count == 0) return;
+
+        var what = count == 1 ? "the open Roblox instance" : $"all {count} Roblox instances";
+        if (!Dialog.Confirm(Window.GetWindow(this), "Close Roblox",
+                $"Are you sure you want to close {what}? Unsaved progress in those games will be lost.",
+                "Close all", danger: true))
+            return;
+
+        var closed = RobloxPaths.CloseAllClients();
+        Toast.Show("Roblox", closed == 1 ? "1 instance closed." : $"{closed} instances closed.");
+        UpdateRunningText();
     }
 
     public void OnShown() => Load();
