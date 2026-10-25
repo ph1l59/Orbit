@@ -108,11 +108,7 @@ public static class WindowTitles
                 if (s.ShowAccountNameOnWindows && title != null && GetTitle(hwnd) != title)
                     SetTitle(hwnd, title);
 
-                if (s.UseOrbitIconOnWindows && _smallIcon != IntPtr.Zero)
-                {
-                    if (Send(hwnd, WM_GETICON, ICON_SMALL, IntPtr.Zero) != _smallIcon) Send(hwnd, WM_SETICON, ICON_SMALL, _smallIcon);
-                    if (Send(hwnd, WM_GETICON, ICON_BIG, IntPtr.Zero) != _bigIcon) Send(hwnd, WM_SETICON, ICON_BIG, _bigIcon);
-                }
+                if (s.UseOrbitIconOnWindows && _smallIcon != IntPtr.Zero) ApplyIcon(hwnd, t.UserId);
             }
         }
     }
@@ -129,17 +125,124 @@ public static class WindowTitles
         _iconsTried = true;
         try
         {
-            var file = Path.Combine(AppPaths.DataDir, "roblox-window.ico");
             var resource = System.Windows.Application.GetResourceStream(new Uri("pack://application:,,,/Assets/roblox-window.ico"));
-            if (resource == null) return;
+            if (resource == null) { Log("icon resource not found"); return; }
+            byte[] ico;
             using (var input = resource.Stream)
-            using (var output = File.Create(file))
-                input.CopyTo(output);
+            using (var buffer = new MemoryStream())
+            {
+                input.CopyTo(buffer);
+                ico = buffer.ToArray();
+            }
 
-            _smallIcon = LoadImage(IntPtr.Zero, file, IMAGE_ICON, 16, 16, LR_LOADFROMFILE);
-            _bigIcon = LoadImage(IntPtr.Zero, file, IMAGE_ICON, 32, 32, LR_LOADFROMFILE);
+            _smallIcon = IconFromIco(ico, 16);
+            _bigIcon = IconFromIco(ico, 32);
+            Log($"icons loaded: small={_smallIcon} big={_bigIcon}");
+
+            // Lets the taskbar find the icon by file too (see SetTaskbarIdentity).
+            _iconFile = Path.Combine(AppPaths.DataDir, "roblox-window.ico");
+            File.WriteAllBytes(_iconFile, ico);
         }
-        catch { /* cosmetic only */ }
+        catch (Exception ex)
+        {
+            Log("loading icons failed: " + ex.Message);
+        }
+    }
+
+    /// <summary>Makes an icon handle from the .ico frame that fits <paramref name="size"/> best.</summary>
+    private static IntPtr IconFromIco(byte[] ico, int size)
+    {
+        var count = BitConverter.ToUInt16(ico, 4);
+        int best = -1, bestDiff = int.MaxValue;
+        for (var i = 0; i < count; i++)
+        {
+            var w = ico[6 + i * 16] == 0 ? 256 : ico[6 + i * 16];
+            var diff = w >= size ? w - size : (size - w) * 4; // prefer scaling down over scaling up
+            if (diff < bestDiff) { bestDiff = diff; best = i; }
+        }
+        if (best < 0) return IntPtr.Zero;
+
+        var entry = 6 + best * 16;
+        var length = BitConverter.ToInt32(ico, entry + 8);
+        var offset = BitConverter.ToInt32(ico, entry + 12);
+        var image = new byte[length];
+        Array.Copy(ico, offset, image, 0, length);
+        return CreateIconFromResourceEx(image, (uint)length, true, 0x00030000, size, size, 0);
+    }
+
+    private static string? _iconFile;
+    private static readonly HashSet<IntPtr> IdentitySet = new();
+    private static readonly HashSet<IntPtr> Logged = new();
+
+    private static void ApplyIcon(IntPtr hwnd, long userId)
+    {
+        // Title bar + Alt+Tab.
+        if (Send(hwnd, WM_GETICON, ICON_SMALL, IntPtr.Zero) != _smallIcon) Send(hwnd, WM_SETICON, ICON_SMALL, _smallIcon);
+        if (Send(hwnd, WM_GETICON, ICON_BIG, IntPtr.Zero) != _bigIcon) Send(hwnd, WM_SETICON, ICON_BIG, _bigIcon);
+
+        // Taskbar: Roblox registers its own app id, and Windows then shows the icon of Roblox's shortcut
+        // instead of the window's. Giving the window an id of its own makes the taskbar use our icon.
+        if (IdentitySet.Add(hwnd))
+        {
+            var ok = SetTaskbarIdentity(hwnd, $"Orbit.Roblox.{userId}", _iconFile);
+            Log($"window {hwnd}: taskbar identity {(ok ? "set" : "failed")}");
+        }
+
+        if (Logged.Add(hwnd))
+            Log($"window {hwnd}: small icon now {Send(hwnd, WM_GETICON, ICON_SMALL, IntPtr.Zero)} (wanted {_smallIcon})");
+    }
+
+    /// <summary>Sets the app id (and relaunch icon) the taskbar uses for one window.</summary>
+    private static bool SetTaskbarIdentity(IntPtr hwnd, string? appId, string? iconFile)
+    {
+        try
+        {
+            var iid = typeof(IPropertyStore).GUID;
+            if (SHGetPropertyStoreForWindow(hwnd, ref iid, out var store) != 0 || store == null) return false;
+            try
+            {
+                var idKey = new PropertyKey(new Guid("9F4C2855-9F79-4B39-A8D0-E1D42DE1D5F3"), 5);  // System.AppUserModel.ID
+                var iconKey = new PropertyKey(new Guid("9F4C2855-9F79-4B39-A8D0-E1D42DE1D5F3"), 3); // RelaunchIconResource
+                SetString(store, idKey, appId);
+                if (appId != null && iconFile != null) SetString(store, iconKey, iconFile + ",0");
+                else SetString(store, iconKey, null);
+                store.Commit();
+                return true;
+            }
+            finally
+            {
+                Marshal.ReleaseComObject(store);
+            }
+        }
+        catch (Exception ex)
+        {
+            Log("taskbar identity error: " + ex.Message);
+            return false;
+        }
+    }
+
+    private static void SetString(IPropertyStore store, PropertyKey key, string? value)
+    {
+        var pv = new PropVariant();
+        if (value != null)
+        {
+            pv.vt = 31; // VT_LPWSTR
+            pv.pointer = Marshal.StringToCoTaskMemUni(value);
+        }
+        try { store.SetValue(ref key, ref pv); }
+        finally { if (pv.pointer != IntPtr.Zero) Marshal.FreeCoTaskMem(pv.pointer); }
+    }
+
+    /// <summary>Small troubleshooting log: %AppData%\Orbit\window-icons.log</summary>
+    private static void Log(string line)
+    {
+        try
+        {
+            var file = Path.Combine(AppPaths.DataDir, "window-icons.log");
+            if (File.Exists(file) && new FileInfo(file).Length > 64 * 1024) File.Delete(file);
+            File.AppendAllText(file, $"{DateTime.Now:yyyy-MM-dd HH:mm:ss} {line}{Environment.NewLine}");
+        }
+        catch { /* ignore */ }
     }
 
     /// <summary>The icon setting was switched off: give the windows their Roblox icon back.</summary>
@@ -151,6 +254,8 @@ public static class WindowTitles
                 // Removing the window's own icon makes Windows fall back to Roblox's built-in one.
                 Send(hwnd, WM_SETICON, ICON_SMALL, IntPtr.Zero);
                 Send(hwnd, WM_SETICON, ICON_BIG, IntPtr.Zero);
+                SetTaskbarIdentity(hwnd, null, null);
+                IdentitySet.Remove(hwnd);
             }
     }
 
@@ -240,7 +345,6 @@ public static class WindowTitles
     private const uint WM_SETTEXT = 0x000C, WM_GETICON = 0x007F, WM_SETICON = 0x0080;
     private static readonly IntPtr ICON_SMALL = 0, ICON_BIG = 1;
     private const uint SMTO_ABORTIFHUNG = 0x0002;
-    private const uint IMAGE_ICON = 1, LR_LOADFROMFILE = 0x0010;
     private const uint GW_OWNER = 4;
     private delegate bool EnumWindowsProc(IntPtr hwnd, IntPtr lParam);
 
@@ -252,6 +356,32 @@ public static class WindowTitles
     [DllImport("user32.dll", CharSet = CharSet.Unicode)] private static extern int GetWindowText(IntPtr hwnd, StringBuilder text, int max);
     [DllImport("user32.dll", CharSet = CharSet.Unicode)]
     private static extern IntPtr SendMessageTimeout(IntPtr hwnd, uint msg, IntPtr wParam, IntPtr lParam, uint flags, uint timeout, out IntPtr result);
-    [DllImport("user32.dll", CharSet = CharSet.Unicode)]
-    private static extern IntPtr LoadImage(IntPtr hInst, string name, uint type, int cx, int cy, uint load);
+    [DllImport("user32.dll")]
+    private static extern IntPtr CreateIconFromResourceEx(byte[] data, uint size, bool icon, uint version, int cx, int cy, uint flags);
+    [DllImport("shell32.dll")]
+    private static extern int SHGetPropertyStoreForWindow(IntPtr hwnd, ref Guid iid, [MarshalAs(UnmanagedType.Interface)] out IPropertyStore store);
+
+    [StructLayout(LayoutKind.Sequential, Pack = 4)]
+    private struct PropertyKey(Guid fmtid, uint pid)
+    {
+        public Guid FormatId = fmtid;
+        public uint PropertyId = pid;
+    }
+
+    [StructLayout(LayoutKind.Explicit, Size = 24)]
+    private struct PropVariant
+    {
+        [FieldOffset(0)] public ushort vt;
+        [FieldOffset(8)] public IntPtr pointer;
+    }
+
+    [ComImport, Guid("886D8EEB-8CF2-4446-8D02-CDBA1DBDCF99"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+    private interface IPropertyStore
+    {
+        void GetCount(out uint count);
+        void GetAt(uint index, out PropertyKey key);
+        void GetValue(ref PropertyKey key, out PropVariant value);
+        void SetValue(ref PropertyKey key, ref PropVariant value);
+        void Commit();
+    }
 }
