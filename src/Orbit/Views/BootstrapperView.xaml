@@ -45,6 +45,16 @@
                     </DockPanel>
                 </Border>
 
+                <Border Style="{StaticResource Row}" Tag="Show account name on Roblox windows|window title taskbar tab rename alias">
+                    <DockPanel>
+                        <CheckBox x:Name="WindowNameToggle" DockPanel.Dock="Right" Style="{StaticResource Toggle}" Click="WindowName_Click"/>
+                        <StackPanel Style="{StaticResource RowText}">
+                            <TextBlock Style="{StaticResource RowTitle}" Text="Show account name on Roblox windows"/>
+                            <TextBlock Style="{StaticResource RowDesc}" Text="Roblox windows launched from Orbit show the account's alias (or its display name) instead of &quot;Roblox&quot;, so you can tell them apart in the taskbar."/>
+                        </StackPanel>
+                    </DockPanel>
+                </Border>
+
                 <Border Style="{StaticResource Row}" Tag="Prompt to confirm when launching another Roblox instance|confirm close">
                     <DockPanel>
                         <CheckBox x:Name="ConfirmToggle" DockPanel.Dock="Right" Style="{StaticResource Toggle}" Click="Changed"/>

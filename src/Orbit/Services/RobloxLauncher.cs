@@ -188,19 +188,22 @@ public static class RobloxLauncher
                   $"+browsertrackerid:{tracker}" +
                   "+robloxLocale:en_us+gameLocale:en_us+channel:+LaunchExp:InApp";
 
-        Start(exe, uri);
+        var pid = Start(exe, uri);
+        WindowTitles.Track(account.UserId, pid);
         Integrations.LastLaunchedAccount = account;
     }
 
     /// <summary>Starts the client with a roblox-player:/roblox: link (also used for links from the website).</summary>
-    public static void Start(string exe, string uri)
+    /// <returns>The id of the started Roblox process (null if Windows didn't report one).</returns>
+    public static int? Start(string exe, string uri)
     {
-        Process.Start(new ProcessStartInfo
+        using var process = Process.Start(new ProcessStartInfo
         {
             FileName = exe,
             Arguments = uri,
             UseShellExecute = false,
             WorkingDirectory = Path.GetDirectoryName(exe)!,
-        })?.Dispose();
+        });
+        return process?.Id;
     }
 }

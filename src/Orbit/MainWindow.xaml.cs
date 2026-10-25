@@ -67,6 +67,7 @@ public partial class MainWindow : Window
         {
             ClickerHotkey.Start();
             Integrations.Start(Dispatcher);
+            WindowTitles.Start();
             await AppState.RefreshAvatarsAsync();
             await CheckForUpdateAsync();
         };

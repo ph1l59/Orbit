@@ -37,6 +37,14 @@ public partial class BootstrapperView : UserControl, IPage
         };
     }
 
+    private void WindowName_Click(object sender, RoutedEventArgs e)
+    {
+        if (_loading) return;
+        AppState.Settings.ShowAccountNameOnWindows = WindowNameToggle.IsChecked == true;
+        AppState.SaveSettings();
+        if (!AppState.Settings.ShowAccountNameOnWindows) WindowTitles.RestoreAll();
+    }
+
     private int UpdateRunningText()
     {
         var count = RobloxPaths.RunningCount();
@@ -75,6 +83,7 @@ public partial class BootstrapperView : UserControl, IPage
 
         MultiToggle.IsChecked = MultiInstance.IsActive;
         ConfirmToggle.IsChecked = s.ConfirmLaunchWhenRunning;
+        WindowNameToggle.IsChecked = s.ShowAccountNameOnWindows;
         Option.Select(DelayCombo, s.LaunchDelaySeconds);
         ManagedToggle.IsChecked = s.UseManagedInstall;
         DefaultToggle.IsChecked = s.DefaultLauncher;
