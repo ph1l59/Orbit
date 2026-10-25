@@ -30,7 +30,7 @@
                         <Image Source="Assets/logo.png" Width="34" Height="34" RenderOptions.BitmapScalingMode="HighQuality"/>
                         <StackPanel Margin="11,0,0,0" VerticalAlignment="Center">
                             <TextBlock FontFamily="{StaticResource DisplayFont}" FontSize="18" FontWeight="Bold">
-                                <Run Text="Orbit"/><Run Text="." Foreground="{StaticResource SignalBrush}"/>
+                                <Run Text="Orbit"/><Run Text=".Beta" Foreground="{StaticResource SignalBrush}"/>
                             </TextBlock>
                             <TextBlock Text="by ph1l59" Style="{StaticResource Crumb}" Margin="0,-1,0,0"/>
                         </StackPanel>
