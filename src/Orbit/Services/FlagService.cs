@@ -1,120 +1,82 @@
 using System.Globalization;
 using System.IO;
-using System.Text;
 using System.Text.Json;
-using System.Xml;
-using System.Xml.Linq;
 using Orbit.Models;
 
 namespace Orbit.Services;
 
-public sealed record ApplyResult(int FoldersWritten, int FoldersFailed, int FlagCount, string FpsMessage, bool FpsOk)
-{
-    public string Summary
-    {
-        get
-        {
-            var parts = new List<string>();
-            if (FoldersWritten == 0 && FoldersFailed == 0)
-                parts.Add("Keine Roblox-Installation gefunden – Grafik-Einstellungen werden beim nächsten Start angewendet.");
-            else
-                parts.Add($"{FlagCount} Grafik-Einstellung(en) in {FoldersWritten} Roblox-Installation(en) gespeichert" +
-                          (FoldersFailed > 0 ? $" ({FoldersFailed} ohne Schreibrechte)." : "."));
-            parts.Add(FpsMessage);
-            return string.Join(" ", parts);
-        }
-    }
-}
-
 /// <summary>
-/// Applies performance settings:
-///  - graphics options as FastFlags in ClientSettings/ClientAppSettings.json
-///    (only flags on Roblox's allowlist have an effect since Sept. 2025)
-///  - the frame rate cap via Roblox's own "FramerateCap" setting in GlobalBasicSettings_13.xml
+/// Writes FastFlags to ClientSettings/ClientAppSettings.json.
+/// Since September 2025 Roblox only honours flags on its official allowlist;
+/// every preset below uses allowlisted flags only.
 /// </summary>
 public static class FlagService
 {
+    /// <summary>Mesh level-of-detail switching distances per "Mesh detail" level (0 = lowest detail).</summary>
+    private static readonly int[][] MeshLevels =
+    {
+        new[] { 0, 0, 0, 0 },
+        new[] { 50, 100, 150, 200 },
+        new[] { 100, 200, 300, 400 },
+        new[] { 200, 400, 600, 800 },
+        new[] { 250, 500, 750, 1000 },
+    };
+
     public static Dictionary<string, string> BuildFlags(AppSettings s)
     {
         var flags = new Dictionary<string, string>();
+        string I(int v) => v.ToString(CultureInfo.InvariantCulture);
 
-        if (s.QualityLevel > 0)
-            flags["DFIntDebugFRMQualityLevelOverride"] = s.QualityLevel.ToString(CultureInfo.InvariantCulture);
-
-        if (s.MsaaSamples > 0)
-            flags["FIntDebugForceMSAASamples"] = s.MsaaSamples.ToString(CultureInfo.InvariantCulture);
-
-        if (s.TextureQuality >= 0)
+        if (s.MeshDetail >= 0)
         {
-            flags["DFFlagTextureQualityOverrideEnabled"] = "True";
-            flags["DFIntTextureQualityOverride"] = s.TextureQuality.ToString(CultureInfo.InvariantCulture);
+            var d = MeshLevels[Math.Clamp(s.MeshDetail, 0, MeshLevels.Length - 1)];
+            flags["DFIntCSGLevelOfDetailSwitchingDistance"] = I(d[0]);
+            flags["DFIntCSGLevelOfDetailSwitchingDistanceL12"] = I(d[1]);
+            flags["DFIntCSGLevelOfDetailSwitchingDistanceL23"] = I(d[2]);
+            flags["DFIntCSGLevelOfDetailSwitchingDistanceL34"] = I(d[3]);
         }
 
-        switch (s.Renderer)
+        if (s.MsaaSamples > 0) flags["FIntDebugForceMSAASamples"] = I(s.MsaaSamples);
+        if (s.PreserveRenderingQuality) flags["DFFlagDisableDPIScale"] = "True";
+        if (s.FrmQuality > 0) flags["DFIntDebugFRMQualityLevelOverride"] = I(s.FrmQuality);
+
+        switch (s.RenderingMode)
         {
             case "d3d11": flags["FFlagDebugGraphicsPreferD3D11"] = "True"; break;
             case "vulkan": flags["FFlagDebugGraphicsPreferVulkan"] = "True"; break;
             case "opengl": flags["FFlagDebugGraphicsPreferOpenGL"] = "True"; break;
         }
 
-        if (s.DisableDpiScale) flags["DFFlagDisableDPIScale"] = "True";
+        if (s.TextureQuality >= 0)
+        {
+            flags["DFFlagTextureQualityOverrideEnabled"] = "True";
+            flags["DFIntTextureQualityOverride"] = I(s.TextureQuality);
+        }
+
         if (s.ExclusiveFullscreen) flags["FFlagHandleAltEnterFullscreenManually"] = "False";
         if (s.GraySky) flags["FFlagDebugSkyGray"] = "True";
+        if (s.PauseVoxelizer) flags["DFFlagDebugPauseVoxelizer"] = "True";
         if (s.DisableGrass)
         {
             flags["FIntFRMMinGrassDistance"] = "0";
             flags["FIntFRMMaxGrassDistance"] = "0";
         }
 
-        foreach (var (key, value) in ParseCustomFlags(s.CustomFlags, out _))
-            flags[key] = value;
+        // The user's own flags from the editor win over presets.
+        foreach (var (key, value) in s.UserFlags)
+            if (!string.IsNullOrWhiteSpace(key)) flags[key.Trim()] = value;
 
         return flags;
     }
 
-    /// <summary>Parses the user's custom JSON. Returns an empty set and an error message if it is invalid.</summary>
-    public static Dictionary<string, string> ParseCustomFlags(string? json, out string? error)
+    /// <summary>Writes the flags into every given Roblox folder. Returns how many folders were written.</summary>
+    public static int Apply(AppSettings s, IEnumerable<string> versionDirs)
     {
-        error = null;
-        var result = new Dictionary<string, string>();
-        if (string.IsNullOrWhiteSpace(json)) return result;
+        if (!s.ManageFastFlags) return 0;
 
-        try
-        {
-            using var doc = JsonDocument.Parse(json);
-            if (doc.RootElement.ValueKind != JsonValueKind.Object)
-            {
-                error = "Eigene Flags müssen ein JSON-Objekt sein, z. B. { \"FIntDebugForceMSAASamples\": \"4\" }.";
-                return result;
-            }
-
-            foreach (var prop in doc.RootElement.EnumerateObject())
-            {
-                result[prop.Name] = prop.Value.ValueKind switch
-                {
-                    JsonValueKind.String => prop.Value.GetString() ?? "",
-                    JsonValueKind.True => "True",
-                    JsonValueKind.False => "False",
-                    _ => prop.Value.GetRawText(),
-                };
-            }
-        }
-        catch (JsonException ex)
-        {
-            error = "Eigene Flags sind kein gültiges JSON: " + ex.Message;
-            result.Clear();
-        }
-
-        return result;
-    }
-
-    public static ApplyResult ApplyAll(AppSettings s)
-    {
-        var flags = BuildFlags(s);
-        var json = JsonSerializer.Serialize(flags, new JsonSerializerOptions { WriteIndented = true });
-
-        int written = 0, failed = 0;
-        foreach (var folder in RobloxPaths.FindPlayerFolders())
+        var json = JsonSerializer.Serialize(BuildFlags(s), new JsonSerializerOptions { WriteIndented = true });
+        var written = 0;
+        foreach (var folder in versionDirs.Distinct(StringComparer.OrdinalIgnoreCase))
         {
             try
             {
@@ -123,59 +85,32 @@ public static class FlagService
                 File.WriteAllText(Path.Combine(dir, "ClientAppSettings.json"), json);
                 written++;
             }
-            catch
-            {
-                failed++;
-            }
+            catch { /* no write access */ }
         }
-
-        var (fpsOk, fpsMessage) = ApplyFramerateCap(s.FpsCap);
-        return new ApplyResult(written, failed, flags.Count, fpsMessage, fpsOk);
+        return written;
     }
 
-    private static (bool ok, string message) ApplyFramerateCap(int cap)
+    /// <summary>Writes the flags to every Roblox installation Orbit can find.</summary>
+    public static int ApplyEverywhere(AppSettings s) => Apply(s, RobloxPaths.FindPlayerFolders());
+
+    /// <summary>Parses a JSON object of flags (for importing into the editor).</summary>
+    public static Dictionary<string, string> ParseJson(string json)
     {
-        if (cap <= 0) return (true, "FPS-Limit: unverändert.");
+        var result = new Dictionary<string, string>();
+        using var doc = JsonDocument.Parse(json);
+        if (doc.RootElement.ValueKind != JsonValueKind.Object)
+            throw new FormatException("Expected a JSON object like { \"FlagName\": \"Value\" }.");
 
-        var path = RobloxPaths.GlobalBasicSettingsFile;
-        if (!File.Exists(path))
-            return (false, "FPS-Limit: Roblox-Einstellungsdatei nicht gefunden. Starte Roblox einmal normal und versuche es dann erneut.");
-
-        try
+        foreach (var prop in doc.RootElement.EnumerateObject())
         {
-            var doc = XDocument.Load(path, LoadOptions.PreserveWhitespace);
-
-            var element = doc.Descendants()
-                .FirstOrDefault(e => e.Name.LocalName == "int" && (string?)e.Attribute("name") == "FramerateCap");
-
-            if (element == null)
+            result[prop.Name] = prop.Value.ValueKind switch
             {
-                var properties = doc.Descendants()
-                    .FirstOrDefault(e => e.Name.LocalName == "Item" && (string?)e.Attribute("class") == "UserGameSettings")
-                    ?.Elements().FirstOrDefault(e => e.Name.LocalName == "Properties");
-
-                if (properties == null)
-                    return (false, "FPS-Limit: Die Roblox-Einstellungsdatei hat ein unbekanntes Format.");
-
-                element = new XElement("int", new XAttribute("name", "FramerateCap"));
-                properties.Add(element);
-            }
-
-            element.Value = cap.ToString(CultureInfo.InvariantCulture);
-
-            var settings = new XmlWriterSettings { OmitXmlDeclaration = true, Encoding = new UTF8Encoding(false) };
-            using (var writer = XmlWriter.Create(path, settings))
-                doc.Save(writer);
-
-            var label = cap >= 9999 ? "unbegrenzt" : cap + " FPS";
-            var note = RobloxPaths.IsRobloxRunning()
-                ? " Hinweis: Roblox läuft gerade – das Limit greift ab dem nächsten Start."
-                : "";
-            return (true, $"FPS-Limit: {label}.{note}");
+                JsonValueKind.String => prop.Value.GetString() ?? "",
+                JsonValueKind.True => "True",
+                JsonValueKind.False => "False",
+                _ => prop.Value.GetRawText(),
+            };
         }
-        catch (Exception ex)
-        {
-            return (false, "FPS-Limit konnte nicht gesetzt werden: " + ex.Message);
-        }
+        return result;
     }
 }

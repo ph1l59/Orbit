@@ -23,12 +23,14 @@ public partial class AccountsView : UserControl
         _view.Filter = MatchesSearch;
 
         PlaceBox.Text = AppState.Settings.LastPlace;
-        JobBox.Text = AppState.Settings.LastJobId;
+        ServerBox.Text = AppState.Settings.LastServer;
 
         AppState.Accounts.CollectionChanged += OnAccountsChanged;
         foreach (var account in AppState.Accounts) account.PropertyChanged += OnAccountPropertyChanged;
         UpdateCounts();
     }
+
+    private Window Owner => Window.GetWindow(this)!;
 
     // ---------- List / selection ----------
 
@@ -43,22 +45,25 @@ public partial class AccountsView : UserControl
 
     private void OnAccountPropertyChanged(object? sender, PropertyChangedEventArgs e)
     {
-        if (e.PropertyName == nameof(Account.IsSelected)) UpdateCounts();
+        if (e.PropertyName is nameof(Account.IsSelected) or nameof(Account.Presence)) UpdateCounts();
     }
 
     private void UpdateCounts()
     {
         var total = AppState.Accounts.Count;
         var selected = AppState.Accounts.Count(a => a.IsSelected);
+        var online = AppState.Accounts.Count(a => a.IsOnline);
 
-        CountText.Text = total == 1 ? "1 Account" : $"{total} Accounts";
-        if (selected > 0) CountText.Text += $"  ·  {selected} ausgewählt";
+        var text = total == 1 ? "1 account" : $"{total} accounts";
+        if (online > 0) text += $"  ·  {online} online";
+        if (selected > 0) text += $"  ·  {selected} selected";
+        CountText.Text = text;
 
         LaunchText.Text = selected switch
         {
-            0 => "Starten",
-            1 => "1 Account starten",
-            _ => $"{selected} Accounts starten",
+            0 => "Launch",
+            1 => "Launch 1 account",
+            _ => $"Launch {selected} accounts",
         };
 
         EmptyState.Visibility = total == 0 ? Visibility.Visible : Visibility.Collapsed;
@@ -90,7 +95,7 @@ public partial class AccountsView : UserControl
 
     private async void Add_Click(object sender, RoutedEventArgs e)
     {
-        var login = new LoginWindow { Owner = Window.GetWindow(this) };
+        var login = new LoginWindow { Owner = Owner };
         if (login.ShowDialog() != true || login.Result is not { } user) return;
 
         var existing = AppState.Accounts.FirstOrDefault(a => a.UserId == user.UserId);
@@ -99,7 +104,7 @@ public partial class AccountsView : UserControl
             existing.Cookie = user.Cookie;
             existing.Username = user.Username;
             existing.DisplayName = user.DisplayName;
-            existing.Status = "Login aktualisiert ✓";
+            existing.Status = "Login updated ✓";
         }
         else
         {
@@ -108,6 +113,7 @@ public partial class AccountsView : UserControl
 
         AppState.SaveAccounts();
         await AppState.RefreshAvatarsAsync();
+        await Integrations.RefreshPresenceAsync();
     }
 
     // ---------- Launch ----------
@@ -115,102 +121,127 @@ public partial class AccountsView : UserControl
     private async void Launch_Click(object sender, RoutedEventArgs e)
     {
         if (_launching) return;
+        var s = AppState.Settings;
 
         var accounts = AppState.Accounts.Where(a => a.IsSelected).ToList();
         if (accounts.Count == 0)
         {
-            ShowStatus("Wähle links mindestens einen Account aus.", true);
+            ShowStatus("Select at least one account on the left.", true);
             return;
         }
 
-        var target = JoinTarget.Parse(PlaceBox.Text, JobBox.Text, out var error);
+        var target = JoinTarget.Parse(PlaceBox.Text, ServerBox.Text, out var error);
         if (target == null)
         {
             ShowStatus(error, true);
             return;
         }
 
-        if (accounts.Count > 1 && !MultiInstance.IsActive)
+        if (!MultiInstance.IsActive)
         {
-            var answer = MessageBox.Show(Window.GetWindow(this)!,
-                "Multi-Roblox ist ausgeschaltet. Ohne Multi-Roblox schließt jeder neue Account das vorherige Roblox-Fenster.\n\n" +
-                "Multi-Roblox jetzt aktivieren?\n(Dafür müssen alle Roblox-Fenster geschlossen sein.)",
-                "Orbit", MessageBoxButton.YesNoCancel, MessageBoxImage.Question);
-
-            if (answer == MessageBoxResult.Cancel) return;
-            if (answer == MessageBoxResult.Yes)
+            if (accounts.Count > 1)
             {
-                if (MultiInstance.TryEnable(out var multiError))
+                var enable = Dialog.Confirm(Owner, "Multi-Roblox is off",
+                    "Without Multi-Roblox every new account closes the previous Roblox window.\n\n" +
+                    "Turn on Multi-Roblox now? All Roblox windows have to be closed for that.",
+                    "Turn on");
+                if (enable)
                 {
-                    AppState.Settings.MultiRoblox = true;
+                    if (!MultiInstance.TryEnable(out var multiError))
+                    {
+                        ShowStatus(multiError ?? "Multi-Roblox could not be turned on.", true);
+                        return;
+                    }
+                    s.MultiRoblox = true;
                     AppState.SaveSettings();
                     AppState.NotifyMultiInstanceChanged();
                 }
-                else
-                {
-                    ShowStatus(multiError ?? "Multi-Roblox konnte nicht aktiviert werden.", true);
+            }
+            else if (s.ConfirmLaunchWhenRunning && RobloxPaths.IsRobloxRunning())
+            {
+                if (!Dialog.Confirm(Owner, "Roblox is already running",
+                        "Launching another account will close the Roblox window that is open right now.", "Launch anyway"))
                     return;
-                }
             }
         }
 
-        AppState.Settings.LastPlace = PlaceBox.Text.Trim();
-        AppState.Settings.LastJobId = JobBox.Text.Trim();
+        s.LastPlace = PlaceBox.Text.Trim();
+        s.LastServer = ServerBox.Text.Trim();
         AppState.SaveSettings();
 
         _launching = true;
         LaunchButton.IsEnabled = false;
+        LaunchProgress.Visibility = Visibility.Visible;
+        LaunchProgress.Value = 0;
+
         try
         {
-            // Performance settings are written once before the clients start.
-            var applied = FlagService.ApplyAll(AppState.Settings);
-            if (!applied.FpsOk) ShowStatus(applied.FpsMessage, true);
+            var progress = new Progress<BootstrapProgress>(p =>
+            {
+                LaunchProgress.Value = p.Percent;
+                ShowStatus(p.Message, false);
+            });
 
-            var delay = Math.Clamp(AppState.Settings.LaunchDelaySeconds, 1, 120);
+            string exe;
+            try
+            {
+                exe = await RobloxLauncher.PrepareAsync(s, progress);
+            }
+            catch (Exception ex)
+            {
+                ShowStatus("Couldn't prepare Roblox: " + ex.Message, true);
+                return;
+            }
+
+            Integrations.StartCustomIntegrations();
+            LaunchProgress.Visibility = Visibility.Collapsed;
+
+            var delay = Math.Clamp(s.LaunchDelaySeconds, 1, 120);
             for (var i = 0; i < accounts.Count; i++)
             {
                 var account = accounts[i];
-                account.Status = "Wird gestartet…";
-                ShowStatus($"Starte {account.Title} ({i + 1}/{accounts.Count})…", false);
+                account.Status = "Launching…";
+                ShowStatus($"Launching {account.Title} ({i + 1}/{accounts.Count})…", false);
 
                 try
                 {
-                    await RobloxLauncher.LaunchAsync(account, target, AppState.Settings);
+                    await RobloxLauncher.LaunchAccountAsync(account, target, exe);
                     account.Status = "";
                     account.LastUsed = DateTime.UtcNow;
                     AppState.SaveAccounts();
                 }
                 catch (Exception ex)
                 {
-                    account.Status = "Fehler: " + ex.Message;
+                    account.Status = "Error: " + ex.Message;
                 }
 
                 if (i < accounts.Count - 1)
                 {
-                    for (var s = delay; s > 0; s--)
+                    for (var sec = delay; sec > 0; sec--)
                     {
-                        ShowStatus($"Nächster Account in {s} s…", false);
+                        ShowStatus($"Next account in {sec}s…", false);
                         await Task.Delay(1000);
                     }
                 }
             }
 
-            var failed = accounts.Count(a => a.Status.StartsWith("Fehler"));
+            var failed = accounts.Count(a => a.Status.StartsWith("Error"));
             ShowStatus(failed == 0
-                ? (accounts.Count == 1 ? "Roblox wird gestartet ✓" : $"{accounts.Count} Accounts gestartet ✓")
-                : $"{accounts.Count - failed} gestartet, {failed} fehlgeschlagen – Details stehen beim Account.", failed > 0);
+                ? (accounts.Count == 1 ? "Roblox is starting ✓" : $"{accounts.Count} accounts launched ✓")
+                : $"{accounts.Count - failed} launched, {failed} failed – see the account card for details.", failed > 0);
         }
         finally
         {
             _launching = false;
             LaunchButton.IsEnabled = true;
+            LaunchProgress.Visibility = Visibility.Collapsed;
         }
     }
 
     private void ShowStatus(string text, bool isWarning)
     {
         LaunchStatus.Text = text;
-        LaunchStatus.Foreground = (System.Windows.Media.Brush)FindResource(isWarning ? "WarningBrush" : "SubTextBrush");
+        LaunchStatus.Foreground = (System.Windows.Media.Brush)FindResource(isWarning ? "WarnBrush" : "DimBrush");
         LaunchStatus.Visibility = Visibility.Visible;
     }
 
@@ -226,8 +257,8 @@ public partial class AccountsView : UserControl
     private void Menu_Alias_Click(object sender, RoutedEventArgs e)
     {
         if (AccountFrom(sender) is not { } account) return;
-        var alias = InputDialog.Ask(Window.GetWindow(this)!, "Alias festlegen",
-            "Eigener Name, der statt des Anzeigenamens gezeigt wird (leer lassen zum Entfernen):", account.Alias);
+        var alias = Dialog.Ask(Owner, "Set alias",
+            "A name of your own, shown instead of the display name. Leave empty to remove it.", account.Alias);
         if (alias == null) return;
         account.Alias = alias.Trim();
         AppState.SaveAccounts();
@@ -242,23 +273,23 @@ public partial class AccountsView : UserControl
     private async void Menu_Check_Click(object sender, RoutedEventArgs e)
     {
         if (AccountFrom(sender) is not { } account) return;
-        account.Status = "Prüfe Login…";
+        account.Status = "Checking login…";
         try
         {
             var user = await RobloxApi.GetAuthenticatedUserAsync(account.Cookie);
             if (user == null)
             {
-                account.Status = "Login abgelaufen – bitte den Account neu hinzufügen.";
+                account.Status = "Login expired – remove the account and add it again.";
                 return;
             }
             account.Username = user.Name;
             account.DisplayName = user.DisplayName;
-            account.Status = "Login gültig ✓";
+            account.Status = "Login is valid ✓";
             AppState.SaveAccounts();
         }
         catch (Exception ex)
         {
-            account.Status = "Fehler: " + ex.Message;
+            account.Status = "Error: " + ex.Message;
         }
     }
 
@@ -278,10 +309,10 @@ public partial class AccountsView : UserControl
     private void Menu_Remove_Click(object sender, RoutedEventArgs e)
     {
         if (AccountFrom(sender) is not { } account) return;
-        var answer = MessageBox.Show(Window.GetWindow(this)!,
-            $"{account.Title} (@{account.Username}) aus Orbit entfernen?\n\nDein Roblox-Account selbst bleibt natürlich bestehen.",
-            "Account entfernen", MessageBoxButton.YesNo, MessageBoxImage.Question);
-        if (answer != MessageBoxResult.Yes) return;
+        if (!Dialog.Confirm(Owner, "Remove account",
+                $"Remove {account.Title} (@{account.Username}) from Orbit?\n\nYour Roblox account itself is not affected.",
+                "Remove", danger: true))
+            return;
 
         AppState.Accounts.Remove(account);
         AppState.SaveAccounts();

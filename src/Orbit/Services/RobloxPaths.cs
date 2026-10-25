@@ -3,7 +3,7 @@ using System.IO;
 
 namespace Orbit.Services;
 
-/// <summary>Finds Roblox player installations (official client and Bloxstrap/Fishstrap copies).</summary>
+/// <summary>Finds Roblox player installations (Orbit's own, the official client, Bloxstrap/Fishstrap copies).</summary>
 public static class RobloxPaths
 {
     public const string PlayerExe = "RobloxPlayerBeta.exe";
@@ -15,8 +15,9 @@ public static class RobloxPaths
         yield return Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles), "Roblox", "Versions");
     }
 
-    private static IEnumerable<string> BootstrapperRoots()
+    private static IEnumerable<string> OtherRoots()
     {
+        yield return AppPaths.VersionsDir;
         yield return Path.Combine(AppPaths.LocalAppData, "Bloxstrap", "Versions");
         yield return Path.Combine(AppPaths.LocalAppData, "Fishstrap", "Versions");
     }
@@ -41,33 +42,33 @@ public static class RobloxPaths
     }
 
     /// <summary>Every folder that contains a RobloxPlayerBeta.exe.</summary>
-    public static List<string> FindPlayerFolders()
-        => FoldersIn(OfficialRoots().Concat(BootstrapperRoots()));
+    public static List<string> FindPlayerFolders() => FoldersIn(OfficialRoots().Concat(OtherRoots()));
 
-    /// <summary>The newest RobloxPlayerBeta.exe, preferring the official installation.</summary>
-    public static string? FindPlayerExe()
+    /// <summary>The newest official RobloxPlayerBeta.exe, or null.</summary>
+    public static string? FindOfficialPlayerExe()
     {
         var folders = FoldersIn(OfficialRoots());
-        if (folders.Count == 0) folders = FoldersIn(BootstrapperRoots());
         if (folders.Count == 0) return null;
-
         return folders
             .Select(f => Path.Combine(f, PlayerExe))
             .OrderByDescending(path => File.GetLastWriteTimeUtc(path))
             .First();
     }
 
-    public static string GlobalBasicSettingsFile
-        => Path.Combine(AppPaths.LocalAppData, "Roblox", "GlobalBasicSettings_13.xml");
+    public static string RobloxDataDir => Path.Combine(AppPaths.LocalAppData, "Roblox");
+    public static string LogsDir => Path.Combine(RobloxDataDir, "logs");
+    public static string GlobalBasicSettingsFile => Path.Combine(RobloxDataDir, "GlobalBasicSettings_13.xml");
 
     public static Process[] RunningClients() => Process.GetProcessesByName("RobloxPlayerBeta");
 
-    public static bool IsRobloxRunning()
+    public static int RunningCount()
     {
         var running = RunningClients();
         foreach (var p in running) p.Dispose();
-        return running.Length > 0;
+        return running.Length;
     }
+
+    public static bool IsRobloxRunning() => RunningCount() > 0;
 
     public static int CloseAllClients()
     {

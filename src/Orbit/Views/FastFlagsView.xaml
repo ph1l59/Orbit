@@ -1,0 +1,184 @@
+<UserControl x:Class="Orbit.Views.FastFlagsView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:local="clr-namespace:Orbit.Views">
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <StackPanel Margin="0,0,0,8">
+            <TextBlock Text="ORBIT / 03 / FASTFLAGS" Style="{StaticResource Crumb}"/>
+            <TextBlock Style="{StaticResource PageTitle}">
+                <Run Text="Fast"/><Run Text="Flags" Foreground="{StaticResource AccentTextBrush}"/>
+            </TextBlock>
+            <TextBlock Style="{StaticResource PageDesc}" Text="Control how specific Roblox engine parameters and features are configured. Changes are saved instantly."/>
+        </StackPanel>
+
+        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" Padding="0,0,10,0">
+            <StackPanel>
+                <Border Background="{StaticResource WarnSoftBrush}" BorderBrush="#4A3A1A" BorderThickness="1" CornerRadius="10"
+                        Padding="16,12" Margin="0,14,0,8">
+                    <DockPanel>
+                        <TextBlock Text="&#xE7BA;" Style="{StaticResource Icon}" Foreground="{StaticResource WarnBrush}" Margin="0,0,12,0"/>
+                        <TextBlock Style="{StaticResource RowDesc}" Foreground="#E8C990" Margin="0">
+                            <Run Text="Warning" FontWeight="SemiBold" Foreground="{StaticResource WarnBrush}"/>
+                            <Run Text=" Roblox only applies allowlisted FastFlags (since September 2025). All presets below are on the allowlist; other flags are simply ignored."/>
+                        </TextBlock>
+                    </DockPanel>
+                </Border>
+
+                <Button Style="{StaticResource LinkRow}" Click="Editor_Click" Tag="Fast Flag Editor|custom flags json import">
+                    <DockPanel>
+                        <TextBlock Text="&#xE70F;" Style="{StaticResource Icon}" FontSize="18" Margin="0,0,16,0" Foreground="{StaticResource SignalLightBrush}"/>
+                        <StackPanel>
+                            <TextBlock Style="{StaticResource RowTitle}" Text="Fast Flag Editor"/>
+                            <TextBlock Style="{StaticResource RowDesc}" Text="Manage your own FastFlags. Use with caution."/>
+                        </StackPanel>
+                    </DockPanel>
+                </Button>
+
+                <Border Style="{StaticResource Row}" Tag="Allow Orbit to manage Fast Flags|enable disable">
+                    <DockPanel>
+                        <CheckBox x:Name="ManageToggle" DockPanel.Dock="Right" Style="{StaticResource Toggle}" Click="Changed"/>
+                        <StackPanel Style="{StaticResource RowText}">
+                            <TextBlock Style="{StaticResource RowTitle}" Text="Allow Orbit to manage Fast Flags"/>
+                            <TextBlock Style="{StaticResource RowDesc}" Text="Turning this off stops anything configured here from being applied to Roblox."/>
+                        </StackPanel>
+                    </DockPanel>
+                </Border>
+
+                <Border Style="{StaticResource Row}" Tag="Reset everything to defaults|reset fastflags">
+                    <DockPanel>
+                        <Button DockPanel.Dock="Right" Style="{StaticResource DangerButton}" Content="Reset" Click="Reset_Click"/>
+                        <StackPanel Style="{StaticResource RowText}">
+                            <TextBlock Style="{StaticResource RowTitle}" Text="Reset everything to defaults"/>
+                            <TextBlock Style="{StaticResource RowDesc}" Text="Turns every preset off and removes your own flags."/>
+                        </StackPanel>
+                    </DockPanel>
+                </Border>
+
+                <StackPanel x:Name="Presets">
+                    <TextBlock Text="// GEOMETRY" Style="{StaticResource Section}"/>
+
+                    <Border Style="{StaticResource Row}" Tag="Mesh detail|level of detail lod csg">
+                        <StackPanel>
+                            <DockPanel>
+                                <CheckBox x:Name="MeshToggle" DockPanel.Dock="Right" Style="{StaticResource Toggle}" Click="Changed"/>
+                                <StackPanel Style="{StaticResource RowText}">
+                                    <TextBlock Style="{StaticResource RowTitle}" Text="Mesh detail"/>
+                                    <TextBlock Style="{StaticResource RowDesc}" Text="Control how detailed meshes appear in-game. Lower = more FPS."/>
+                                </StackPanel>
+                            </DockPanel>
+                            <DockPanel x:Name="MeshPanel" Margin="0,12,0,0">
+                                <local:NumberSlider x:Name="MeshSlider" DockPanel.Dock="Right" Minimum="0" Maximum="4" Step="1" ValueChanged="Changed"/>
+                                <TextBlock Style="{StaticResource Crumb}" VerticalAlignment="Center" Text="DETAIL LEVEL  ·  0 LOWEST  ·  4 DEFAULT"/>
+                            </DockPanel>
+                        </StackPanel>
+                    </Border>
+
+                    <TextBlock Text="// RENDERING AND GRAPHICS" Style="{StaticResource Section}"/>
+
+                    <Border Style="{StaticResource Row}" Tag="Anti-aliasing quality (MSAA)|msaa antialiasing">
+                        <DockPanel>
+                            <ComboBox x:Name="MsaaCombo" DockPanel.Dock="Right" SelectionChanged="Changed"/>
+                            <StackPanel Style="{StaticResource RowText}">
+                                <TextBlock Style="{StaticResource RowTitle}" Text="Anti-aliasing quality (MSAA)"/>
+                                <TextBlock Style="{StaticResource RowDesc}" Text="Smoother edges cost performance."/>
+                            </StackPanel>
+                        </DockPanel>
+                    </Border>
+
+                    <Border Style="{StaticResource Row}" Tag="Preserve rendering quality with display scaling|dpi scale sharp">
+                        <DockPanel>
+                            <CheckBox x:Name="DpiToggle" DockPanel.Dock="Right" Style="{StaticResource Toggle}" Click="Changed"/>
+                            <StackPanel Style="{StaticResource RowText}">
+                                <TextBlock Style="{StaticResource RowTitle}" Text="Preserve rendering quality with display scaling"/>
+                                <TextBlock Style="{StaticResource RowDesc}" Text="Roblox lowers its rendering quality depending on how your display is scaled in Windows."/>
+                            </StackPanel>
+                        </DockPanel>
+                    </Border>
+
+                    <Border Style="{StaticResource Row}" Tag="FRM Quality Override|graphics quality level frm">
+                        <StackPanel>
+                            <DockPanel>
+                                <CheckBox x:Name="FrmToggle" DockPanel.Dock="Right" Style="{StaticResource Toggle}" Click="Changed"/>
+                                <StackPanel Style="{StaticResource RowText}">
+                                    <TextBlock Style="{StaticResource RowTitle}" Text="FRM Quality Override"/>
+                                    <TextBlock Style="{StaticResource RowDesc}" Text="Force the render quality level Roblox uses, from 1 (lowest) to 21 (highest)."/>
+                                </StackPanel>
+                            </DockPanel>
+                            <DockPanel x:Name="FrmPanel" Margin="0,12,0,0">
+                                <local:NumberSlider x:Name="FrmSlider" DockPanel.Dock="Right" Minimum="1" Maximum="21" Step="1" ValueChanged="Changed"/>
+                                <TextBlock Style="{StaticResource Crumb}" VerticalAlignment="Center" Text="QUALITY LEVEL"/>
+                            </DockPanel>
+                        </StackPanel>
+                    </Border>
+
+                    <Border Style="{StaticResource Row}" Tag="Rendering mode|direct3d vulkan opengl graphics api">
+                        <DockPanel>
+                            <ComboBox x:Name="RendererCombo" DockPanel.Dock="Right" SelectionChanged="Changed"/>
+                            <StackPanel Style="{StaticResource RowText}">
+                                <TextBlock Style="{StaticResource RowTitle}" Text="Rendering mode"/>
+                                <TextBlock Style="{StaticResource RowDesc}" Text="Only change this if Roblox stutters or crashes."/>
+                            </StackPanel>
+                        </DockPanel>
+                    </Border>
+
+                    <Border Style="{StaticResource Row}" Tag="Texture quality|textures memory">
+                        <DockPanel>
+                            <ComboBox x:Name="TextureCombo" DockPanel.Dock="Right" SelectionChanged="Changed"/>
+                            <StackPanel Style="{StaticResource RowText}">
+                                <TextBlock Style="{StaticResource RowTitle}" Text="Texture quality"/>
+                                <TextBlock Style="{StaticResource RowDesc}" Text="Lower textures save video memory."/>
+                            </StackPanel>
+                        </DockPanel>
+                    </Border>
+
+                    <Border Style="{StaticResource Row}" Tag="Exclusive fullscreen|alt enter fullscreen">
+                        <DockPanel>
+                            <CheckBox x:Name="FullscreenToggle" DockPanel.Dock="Right" Style="{StaticResource Toggle}" Click="Changed"/>
+                            <StackPanel Style="{StaticResource RowText}">
+                                <TextBlock Style="{StaticResource RowTitle}" Text="Exclusive fullscreen"/>
+                                <TextBlock Style="{StaticResource RowDesc}" Text="Use Alt+Enter for true fullscreen instead of a borderless window. Can add a few FPS."/>
+                            </StackPanel>
+                        </DockPanel>
+                    </Border>
+
+                    <Border Style="{StaticResource Row}" Tag="Disable grass|terrain grass">
+                        <DockPanel>
+                            <CheckBox x:Name="GrassToggle" DockPanel.Dock="Right" Style="{StaticResource Toggle}" Click="Changed"/>
+                            <StackPanel Style="{StaticResource RowText}">
+                                <TextBlock Style="{StaticResource RowTitle}" Text="Disable grass"/>
+                                <TextBlock Style="{StaticResource RowDesc}" Text="Removes animated grass from terrain."/>
+                            </StackPanel>
+                        </DockPanel>
+                    </Border>
+
+                    <Border Style="{StaticResource Row}" Tag="Gray sky|skybox">
+                        <DockPanel>
+                            <CheckBox x:Name="SkyToggle" DockPanel.Dock="Right" Style="{StaticResource Toggle}" Click="Changed"/>
+                            <StackPanel Style="{StaticResource RowText}">
+                                <TextBlock Style="{StaticResource RowTitle}" Text="Gray sky"/>
+                                <TextBlock Style="{StaticResource RowDesc}" Text="Replaces the skybox with a plain gray sky."/>
+                            </StackPanel>
+                        </DockPanel>
+                    </Border>
+
+                    <Border Style="{StaticResource Row}" Tag="Pause voxelizer|lighting performance">
+                        <DockPanel>
+                            <CheckBox x:Name="VoxelToggle" DockPanel.Dock="Right" Style="{StaticResource Toggle}" Click="Changed"/>
+                            <StackPanel Style="{StaticResource RowText}">
+                                <TextBlock Style="{StaticResource RowTitle}" Text="Pause voxelizer"/>
+                                <TextBlock Style="{StaticResource RowDesc}" Text="Stops lighting from updating as the world changes. Saves CPU, but lighting can look off."/>
+                            </StackPanel>
+                        </DockPanel>
+                    </Border>
+                </StackPanel>
+
+                <TextBlock x:Name="StatusText" Style="{StaticResource Crumb}" Margin="2,12,0,0"/>
+            </StackPanel>
+        </ScrollViewer>
+    </Grid>
+</UserControl>

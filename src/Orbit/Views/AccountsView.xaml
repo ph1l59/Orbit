@@ -8,12 +8,12 @@
         <local:NotEmptyToVisibilityConverter x:Key="NotEmpty"/>
 
         <ContextMenu x:Key="AccountMenu">
-            <MenuItem Header="Alias festlegen…" Click="Menu_Alias_Click"/>
-            <MenuItem Header="Profil im Browser öffnen" Click="Menu_Profile_Click"/>
-            <MenuItem Header="Login prüfen" Click="Menu_Check_Click"/>
-            <MenuItem Header="Nach oben verschieben" Click="Menu_Up_Click"/>
-            <MenuItem Header="Nach unten verschieben" Click="Menu_Down_Click"/>
-            <MenuItem Header="Entfernen" Click="Menu_Remove_Click" Foreground="{StaticResource DangerBrush}"/>
+            <MenuItem Header="Set alias…" Click="Menu_Alias_Click"/>
+            <MenuItem Header="Open profile in browser" Click="Menu_Profile_Click"/>
+            <MenuItem Header="Check login" Click="Menu_Check_Click"/>
+            <MenuItem Header="Move up" Click="Menu_Up_Click"/>
+            <MenuItem Header="Move down" Click="Menu_Down_Click"/>
+            <MenuItem Header="Remove" Click="Menu_Remove_Click" Foreground="{StaticResource DangerBrush}"/>
         </ContextMenu>
 
         <Style x:Key="AccountItem" TargetType="ListBoxItem">
@@ -26,18 +26,18 @@
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="ListBoxItem">
-                        <Border x:Name="card" Background="{StaticResource SurfaceBrush}" BorderBrush="{StaticResource BorderBrush}"
-                                BorderThickness="1" CornerRadius="12" Padding="14,12">
+                        <Border x:Name="card" Background="{StaticResource PanelBrush}" BorderBrush="{StaticResource LineBrush}"
+                                BorderThickness="1" CornerRadius="10" Padding="14,12">
                             <ContentPresenter/>
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="card" Property="BorderBrush" Value="{StaticResource BorderHoverBrush}"/>
-                                <Setter TargetName="card" Property="Background" Value="{StaticResource Surface2Brush}"/>
+                                <Setter TargetName="card" Property="BorderBrush" Value="{StaticResource LineStrongBrush}"/>
+                                <Setter TargetName="card" Property="Background" Value="{StaticResource RaisedBrush}"/>
                             </Trigger>
                             <Trigger Property="IsSelected" Value="True">
-                                <Setter TargetName="card" Property="BorderBrush" Value="{StaticResource AccentSolidBrush}"/>
-                                <Setter TargetName="card" Property="Background" Value="#1A1730"/>
+                                <Setter TargetName="card" Property="BorderBrush" Value="{StaticResource SignalBorderBrush}"/>
+                                <Setter TargetName="card" Property="Background" Value="{StaticResource SignalTintBrush}"/>
                             </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
@@ -53,41 +53,43 @@
                     <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
 
-                <!-- Avatar -->
-                <Grid Width="46" Height="46">
-                    <Ellipse Fill="{StaticResource AccentBrush}"/>
+                <!-- Avatar with online dot -->
+                <Grid Width="48" Height="48">
+                    <Ellipse Fill="{StaticResource Raised2Brush}"/>
                     <TextBlock Text="{Binding Initial}" HorizontalAlignment="Center" VerticalAlignment="Center"
-                               FontSize="18" FontWeight="SemiBold" Foreground="White"/>
+                               FontSize="18" FontWeight="SemiBold" Foreground="{StaticResource SignalLightBrush}"/>
                     <Ellipse>
                         <Ellipse.Fill>
                             <ImageBrush ImageSource="{Binding AvatarUrl, Converter={StaticResource UrlToImage}}" Stretch="UniformToFill"/>
                         </Ellipse.Fill>
                     </Ellipse>
+                    <Ellipse x:Name="dot" Width="14" Height="14" HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="0,0,-1,-1"
+                             Fill="{StaticResource FaintBrush}" Stroke="{StaticResource PanelBrush}" StrokeThickness="3"
+                             ToolTip="{Binding PresenceText}"/>
                 </Grid>
 
                 <StackPanel Grid.Column="1" Margin="14,0,10,0" VerticalAlignment="Center">
                     <StackPanel Orientation="Horizontal">
-                        <TextBlock Text="{Binding Title}" FontSize="14.5" FontWeight="SemiBold" TextTrimming="CharacterEllipsis"/>
+                        <TextBlock Text="{Binding Title}" FontSize="14.5" FontWeight="SemiBold"/>
                         <TextBlock Text="{Binding Subtitle}" Margin="8,0,0,0" FontSize="12.5" VerticalAlignment="Bottom"
-                                   Foreground="{StaticResource SubTextBrush}" TextTrimming="CharacterEllipsis"/>
+                                   Foreground="{StaticResource DimBrush}"/>
                     </StackPanel>
-                    <TextBlock Text="{Binding LastUsedText}" Margin="0,3,0,0" FontSize="12" Foreground="{StaticResource SubTextBrush}"/>
-                    <TextBlock Text="{Binding Status}" Margin="0,3,0,0" FontSize="12" Foreground="{StaticResource WarningBrush}"
+                    <StackPanel Orientation="Horizontal" Margin="0,4,0,0">
+                        <TextBlock x:Name="presence" Text="{Binding PresenceText}" Style="{StaticResource Crumb}"/>
+                        <TextBlock Text="  ·  " Style="{StaticResource Crumb}"/>
+                        <TextBlock Text="{Binding LastUsedText}" Style="{StaticResource Crumb}"/>
+                    </StackPanel>
+                    <TextBlock Text="{Binding Status}" Margin="0,4,0,0" FontSize="12" Foreground="{StaticResource WarnBrush}"
                                TextWrapping="Wrap" Visibility="{Binding Status, Converter={StaticResource NotEmpty}}"/>
                 </StackPanel>
 
-                <!-- Check mark -->
-                <Border Grid.Column="2" Width="24" Height="24" CornerRadius="12" VerticalAlignment="Center"
-                        BorderBrush="{StaticResource BorderHoverBrush}" BorderThickness="1.5" x:Name="check">
-                    <TextBlock x:Name="checkIcon" Text="&#xE73E;" Style="{StaticResource Icon}" FontSize="11"
-                               HorizontalAlignment="Center" Foreground="White" Visibility="Collapsed"/>
-                </Border>
+                <CheckBox Grid.Column="2" Style="{StaticResource CheckSquare}" VerticalAlignment="Center" IsHitTestVisible="False"
+                          IsChecked="{Binding IsSelected, Mode=OneWay}"/>
             </Grid>
             <DataTemplate.Triggers>
-                <DataTrigger Binding="{Binding IsSelected}" Value="True">
-                    <Setter TargetName="check" Property="Background" Value="{StaticResource AccentBrush}"/>
-                    <Setter TargetName="check" Property="BorderBrush" Value="Transparent"/>
-                    <Setter TargetName="checkIcon" Property="Visibility" Value="Visible"/>
+                <DataTrigger Binding="{Binding IsOnline}" Value="True">
+                    <Setter TargetName="dot" Property="Fill" Value="{StaticResource OkBrush}"/>
+                    <Setter TargetName="presence" Property="Foreground" Value="{StaticResource OkBrush}"/>
                 </DataTrigger>
             </DataTemplate.Triggers>
         </DataTemplate>
@@ -96,8 +98,8 @@
     <Grid>
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="*"/>
-            <ColumnDefinition Width="24"/>
-            <ColumnDefinition Width="340"/>
+            <ColumnDefinition Width="28"/>
+            <ColumnDefinition Width="350"/>
         </Grid.ColumnDefinitions>
 
         <!-- ================= Account list ================= -->
@@ -108,23 +110,27 @@
                 <RowDefinition Height="*"/>
             </Grid.RowDefinitions>
 
-            <DockPanel Margin="0,0,0,18">
-                <Button DockPanel.Dock="Right" Style="{StaticResource PrimaryButton}" Click="Add_Click" VerticalAlignment="Center">
+            <DockPanel Margin="0,0,0,20">
+                <Button DockPanel.Dock="Right" Style="{StaticResource PrimaryButton}" Click="Add_Click" VerticalAlignment="Bottom"
+                        Tag="Add account|login new account">
                     <StackPanel Orientation="Horizontal">
-                        <TextBlock Text="&#xE710;" Style="{StaticResource Icon}" FontSize="12" Foreground="White"/>
-                        <TextBlock Text="Account hinzufügen" Margin="8,0,0,0" Foreground="White"/>
+                        <TextBlock Text="&#xE710;" Style="{StaticResource Icon}" FontSize="11"/>
+                        <TextBlock Text="Add account" Margin="8,0,0,0"/>
                     </StackPanel>
                 </Button>
                 <StackPanel>
-                    <TextBlock Text="Accounts" Style="{StaticResource H1}"/>
-                    <TextBlock x:Name="CountText" Text="0 Accounts" Style="{StaticResource Sub}" Margin="0,2,0,0"/>
+                    <TextBlock Text="ORBIT / 01 / ACCOUNTS" Style="{StaticResource Crumb}"/>
+                    <TextBlock Style="{StaticResource PageTitle}">
+                        <Run Text="Your"/> <Run Text="accounts" Foreground="{StaticResource AccentTextBrush}"/>
+                    </TextBlock>
+                    <TextBlock x:Name="CountText" Text="0 accounts" Style="{StaticResource PageDesc}"/>
                 </StackPanel>
             </DockPanel>
 
             <DockPanel Grid.Row="1" Margin="0,0,0,14">
-                <Button DockPanel.Dock="Right" Content="Keine" Margin="8,0,0,0" Click="SelectNone_Click" ToolTip="Auswahl aufheben"/>
-                <Button DockPanel.Dock="Right" Content="Alle auswählen" Margin="8,0,0,0" Click="SelectAll_Click"/>
-                <TextBox x:Name="SearchBox" Tag="Suchen…" TextChanged="Search_TextChanged"/>
+                <Button DockPanel.Dock="Right" Content="Clear" Margin="8,0,0,0" Click="SelectNone_Click"/>
+                <Button DockPanel.Dock="Right" Content="Select all" Margin="8,0,0,0" Click="SelectAll_Click"/>
+                <TextBox x:Name="SearchBox" Tag="Filter accounts…" TextChanged="Search_TextChanged"/>
             </DockPanel>
 
             <Grid Grid.Row="2">
@@ -141,15 +147,13 @@
                     </ListBox.Template>
                 </ListBox>
 
-                <!-- Empty state -->
-                <Border x:Name="EmptyState" Style="{StaticResource Card}" VerticalAlignment="Top" Padding="28" Visibility="Collapsed">
+                <Border x:Name="EmptyState" Style="{StaticResource Panel}" VerticalAlignment="Top" Padding="32" Visibility="Collapsed">
                     <StackPanel HorizontalAlignment="Center">
-                        <TextBlock Text="&#xE716;" Style="{StaticResource Icon}" FontSize="34" HorizontalAlignment="Center"
-                                   Foreground="{StaticResource SubTextBrush}"/>
-                        <TextBlock Text="Noch keine Accounts" Style="{StaticResource H2}" HorizontalAlignment="Center" Margin="0,14,0,4"/>
-                        <TextBlock Text="Füge deinen ersten Roblox-Account hinzu. Du meldest dich ganz normal auf roblox.com an – Orbit speichert danach nur das Login verschlüsselt auf diesem PC."
-                                   Style="{StaticResource Sub}" TextAlignment="Center" MaxWidth="380"/>
-                        <Button Style="{StaticResource PrimaryButton}" Content="Account hinzufügen" Margin="0,16,0,0"
+                        <Image Source="/Assets/logo.png" Width="72" Height="72" RenderOptions.BitmapScalingMode="HighQuality"/>
+                        <TextBlock Text="No accounts yet" FontSize="17" FontWeight="SemiBold" HorizontalAlignment="Center" Margin="0,16,0,6"/>
+                        <TextBlock Text="Add your first Roblox account. You log in on the real roblox.com page – Orbit only keeps the login, encrypted on this PC."
+                                   Style="{StaticResource PageDesc}" TextAlignment="Center" MaxWidth="400"/>
+                        <Button Style="{StaticResource SolidButton}" Content="Add account" Margin="0,18,0,0"
                                 HorizontalAlignment="Center" Click="Add_Click"/>
                     </StackPanel>
                 </Border>
@@ -157,42 +161,37 @@
         </Grid>
 
         <!-- ================= Join panel ================= -->
-        <StackPanel Grid.Column="2">
-            <Border Style="{StaticResource Card}">
+        <StackPanel Grid.Column="2" Margin="0,22,0,0">
+            <Border Style="{StaticResource Panel}" Padding="20" Tag="Join game|server link place id private server share link job id launch">
                 <StackPanel>
-                    <StackPanel Orientation="Horizontal">
-                        <TextBlock Text="&#xE768;" Style="{StaticResource Icon}" Foreground="{StaticResource AccentSolidBrush}"/>
-                        <TextBlock Text="Spiel beitreten" Style="{StaticResource H2}" Margin="10,0,0,0"/>
-                    </StackPanel>
+                    <TextBlock Text="LAUNCH" Style="{StaticResource Crumb}" Foreground="{StaticResource SignalLightBrush}"/>
+                    <TextBlock Text="Join a game" FontFamily="{StaticResource DisplayFont}" FontSize="20" FontWeight="Bold" Margin="0,4,0,0"/>
 
-                    <TextBlock Text="Place-ID oder Link" Style="{StaticResource Sub}" Margin="0,16,0,6"/>
-                    <TextBox x:Name="PlaceBox" Tag="z. B. 920587237 oder roblox.com/games/…"/>
+                    <TextBlock Text="PLACE ID OR GAME LINK" Style="{StaticResource Label}" Margin="0,18,0,6"/>
+                    <TextBox x:Name="PlaceBox" Tag="920587237 or roblox.com/games/…"/>
 
-                    <TextBlock Text="Job-ID (optional, für einen bestimmten Server)" Style="{StaticResource Sub}" Margin="0,12,0,6"/>
-                    <TextBox x:Name="JobBox" Tag="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"/>
+                    <TextBlock Text="SERVER LINK (OPTIONAL)" Style="{StaticResource Label}" Margin="0,14,0,6"/>
+                    <TextBox x:Name="ServerBox" Tag="Private server / share link or Job ID"/>
 
-                    <TextBlock Style="{StaticResource Sub}" Margin="0,10,0,0"
-                               Text="Privatserver: einfach den kompletten Privatserver- oder Share-Link oben einfügen."/>
-
-                    <Button x:Name="LaunchButton" Style="{StaticResource PrimaryButton}" Height="44" Margin="0,18,0,0"
+                    <Button x:Name="LaunchButton" Style="{StaticResource SolidButton}" Height="44" Margin="0,20,0,0"
                             HorizontalAlignment="Stretch" Click="Launch_Click">
                         <StackPanel Orientation="Horizontal">
-                            <TextBlock Text="&#xE768;" Style="{StaticResource Icon}" FontSize="13" Foreground="White"/>
-                            <TextBlock x:Name="LaunchText" Text="Starten" Margin="10,0,0,0" FontSize="14" Foreground="White"/>
+                            <TextBlock Text="&#xE768;" Style="{StaticResource Icon}" FontSize="12"/>
+                            <TextBlock x:Name="LaunchText" Text="Launch" Margin="10,0,0,0" FontSize="14"/>
                         </StackPanel>
                     </Button>
 
-                    <TextBlock x:Name="LaunchStatus" Style="{StaticResource Sub}" Margin="0,12,0,0" Visibility="Collapsed"/>
+                    <ProgressBar x:Name="LaunchProgress" Margin="0,14,0,0" Maximum="100" Visibility="Collapsed"/>
+                    <TextBlock x:Name="LaunchStatus" Style="{StaticResource RowDesc}" Margin="0,10,0,0" Visibility="Collapsed"/>
                 </StackPanel>
             </Border>
 
-            <Border Style="{StaticResource Card}" Margin="0,12,0,0">
+            <Border Style="{StaticResource Panel}" Margin="0,12,0,0" Padding="20">
                 <StackPanel>
-                    <TextBlock Text="So funktioniert's" Style="{StaticResource H2}"/>
-                    <TextBlock Style="{StaticResource Sub}" Margin="0,8,0,0"
-                               Text="1. Accounts links anklicken, um sie auszuwählen.&#x0a;2. Spiel-Link oder Place-ID eintragen.&#x0a;3. Starten – bei mehreren Accounts wird nacheinander gestartet."/>
-                    <TextBlock Style="{StaticResource Sub}" Margin="0,8,0,0"
-                               Text="Rechtsklick auf einen Account für weitere Optionen."/>
+                    <TextBlock Text="HOW IT WORKS" Style="{StaticResource Crumb}"/>
+                    <TextBlock Style="{StaticResource RowDesc}" Margin="0,8,0,0" LineHeight="20"
+                               Text="1 · Click accounts on the left to select them.&#x0a;2 · Paste a game link or place ID.&#x0a;3 · Optional: paste a private server or share link.&#x0a;4 · Launch – several accounts start one after another."/>
+                    <TextBlock Style="{StaticResource RowDesc}" Margin="0,10,0,0" Text="Right-click an account for more options. The dot shows if it's online."/>
                 </StackPanel>
             </Border>
         </StackPanel>

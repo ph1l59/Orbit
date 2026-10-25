@@ -26,7 +26,7 @@ public partial class LoginWindow : Window
     public LoginWindow()
     {
         InitializeComponent();
-        Web.DefaultBackgroundColor = System.Drawing.Color.FromArgb(11, 12, 16);
+        Web.DefaultBackgroundColor = System.Drawing.Color.FromArgb(10, 9, 13);
         Loaded += OnLoaded;
         _poll.Tick += async (_, _) => await CheckForLoginAsync();
     }
@@ -53,17 +53,15 @@ public partial class LoginWindow : Window
         }
         catch (WebView2RuntimeNotFoundException)
         {
-            MessageBox.Show(this,
-                "Für die Anmeldung wird die Microsoft Edge WebView2 Runtime benötigt.\n\n" +
-                "Sie ist auf Windows 10/11 normalerweise schon installiert. Falls nicht, öffnet sich gleich die Download-Seite.",
-                "Orbit", MessageBoxButton.OK, MessageBoxImage.Warning);
+            Dialog.Info(this, "WebView2 needed",
+                "Logging in needs the Microsoft Edge WebView2 Runtime. It's normally part of Windows 10/11 – " +
+                "if it's missing, the download page opens now.");
             Process.Start(new ProcessStartInfo("https://developer.microsoft.com/microsoft-edge/webview2/") { UseShellExecute = true });
             Close();
         }
         catch (Exception ex)
         {
-            MessageBox.Show(this, "Der Login konnte nicht geöffnet werden: " + ex.Message, "Orbit",
-                MessageBoxButton.OK, MessageBoxImage.Error);
+            Dialog.Info(this, "Login failed", "The login page could not be opened: " + ex.Message);
             Close();
         }
     }
@@ -79,7 +77,7 @@ public partial class LoginWindow : Window
             var cookie = cookies.FirstOrDefault(c => c.Name == ".ROBLOSECURITY")?.Value;
             if (string.IsNullOrEmpty(cookie)) return;
 
-            StatusText.Text = "Angemeldet – Account wird überprüft…";
+            StatusText.Text = "Logged in – checking the account…";
             var user = await RobloxApi.GetAuthenticatedUserAsync(cookie);
             if (user == null) return;
 

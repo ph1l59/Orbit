@@ -1,0 +1,28 @@
+using System.Diagnostics;
+using System.Reflection;
+using System.Windows;
+using System.Windows.Controls;
+using Orbit.Services;
+
+namespace Orbit.Views;
+
+public partial class AboutView : UserControl
+{
+    private const string RepoUrl = "https://github.com/ph1l59/Orbit";
+
+    public AboutView()
+    {
+        InitializeComponent();
+        var version = Assembly.GetExecutingAssembly().GetName().Version;
+        if (version != null) VersionText.Text = $"VERSION {version.Major}.{version.Minor}.{version.Build}";
+    }
+
+    private static void Open(string url) => Process.Start(new ProcessStartInfo(url) { UseShellExecute = true });
+
+    private void GitHub_Click(object sender, RoutedEventArgs e) => Open(RepoUrl);
+    private void Releases_Click(object sender, RoutedEventArgs e) => Open(RepoUrl + "/releases");
+    private void Issues_Click(object sender, RoutedEventArgs e) => Open(RepoUrl + "/issues");
+
+    private void Data_Click(object sender, RoutedEventArgs e)
+        => Process.Start(new ProcessStartInfo("explorer.exe", $"\"{AppPaths.DataDir}\"") { UseShellExecute = true });
+}

@@ -67,6 +67,35 @@ public sealed class Account : INotifyPropertyChanged
         set { _status = value; OnChanged(); }
     }
 
+    private int _presence;
+    /// <summary>0 offline, 1 online, 2 in game, 3 in Studio (Roblox presence API).</summary>
+    [JsonIgnore]
+    public int Presence
+    {
+        get => _presence;
+        set { _presence = value; OnChanged(); OnChanged(nameof(IsOnline)); OnChanged(nameof(PresenceText)); }
+    }
+
+    private string _presenceLocation = "";
+    [JsonIgnore]
+    public string PresenceLocation
+    {
+        get => _presenceLocation;
+        set { _presenceLocation = value ?? ""; OnChanged(); OnChanged(nameof(PresenceText)); }
+    }
+
+    [JsonIgnore]
+    public bool IsOnline => Presence > 0;
+
+    [JsonIgnore]
+    public string PresenceText => Presence switch
+    {
+        1 => "Online",
+        2 => string.IsNullOrEmpty(PresenceLocation) ? "In game" : "In game · " + PresenceLocation,
+        3 => "In Studio",
+        _ => "Offline",
+    };
+
     [JsonIgnore]
     public string Title => string.IsNullOrWhiteSpace(Alias) ? DisplayName : Alias;
 
@@ -78,8 +107,8 @@ public sealed class Account : INotifyPropertyChanged
 
     [JsonIgnore]
     public string LastUsedText => LastUsed is null
-        ? "Noch nie gestartet"
-        : "Zuletzt: " + LastUsed.Value.ToLocalTime().ToString("dd.MM.yyyy, HH:mm");
+        ? "Never launched"
+        : "Last launched " + LastUsed.Value.ToLocalTime().ToString("MMM d, HH:mm", System.Globalization.CultureInfo.InvariantCulture);
 
     public event PropertyChangedEventHandler? PropertyChanged;
     private void OnChanged([CallerMemberName] string? name = null)

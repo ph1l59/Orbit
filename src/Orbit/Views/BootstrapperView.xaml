@@ -1,0 +1,142 @@
+<UserControl x:Class="Orbit.Views.BootstrapperView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <StackPanel Margin="0,0,0,8">
+            <TextBlock Text="ORBIT / 05 / BOOTSTRAPPER" Style="{StaticResource Crumb}"/>
+            <TextBlock Style="{StaticResource PageTitle}">
+                <Run Text="Boot"/><Run Text="strapper" Foreground="{StaticResource AccentTextBrush}"/>
+            </TextBlock>
+            <TextBlock Style="{StaticResource PageDesc}" Text="Configure what Orbit should do when launching Roblox."/>
+        </StackPanel>
+
+        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" Padding="0,0,10,0">
+            <StackPanel>
+                <TextBlock Text="// LAUNCHING" Style="{StaticResource Section}" Margin="2,14,0,10"/>
+
+                <Border Style="{StaticResource Row}" Tag="Multi-Roblox|multiple instances several windows alt accounts">
+                    <StackPanel>
+                        <DockPanel>
+                            <CheckBox x:Name="MultiToggle" DockPanel.Dock="Right" Style="{StaticResource Toggle}" Click="Multi_Click"/>
+                            <StackPanel Style="{StaticResource RowText}">
+                                <TextBlock Style="{StaticResource RowTitle}" Text="Multi-Roblox"/>
+                                <TextBlock Style="{StaticResource RowDesc}" Text="Allow several Roblox windows at the same time – needed to play multiple accounts at once. Works while Orbit is open."/>
+                            </StackPanel>
+                        </DockPanel>
+                        <TextBlock Style="{StaticResource RowDesc}" Foreground="#C9A86A" Margin="0,10,0,0"
+                                   Text="Use at your own risk: Roblox doesn't officially support several clients, and some games don't allow alt accounts."/>
+                        <TextBlock x:Name="MultiStatus" Style="{StaticResource RowDesc}" Visibility="Collapsed"/>
+                    </StackPanel>
+                </Border>
+
+                <Border Style="{StaticResource Row}" Tag="Prompt to confirm when launching another Roblox instance|confirm close">
+                    <DockPanel>
+                        <CheckBox x:Name="ConfirmToggle" DockPanel.Dock="Right" Style="{StaticResource Toggle}" Click="Changed"/>
+                        <StackPanel Style="{StaticResource RowText}">
+                            <TextBlock Style="{StaticResource RowTitle}" Text="Prompt to confirm when launching another Roblox instance"/>
+                            <TextBlock Style="{StaticResource RowDesc}" Text="Protects your current game from being closed by accident (when Multi-Roblox is off)."/>
+                        </StackPanel>
+                    </DockPanel>
+                </Border>
+
+                <Border Style="{StaticResource Row}" Tag="Delay between accounts|launch delay wait">
+                    <DockPanel>
+                        <ComboBox x:Name="DelayCombo" DockPanel.Dock="Right" SelectionChanged="Changed"/>
+                        <StackPanel Style="{StaticResource RowText}">
+                            <TextBlock Style="{StaticResource RowTitle}" Text="Delay between accounts"/>
+                            <TextBlock Style="{StaticResource RowDesc}" Text="Wait time when launching several accounts. Very short delays can get blocked by Roblox."/>
+                        </StackPanel>
+                    </DockPanel>
+                </Border>
+
+                <TextBlock Text="// ROBLOX INSTALLATION" Style="{StaticResource Section}"/>
+
+                <Border Style="{StaticResource Row}" Tag="Use Orbit's own Roblox install|managed install update download">
+                    <StackPanel>
+                        <DockPanel>
+                            <CheckBox x:Name="ManagedToggle" DockPanel.Dock="Right" Style="{StaticResource Toggle}" Click="Changed"/>
+                            <StackPanel Style="{StaticResource RowText}">
+                                <TextBlock Style="{StaticResource RowTitle}" Text="Use Orbit's own Roblox install"/>
+                                <TextBlock Style="{StaticResource RowDesc}" Text="Orbit downloads and updates its own copy of Roblox, like Fishstrap. Your FastFlags and mods are never overwritten. Recommended."/>
+                            </StackPanel>
+                        </DockPanel>
+                        <DockPanel Margin="0,12,0,0">
+                            <Button x:Name="ReinstallButton" DockPanel.Dock="Right" Content="Reinstall" Margin="8,0,0,0" Click="Reinstall_Click"/>
+                            <Button x:Name="UpdateButton" DockPanel.Dock="Right" Style="{StaticResource PrimaryButton}" Content="Check for updates" Click="Update_Click"/>
+                            <StackPanel VerticalAlignment="Center">
+                                <TextBlock x:Name="VersionText" Style="{StaticResource Crumb}" Text="NOT INSTALLED"/>
+                                <ProgressBar x:Name="UpdateProgress" Margin="0,8,24,0" Maximum="100" Visibility="Collapsed"/>
+                            </StackPanel>
+                        </DockPanel>
+                    </StackPanel>
+                </Border>
+
+                <Border Style="{StaticResource Row}" Tag="Use Orbit as the default Roblox launcher|protocol website play button">
+                    <DockPanel>
+                        <CheckBox x:Name="DefaultToggle" DockPanel.Dock="Right" Style="{StaticResource Toggle}" Click="Default_Click"/>
+                        <StackPanel Style="{StaticResource RowText}">
+                            <TextBlock Style="{StaticResource RowTitle}" Text="Use Orbit as the default Roblox launcher"/>
+                            <TextBlock Style="{StaticResource RowDesc}" Text="The Play button on roblox.com starts Roblox through Orbit, so FastFlags, mods and integrations always apply."/>
+                        </StackPanel>
+                    </DockPanel>
+                </Border>
+
+                <TextBlock Text="// CLEANER" Style="{StaticResource Section}"/>
+
+                <Border Style="{StaticResource Panel}" Padding="0" Tag="Cleaner|delete old files cache logs disk space">
+                    <StackPanel>
+                        <DockPanel Margin="18,14">
+                            <ComboBox x:Name="CleanerCombo" DockPanel.Dock="Right" SelectionChanged="Changed"/>
+                            <StackPanel Style="{StaticResource RowText}">
+                                <TextBlock Style="{StaticResource RowTitle}" Text="When should files be deleted"/>
+                                <TextBlock Style="{StaticResource RowDesc}" Text="Files older than this are removed automatically (checked once a day)."/>
+                            </StackPanel>
+                        </DockPanel>
+                        <Border Height="1" Background="{StaticResource LineBrush}"/>
+                        <DockPanel Margin="18,12">
+                            <CheckBox x:Name="CacheToggle" DockPanel.Dock="Right" Style="{StaticResource Toggle}" Click="Changed"/>
+                            <StackPanel Style="{StaticResource RowText}">
+                                <TextBlock Style="{StaticResource RowTitle}" Text="Cache"/>
+                                <TextBlock Style="{StaticResource RowDesc}" Text="Roblox's temporary downloads."/>
+                            </StackPanel>
+                        </DockPanel>
+                        <Border Height="1" Background="{StaticResource LineBrush}"/>
+                        <DockPanel Margin="18,12">
+                            <CheckBox x:Name="LogsToggle" DockPanel.Dock="Right" Style="{StaticResource Toggle}" Click="Changed"/>
+                            <StackPanel Style="{StaticResource RowText}">
+                                <TextBlock Style="{StaticResource RowTitle}" Text="Logs"/>
+                                <TextBlock Style="{StaticResource RowDesc}" Text="Roblox's old log files."/>
+                            </StackPanel>
+                        </DockPanel>
+                        <Border Height="1" Background="{StaticResource LineBrush}"/>
+                        <DockPanel Margin="18,12">
+                            <CheckBox x:Name="DownloadsToggle" DockPanel.Dock="Right" Style="{StaticResource Toggle}" Click="Changed"/>
+                            <StackPanel Style="{StaticResource RowText}">
+                                <TextBlock Style="{StaticResource RowTitle}" Text="Orbit downloads"/>
+                                <TextBlock Style="{StaticResource RowDesc}" Text="Roblox packages Orbit downloaded for updates."/>
+                            </StackPanel>
+                        </DockPanel>
+                        <Border Height="1" Background="{StaticResource LineBrush}"/>
+                        <DockPanel Margin="18,12">
+                            <CheckBox x:Name="VersionsToggle" DockPanel.Dock="Right" Style="{StaticResource Toggle}" Click="Changed"/>
+                            <StackPanel Style="{StaticResource RowText}">
+                                <TextBlock Style="{StaticResource RowTitle}" Text="Old Roblox versions"/>
+                                <TextBlock Style="{StaticResource RowDesc}" Text="Previous Roblox installs left over after an update."/>
+                            </StackPanel>
+                        </DockPanel>
+                        <Border Height="1" Background="{StaticResource LineBrush}"/>
+                        <DockPanel Margin="18,12">
+                            <Button DockPanel.Dock="Right" Style="{StaticResource PrimaryButton}" Content="Clean now" Click="CleanNow_Click"/>
+                            <TextBlock x:Name="CleanerStatus" Style="{StaticResource Crumb}" VerticalAlignment="Center" Text="LAST RUN: NEVER"/>
+                        </DockPanel>
+                    </StackPanel>
+                </Border>
+            </StackPanel>
+        </ScrollViewer>
+    </Grid>
+</UserControl>

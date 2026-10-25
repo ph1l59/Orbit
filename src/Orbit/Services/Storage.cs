@@ -21,6 +21,23 @@ public static class AppPaths
     public static string AccountsFile => Path.Combine(DataDir, "accounts.dat");
     public static string SettingsFile => Path.Combine(DataDir, "settings.json");
     public static string LocalAppData => Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
+
+    private static string Ensure(string dir)
+    {
+        Directory.CreateDirectory(dir);
+        return dir;
+    }
+
+    /// <summary>User mods. Files here mirror the Roblox folder structure.</summary>
+    public static string ModsDir => Ensure(Path.Combine(DataDir, "Modifications"));
+
+    /// <summary>Files for built-in presets (custom font, cursor).</summary>
+    public static string PresetsDir => Ensure(Path.Combine(DataDir, "Presets"));
+
+    /// <summary>Orbit's own Roblox installation (bootstrapper).</summary>
+    public static string VersionsDir => Ensure(Path.Combine(LocalAppData, "Orbit", "Versions"));
+
+    public static string DownloadsDir => Ensure(Path.Combine(LocalAppData, "Orbit", "Downloads"));
 }
 
 /// <summary>
@@ -49,8 +66,8 @@ public static class AccountStore
             // Never overwrite a file we could not read - keep a copy so nothing gets lost.
             var backup = path + ".unreadable-" + DateTime.Now.ToString("yyyyMMdd-HHmmss");
             try { File.Copy(path, backup, true); } catch { /* ignore */ }
-            error = "Die Account-Datei konnte nicht gelesen werden (" + ex.Message + "). " +
-                    "Eine Sicherung liegt unter: " + backup;
+            error = "Your account file could not be read (" + ex.Message + "). " +
+                    "A backup copy was saved to: " + backup;
             return new List<Account>();
         }
     }

@@ -19,7 +19,7 @@ public static class MultiInstance
 
         if (RobloxPaths.IsRobloxRunning())
         {
-            error = "Bitte schließe zuerst alle Roblox-Fenster und aktiviere Multi-Roblox dann erneut.";
+            error = "Close all Roblox windows first, then turn on Multi-Roblox again.";
             return false;
         }
 
@@ -32,8 +32,8 @@ public static class MultiInstance
         catch (Exception ex)
         {
             Disable();
-            error = "Multi-Roblox konnte nicht aktiviert werden: " + ex.Message +
-                    " Schließe alle Roblox-Prozesse (auch im Hintergrund) und versuche es erneut.";
+            error = "Multi-Roblox could not be turned on: " + ex.Message +
+                    " Close every Roblox process (also in the background) and try again.";
             return false;
         }
     }

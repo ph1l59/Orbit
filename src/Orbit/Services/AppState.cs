@@ -28,7 +28,7 @@ public static class AppState
         try { AccountStore.Save(Accounts); }
         catch (Exception ex)
         {
-            System.Windows.MessageBox.Show("Accounts konnten nicht gespeichert werden: " + ex.Message, "Orbit");
+            System.Windows.MessageBox.Show("Accounts could not be saved: " + ex.Message, "Orbit");
         }
     }
 

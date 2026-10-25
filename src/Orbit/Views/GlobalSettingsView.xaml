@@ -1,0 +1,128 @@
+<UserControl x:Class="Orbit.Views.GlobalSettingsView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:local="clr-namespace:Orbit.Views">
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <StackPanel Margin="0,0,0,8">
+            <TextBlock Text="ORBIT / 02 / GLOBAL SETTINGS" Style="{StaticResource Crumb}"/>
+            <TextBlock Style="{StaticResource PageTitle}">
+                <Run Text="Global"/> <Run Text="settings" Foreground="{StaticResource AccentTextBrush}"/>
+            </TextBlock>
+            <TextBlock Style="{StaticResource PageDesc}" Text="Roblox's in-game settings, edited from here. Saved straight into Roblox's settings file."/>
+        </StackPanel>
+
+        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" Padding="0,0,10,0">
+            <StackPanel>
+                <Border x:Name="MissingBanner" Background="{StaticResource WarnSoftBrush}" BorderBrush="#4A3A1A" BorderThickness="1"
+                        CornerRadius="10" Padding="16,12" Margin="0,14,0,0" Visibility="Collapsed">
+                    <TextBlock Style="{StaticResource RowDesc}" Foreground="#E8C990" Margin="0"
+                               Text="Roblox's settings file wasn't found. Start Roblox once, close it, then come back here."/>
+                </Border>
+
+                <StackPanel x:Name="Form">
+                    <Border Style="{StaticResource Row}" Tag="Set as read-only|lock global settings prevent override" Margin="0,16,0,6">
+                        <DockPanel>
+                            <CheckBox x:Name="ReadOnlyToggle" DockPanel.Dock="Right" Style="{StaticResource Toggle}"/>
+                            <StackPanel Style="{StaticResource RowText}">
+                                <TextBlock Style="{StaticResource RowTitle}" Text="Set as read-only"/>
+                                <TextBlock Style="{StaticResource RowDesc}" Text="Prevents Roblox from overwriting these settings. Changes made in-game won't be saved while this is on."/>
+                            </StackPanel>
+                        </DockPanel>
+                    </Border>
+
+                    <TextBlock Text="// RENDERING AND GRAPHICS" Style="{StaticResource Section}"/>
+
+                    <Border Style="{StaticResource Row}" Tag="Graphics quality|graphics level slider">
+                        <DockPanel>
+                            <local:NumberSlider x:Name="QualitySlider" DockPanel.Dock="Right" Minimum="0" Maximum="10" Step="1"/>
+                            <StackPanel Style="{StaticResource RowText}">
+                                <TextBlock Style="{StaticResource RowTitle}" Text="Graphics quality"/>
+                                <TextBlock Style="{StaticResource RowDesc}" Text="The in-game graphics slider. 0 = automatic, 1 = lowest, 10 = highest."/>
+                            </StackPanel>
+                        </DockPanel>
+                    </Border>
+
+                    <Border Style="{StaticResource Row}" Tag="Framerate limit|fps cap unlock frame rate">
+                        <DockPanel>
+                            <TextBox x:Name="FpsBox" DockPanel.Dock="Right" Width="120" Style="{StaticResource NumberBox}"
+                                     local:Numeric.IntegerOnly="True" Tag="FPS"/>
+                            <StackPanel Style="{StaticResource RowText}">
+                                <TextBlock Style="{StaticResource RowTitle}" Text="Framerate limit"/>
+                                <TextBlock Style="{StaticResource RowDesc}" Text="Any whole number. Going above 240 FPS is not recommended – it can cause physics and ping issues."/>
+                            </StackPanel>
+                        </DockPanel>
+                    </Border>
+
+                    <TextBlock Text="// USER INTERFACE AND LAYOUT" Style="{StaticResource Section}"/>
+
+                    <Border Style="{StaticResource Row}" Tag="Transparency|ui transparency background">
+                        <DockPanel>
+                            <local:NumberSlider x:Name="TransparencySlider" DockPanel.Dock="Right" Minimum="0" Maximum="1" Step="0.1"/>
+                            <StackPanel Style="{StaticResource RowText}">
+                                <TextBlock Style="{StaticResource RowTitle}" Text="Transparency"/>
+                                <TextBlock Style="{StaticResource RowDesc}" Text="Background transparency of Roblox's UI. 1 = default, 0 = solid."/>
+                            </StackPanel>
+                        </DockPanel>
+                    </Border>
+
+                    <Border Style="{StaticResource Row}" Tag="Reduced motion|animation escape menu">
+                        <DockPanel>
+                            <CheckBox x:Name="MotionToggle" DockPanel.Dock="Right" Style="{StaticResource Toggle}"/>
+                            <StackPanel Style="{StaticResource RowText}">
+                                <TextBlock Style="{StaticResource RowTitle}" Text="Reduced motion"/>
+                                <TextBlock Style="{StaticResource RowDesc}" Text="Removes animations like the one on the escape menu."/>
+                            </StackPanel>
+                        </DockPanel>
+                    </Border>
+
+                    <Border Style="{StaticResource Row}" Tag="Font size|text size bigger">
+                        <DockPanel>
+                            <ComboBox x:Name="FontCombo" DockPanel.Dock="Right"/>
+                            <StackPanel Style="{StaticResource RowText}">
+                                <TextBlock Style="{StaticResource RowTitle}" Text="Font size"/>
+                                <TextBlock Style="{StaticResource RowDesc}" Text="How large text in Roblox's menus appears."/>
+                            </StackPanel>
+                        </DockPanel>
+                    </Border>
+
+                    <TextBlock Text="// OTHER" Style="{StaticResource Section}"/>
+
+                    <Border Style="{StaticResource Row}" Tag="Mouse sensitivity|camera speed">
+                        <DockPanel>
+                            <local:NumberSlider x:Name="SensitivitySlider" DockPanel.Dock="Right" Minimum="0.1" Maximum="4" Step="0.05"/>
+                            <StackPanel Style="{StaticResource RowText}">
+                                <TextBlock Style="{StaticResource RowTitle}" Text="Mouse sensitivity"/>
+                                <TextBlock Style="{StaticResource RowDesc}" Text="How fast the camera moves in-game."/>
+                            </StackPanel>
+                        </DockPanel>
+                    </Border>
+
+                    <Border Style="{StaticResource Row}" Tag="VR enabled|virtual reality">
+                        <DockPanel>
+                            <CheckBox x:Name="VrToggle" DockPanel.Dock="Right" Style="{StaticResource Toggle}"/>
+                            <StackPanel Style="{StaticResource RowText}">
+                                <TextBlock Style="{StaticResource RowTitle}" Text="VR enabled"/>
+                                <TextBlock Style="{StaticResource RowDesc}" Text="Lets Roblox use a connected VR headset."/>
+                            </StackPanel>
+                        </DockPanel>
+                    </Border>
+                </StackPanel>
+            </StackPanel>
+        </ScrollViewer>
+
+        <Border Grid.Row="2" Style="{StaticResource Panel}" Margin="0,14,0,0" Padding="16,12">
+            <DockPanel>
+                <Button x:Name="SaveButton" DockPanel.Dock="Right" Style="{StaticResource SolidButton}" Content="Save" MinWidth="130" Click="Save_Click"/>
+                <Button DockPanel.Dock="Right" Content="Reload" Margin="0,0,8,0" Click="Reload_Click"/>
+                <TextBlock x:Name="StatusText" Style="{StaticResource RowDesc}" Margin="0,0,16,0" VerticalAlignment="Center"
+                           Text="Changes apply the next time Roblox starts."/>
+            </DockPanel>
+        </Border>
+    </Grid>
+</UserControl>
