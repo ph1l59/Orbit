@@ -79,10 +79,10 @@
 
                 <Border Style="{StaticResource Row}" Tag="Clicks per second|cps speed rate interval">
                     <DockPanel>
-                        <local:NumberSlider x:Name="CpsSlider" DockPanel.Dock="Right" Minimum="1" Maximum="1000" Step="1" ValueChanged="Changed"/>
+                        <local:NumberSlider x:Name="CpsSlider" DockPanel.Dock="Right" Minimum="1" Maximum="100" Step="1" ValueChanged="Changed"/>
                         <StackPanel Style="{StaticResource RowText}">
                             <TextBlock Style="{StaticResource RowTitle}" Text="Clicks per second"/>
-                            <TextBlock Style="{StaticResource RowDesc}" Text="1 to 1000. Type the exact number into the box for precise values."/>
+                            <TextBlock Style="{StaticResource RowDesc}" Text="1 to 100. Type the exact number into the box for precise values."/>
                         </StackPanel>
                     </DockPanel>
                 </Border>

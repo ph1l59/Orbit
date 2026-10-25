@@ -5,7 +5,7 @@ using Orbit.Models;
 namespace Orbit.Services;
 
 /// <summary>
-/// High-precision auto clicker (up to ~1000 clicks per second).
+/// High-precision auto clicker (up to 100 clicks per second).
 /// Clicks where the mouse is or at a fixed spot on the screen.
 /// </summary>
 public sealed class AutoClicker
@@ -32,7 +32,7 @@ public sealed class AutoClicker
         _stop = false;
 
         var options = new Options(
-            Math.Clamp(s.ClickerCps, 1, 1000),
+            Math.Clamp(s.ClickerCps, 1, 100),
             s.ClickerButton,
             s.ClickerRobloxOnly,
             s.ClickerTarget,

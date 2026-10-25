@@ -36,7 +36,7 @@ public partial class AutoClickerView : UserControl, IPage
         _loading = true;
         var s = AppState.Settings;
         if (s.ClickerTarget is not ("cursor" or "fixed")) s.ClickerTarget = "cursor";
-        CpsSlider.Value = Math.Clamp(s.ClickerCps, 1, 1000);
+        CpsSlider.Value = Math.Clamp(s.ClickerCps, 1, 100);
         Option.Select(ButtonCombo, s.ClickerButton);
         Option.Select(ModeCombo, s.ClickerMode);
         DelaySlider.Value = Math.Clamp(s.ClickerStartDelay, 0, 10);

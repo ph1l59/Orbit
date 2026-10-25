@@ -29,7 +29,7 @@
 | **Mods** | Custom cursor, custom font and a mods folder that mirrors Roblox's files. Originals get backed up. |
 | **Bootstrapper** | Orbit installs and updates its own copy of Roblox and can take over the Play button on the website. Includes a cleaner for cache, logs and old versions. |
 | **Integrations** | Discord Rich Presence, server location, activity tracking and programs that start and stop with Roblox. |
-| **Auto clicker** | 1 to 1000 CPS, hotkey (toggle or hold), click limit, Roblox only mode. |
+| **Auto clicker** | 1 to 100 CPS, hotkey (toggle or hold), click limit, Roblox only mode. |
 | **Updates** | When a new version is out, a notice slides in. One click downloads it, checks it and restarts Orbit. |
 
 Can't find a setting? There's a search bar in the sidebar.
