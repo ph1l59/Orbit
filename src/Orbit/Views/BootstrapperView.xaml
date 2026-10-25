@@ -55,6 +55,16 @@
                     </DockPanel>
                 </Border>
 
+                <Border Style="{StaticResource Row}" Tag="Use the Orbit icon on Roblox windows|taskbar icon logo">
+                    <DockPanel>
+                        <CheckBox x:Name="WindowIconToggle" DockPanel.Dock="Right" Style="{StaticResource Toggle}" Click="WindowIcon_Click"/>
+                        <StackPanel Style="{StaticResource RowText}">
+                            <TextBlock Style="{StaticResource RowTitle}" Text="Use the Orbit icon on Roblox windows"/>
+                            <TextBlock Style="{StaticResource RowDesc}" Text="Roblox windows launched from Orbit show the Orbit icon in the title bar and taskbar."/>
+                        </StackPanel>
+                    </DockPanel>
+                </Border>
+
                 <Border Style="{StaticResource Row}" Tag="Prompt to confirm when launching another Roblox instance|confirm close">
                     <DockPanel>
                         <CheckBox x:Name="ConfirmToggle" DockPanel.Dock="Right" Style="{StaticResource Toggle}" Click="Changed"/>

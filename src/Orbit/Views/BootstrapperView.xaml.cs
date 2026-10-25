@@ -45,6 +45,14 @@ public partial class BootstrapperView : UserControl, IPage
         if (!AppState.Settings.ShowAccountNameOnWindows) WindowTitles.RestoreAll();
     }
 
+    private void WindowIcon_Click(object sender, RoutedEventArgs e)
+    {
+        if (_loading) return;
+        AppState.Settings.UseOrbitIconOnWindows = WindowIconToggle.IsChecked == true;
+        AppState.SaveSettings();
+        if (!AppState.Settings.UseOrbitIconOnWindows) WindowTitles.RestoreIcons();
+    }
+
     private int UpdateRunningText()
     {
         var count = RobloxPaths.RunningCount();
@@ -84,6 +92,7 @@ public partial class BootstrapperView : UserControl, IPage
         MultiToggle.IsChecked = MultiInstance.IsActive;
         ConfirmToggle.IsChecked = s.ConfirmLaunchWhenRunning;
         WindowNameToggle.IsChecked = s.ShowAccountNameOnWindows;
+        WindowIconToggle.IsChecked = s.UseOrbitIconOnWindows;
         Option.Select(DelayCombo, s.LaunchDelaySeconds);
         ManagedToggle.IsChecked = s.UseManagedInstall;
         DefaultToggle.IsChecked = s.DefaultLauncher;

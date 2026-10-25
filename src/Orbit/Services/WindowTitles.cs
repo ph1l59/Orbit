@@ -56,7 +56,7 @@ public static class WindowTitles
     {
         foreach (var t in Windows)
             foreach (var hwnd in WindowsOf(t.Pid))
-                if (GetTitle(hwnd) != DefaultTitle) SetWindowText(hwnd, DefaultTitle);
+                if (GetTitle(hwnd) != DefaultTitle) SetTitle(hwnd, DefaultTitle);
     }
 
     private static void Tick()
@@ -92,19 +92,66 @@ public static class WindowTitles
         }
 
         if (Windows.Count != before) Save();
-        if (!AppState.Settings.ShowAccountNameOnWindows) return;
+
+        var s = AppState.Settings;
+        if (!s.ShowAccountNameOnWindows && !s.UseOrbitIconOnWindows) return;
+        if (s.UseOrbitIconOnWindows) LoadIcons();
 
         foreach (var t in Windows)
         {
             var account = AppState.Accounts.FirstOrDefault(a => a.UserId == t.UserId);
-            if (account == null) continue;
-            var title = account.Title;
-            if (string.IsNullOrWhiteSpace(title)) title = account.Username;
+            var title = account == null ? null : string.IsNullOrWhiteSpace(account.Title) ? account.Username : account.Title;
 
-            // Roblox sets its title again now and then (e.g. after a teleport), so keep re-applying it.
+            // Roblox sets its title/icon again now and then (e.g. after a teleport), so keep re-applying them.
             foreach (var hwnd in WindowsOf(t.Pid))
-                if (GetTitle(hwnd) != title) SetWindowText(hwnd, title);
+            {
+                if (s.ShowAccountNameOnWindows && title != null && GetTitle(hwnd) != title)
+                    SetTitle(hwnd, title);
+
+                if (s.UseOrbitIconOnWindows && _smallIcon != IntPtr.Zero)
+                {
+                    if (Send(hwnd, WM_GETICON, ICON_SMALL, IntPtr.Zero) != _smallIcon) Send(hwnd, WM_SETICON, ICON_SMALL, _smallIcon);
+                    if (Send(hwnd, WM_GETICON, ICON_BIG, IntPtr.Zero) != _bigIcon) Send(hwnd, WM_SETICON, ICON_BIG, _bigIcon);
+                }
+            }
         }
+    }
+
+    // ---------- Icon ----------
+
+    private static IntPtr _smallIcon, _bigIcon;
+    private static bool _iconsTried;
+
+    /// <summary>Loads Assets\roblox-window.ico (16 px for the title bar/taskbar, 32 px for Alt+Tab).</summary>
+    private static void LoadIcons()
+    {
+        if (_iconsTried) return;
+        _iconsTried = true;
+        try
+        {
+            var file = Path.Combine(AppPaths.DataDir, "roblox-window.ico");
+            var resource = System.Windows.Application.GetResourceStream(new Uri("pack://application:,,,/Assets/roblox-window.ico"));
+            if (resource == null) return;
+            using (var input = resource.Stream)
+            using (var output = File.Create(file))
+                input.CopyTo(output);
+
+            _smallIcon = LoadImage(IntPtr.Zero, file, IMAGE_ICON, 16, 16, LR_LOADFROMFILE);
+            _bigIcon = LoadImage(IntPtr.Zero, file, IMAGE_ICON, 32, 32, LR_LOADFROMFILE);
+        }
+        catch { /* cosmetic only */ }
+    }
+
+    /// <summary>The icon setting was switched off: give the windows their Roblox icon back.</summary>
+    public static void RestoreIcons()
+    {
+        foreach (var t in Windows)
+            foreach (var hwnd in WindowsOf(t.Pid))
+            {
+                // Removing the window's own icon makes Windows fall back to Roblox's built-in one.
+                Send(hwnd, WM_SETICON, ICON_SMALL, IntPtr.Zero);
+                Send(hwnd, WM_SETICON, ICON_BIG, IntPtr.Zero);
+            }
     }
 
     private static void Add(Tracked t)
@@ -176,6 +223,24 @@ public static class WindowTitles
         return sb.ToString();
     }
 
+    /// <summary>Sends a message without hanging Orbit if the Roblox window is busy.</summary>
+    private static IntPtr Send(IntPtr hwnd, uint msg, IntPtr wParam, IntPtr lParam)
+    {
+        SendMessageTimeout(hwnd, msg, wParam, lParam, SMTO_ABORTIFHUNG, 500, out var result);
+        return result;
+    }
+
+    private static void SetTitle(IntPtr hwnd, string title)
+    {
+        var text = Marshal.StringToHGlobalUni(title);
+        try { SendMessageTimeout(hwnd, WM_SETTEXT, IntPtr.Zero, text, SMTO_ABORTIFHUNG, 500, out _); }
+        finally { Marshal.FreeHGlobal(text); }
+    }
+
+    private const uint WM_SETTEXT = 0x000C, WM_GETICON = 0x007F, WM_SETICON = 0x0080;
+    private static readonly IntPtr ICON_SMALL = 0, ICON_BIG = 1;
+    private const uint SMTO_ABORTIFHUNG = 0x0002;
+    private const uint IMAGE_ICON = 1, LR_LOADFROMFILE = 0x0010;
     private const uint GW_OWNER = 4;
     private delegate bool EnumWindowsProc(IntPtr hwnd, IntPtr lParam);
 
@@ -185,5 +250,8 @@ public static class WindowTitles
     [DllImport("user32.dll")] private static extern IntPtr GetWindow(IntPtr hwnd, uint cmd);
     [DllImport("user32.dll", CharSet = CharSet.Unicode)] private static extern int GetWindowTextLength(IntPtr hwnd);
     [DllImport("user32.dll", CharSet = CharSet.Unicode)] private static extern int GetWindowText(IntPtr hwnd, StringBuilder text, int max);
-    [DllImport("user32.dll", CharSet = CharSet.Unicode)] private static extern bool SetWindowText(IntPtr hwnd, string text);
+    [DllImport("user32.dll", CharSet = CharSet.Unicode)]
+    private static extern IntPtr SendMessageTimeout(IntPtr hwnd, uint msg, IntPtr wParam, IntPtr lParam, uint flags, uint timeout, out IntPtr result);
+    [DllImport("user32.dll", CharSet = CharSet.Unicode)]
+    private static extern IntPtr LoadImage(IntPtr hInst, string name, uint type, int cx, int cy, uint load);
 }

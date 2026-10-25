@@ -18,6 +18,8 @@ public sealed class AppSettings
     public string LastServer { get; set; } = "";
     /// <summary>Show the account's alias/display name instead of "Roblox" on windows Orbit launched.</summary>
     public bool ShowAccountNameOnWindows { get; set; } = true;
+    /// <summary>Give Roblox windows Orbit launched the icon from Assets\roblox-window.ico.</summary>
+    public bool UseOrbitIconOnWindows { get; set; } = true;
 
     // ===== Updates =====
     /// <summary>Look for a new Orbit release on GitHub at start (and every few hours).</summary>

@@ -23,7 +23,7 @@
 | **Accounts** | Log in on the real roblox.com page. Orbit only keeps the login cookie, encrypted with Windows DPAPI. Every account shows its avatar and whether it's online. |
 | **Create accounts** | Set birthday and gender once, paste a list of `Username:Password`, and Orbit fills out the sign up page for each one. You click Sign Up yourself. |
 | **Joining** | Place ID, game link, private server link, share link, share code or Job ID. Orbit figures it out. |
-| **Multi-Roblox** | Launch several accounts in a row and keep them all open. Each window shows the account name in the taskbar, and one button closes them all. |
+| **Multi-Roblox** | Launch several accounts in a row and keep them all open. Each window shows the account name and the Orbit icon in the taskbar, and one button closes them all. |
 | **Game settings** | Graphics quality, FPS limit, transparency, font size, mouse sensitivity and more. Can be locked so Roblox doesn't reset them. |
 | **FastFlags** | Presets for mesh detail, MSAA, textures, rendering mode and more, plus a full editor with JSON import and export. |
 | **Mods** | Custom cursor, custom font and a mods folder that mirrors Roblox's files. Originals get backed up. |
