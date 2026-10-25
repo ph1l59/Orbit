@@ -35,8 +35,6 @@ public sealed class AutoClicker
         var options = new Options(
             Math.Clamp(s.ClickerCps, 1, 1000),
             s.ClickerButton,
-            s.ClickerDouble,
-            Math.Max(0, s.ClickerLimit),
             s.ClickerRobloxOnly,
             s.ClickerTarget,
             s.ClickerX,
@@ -54,7 +52,7 @@ public sealed class AutoClicker
 
     public void Stop() => _stop = true;
 
-    private sealed record Options(int Cps, string Button, bool Double, int Limit, bool RobloxOnly, string Target, int X, int Y);
+    private sealed record Options(int Cps, string Button, bool RobloxOnly, string Target, int X, int Y);
 
     private void Run(Options o)
     {
@@ -64,14 +62,11 @@ public sealed class AutoClicker
             var interval = Stopwatch.Frequency / (double)o.Cps;
             var watch = Stopwatch.StartNew();
             double next = 0;
-            long clicks = 0;
             var windows = new List<IntPtr>();
             long windowsCheckedAt = -10_000;
 
             while (!_stop)
             {
-                if (o.Limit > 0 && clicks >= o.Limit) break;
-
                 if (o.Target == "background")
                 {
                     // Refresh the list of Roblox windows once a second.
@@ -81,18 +76,12 @@ public sealed class AutoClicker
                         windowsCheckedAt = Environment.TickCount64;
                     }
                     foreach (var hwnd in windows)
-                    {
                         Native.PostClick(hwnd, o.Button, o.X, o.Y);
-                        if (o.Double) Native.PostClick(hwnd, o.Button, o.X, o.Y);
-                    }
-                    clicks++;
                 }
                 else if (!o.RobloxOnly || Native.IsRobloxForeground())
                 {
                     if (o.Target == "fixed") Native.SetCursorPos(o.X, o.Y);
                     Native.Click(o.Button);
-                    if (o.Double) Native.Click(o.Button);
-                    clicks++;
                 }
 
                 next += interval;

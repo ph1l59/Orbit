@@ -70,6 +70,7 @@ public static class ClickerHotkey
     /// <summary>Human readable name, e.g. "Ctrl + F6" or "Mouse 4".</summary>
     public static string Describe(int vk, int mods)
     {
+        if (vk == 0) return "Not set";
         var parts = new List<string>();
         if ((mods & ModCtrl) != 0) parts.Add("Ctrl");
         if ((mods & ModAlt) != 0) parts.Add("Alt");

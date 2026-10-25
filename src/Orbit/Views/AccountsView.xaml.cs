@@ -39,7 +39,8 @@ public partial class AccountsView : UserControl
 
         _previewTimer.Tick += async (_, _) => { _previewTimer.Stop(); await UpdateGamePreviewAsync(); };
         _followTimer.Tick += async (_, _) => { _followTimer.Stop(); await UpdateFollowPreviewAsync(); };
-        _previewTimer.Start();
+        ShowNoGame();
+        Join_TextChanged(this, null!);
     }
 
     private Window Owner => Window.GetWindow(this)!;
@@ -345,53 +346,204 @@ public partial class AccountsView : UserControl
         foreach (var account in selected.Take(4)) new BrowserWindow(account).Show();
     }
 
+    // ---------- Right-click menu ----------
+
+    private void Item_RightButtonDown(object sender, MouseButtonEventArgs e)
+    {
+        // Don't change the selection – only show the menu for this account.
+        e.Handled = true;
+        if (sender is not ListBoxItem item || item.DataContext is not Account account) return;
+
+        var menu = new ContextMenu { PlacementTarget = item, Placement = System.Windows.Controls.Primitives.PlacementMode.MousePoint };
+        menu.Items.Add(MenuHeader(account));
+        menu.Items.Add(new Separator());
+        menu.Items.Add(MakeMenuItem("\uE774", "Open browser (logged in)", Menu_Browser_Click));
+        menu.Items.Add(MakeMenuItem("\uE70F", "Set alias…", Menu_Alias_Click));
+        menu.Items.Add(MakeMenuItem("\uE77B", "Open profile page", Menu_Profile_Click));
+        menu.Items.Add(MakeMenuItem("\uE72E", "Check login", Menu_Check_Click));
+        menu.Items.Add(new Separator());
+        var remove = MakeMenuItem("\uE74D", "Remove", Menu_Remove_Click);
+        remove.Foreground = (Brush)FindResource("DangerBrush");
+        menu.Items.Add(remove);
+        menu.IsOpen = true;
+    }
+
+    private static MenuItem MakeMenuItem(string glyph, string text, RoutedEventHandler click)
+    {
+        var row = new StackPanel { Orientation = Orientation.Horizontal };
+        row.Children.Add(new TextBlock
+        {
+            Text = glyph, FontFamily = (FontFamily)Application.Current.FindResource("IconFont"), FontSize = 13,
+            Width = 22, VerticalAlignment = VerticalAlignment.Center,
+        });
+        row.Children.Add(new TextBlock { Text = text, VerticalAlignment = VerticalAlignment.Center });
+        var item = new MenuItem { Header = row };
+        item.Click += click;
+        return item;
+    }
+
+    private MenuItem MenuHeader(Account account)
+    {
+        var avatar = new Grid { Width = 28, Height = 28, Margin = new Thickness(0, 0, 10, 0) };
+        avatar.Children.Add(new System.Windows.Shapes.Ellipse { Fill = (Brush)FindResource("Raised2Brush") });
+        if (ImageFrom(account.AvatarUrl) is { } img) avatar.Children.Add(new System.Windows.Shapes.Ellipse { Fill = img });
+
+        var text = new StackPanel { VerticalAlignment = VerticalAlignment.Center };
+        text.Children.Add(new TextBlock { Text = account.Title, FontSize = 12.5, FontWeight = FontWeights.SemiBold });
+        text.Children.Add(new TextBlock { Text = "@" + account.Username, Style = (Style)FindResource("Crumb") });
+
+        var row = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(0, 2, 0, 2) };
+        row.Children.Add(avatar);
+        row.Children.Add(text);
+        return new MenuItem { Header = row, IsHitTestVisible = false, Focusable = false };
+    }
+
     // ---------- Drag to reorder ----------
 
     private Account? _dragging;
     private ListBoxItem? _dragContainer;
+    private double _grabOffset;
+    private Account? _dropBefore;   // insert before this account (null = at the end)
+    private bool _dropValid;
+
+    private IEnumerable<(Account Account, ListBoxItem Container, double Top)> VisibleCards()
+    {
+        foreach (var item in _view.Cast<Account>())
+        {
+            if (AccountList.ItemContainerGenerator.ContainerFromItem(item) is not ListBoxItem c || !c.IsVisible) continue;
+            yield return (item, c, c.TranslatePoint(new Point(0, 0), DragLayer).Y);
+        }
+    }
 
     private void Grip_MouseDown(object sender, MouseButtonEventArgs e)
     {
-        if (sender is not FrameworkElement grip || grip.DataContext is not Account account) return;
-        _dragging = account;
-        _dragContainer = AccountList.ItemContainerGenerator.ContainerFromItem(account) as ListBoxItem;
-        if (_dragContainer != null) _dragContainer.Opacity = 0.55;
-        grip.CaptureMouse();
         e.Handled = true; // don't toggle the selection
+        if (sender is not FrameworkElement grip || grip.DataContext is not Account account) return;
+        if (AccountList.ItemContainerGenerator.ContainerFromItem(account) is not ListBoxItem container) return;
+
+        _dragging = account;
+        _dragContainer = container;
+        var top = container.TranslatePoint(new Point(0, 0), DragLayer).Y;
+        _grabOffset = e.GetPosition(DragLayer).Y - top;
+
+        // Snapshot of the card that follows the mouse.
+        var dpi = VisualTreeHelper.GetDpi(container);
+        var bitmap = new RenderTargetBitmap(
+            Math.Max(1, (int)Math.Ceiling(container.ActualWidth * dpi.DpiScaleX)),
+            Math.Max(1, (int)Math.Ceiling(container.ActualHeight * dpi.DpiScaleY)),
+            dpi.PixelsPerInchX, dpi.PixelsPerInchY, PixelFormats.Pbgra32);
+        bitmap.Render(container);
+
+        DragGhost.Width = container.ActualWidth;
+        DragGhost.Height = container.ActualHeight - container.Margin.Bottom;
+        DragGhost.Background = new ImageBrush(bitmap) { Stretch = Stretch.None, AlignmentX = AlignmentX.Left, AlignmentY = AlignmentY.Top };
+        Canvas.SetLeft(DragGhost, container.TranslatePoint(new Point(0, 0), DragLayer).X);
+        Canvas.SetTop(DragGhost, top);
+        DragGhost.Visibility = Visibility.Visible;
+
+        container.Opacity = 0.25;
+        grip.CaptureMouse();
     }
 
     private void Grip_MouseMove(object sender, MouseEventArgs e)
     {
-        if (_dragging == null || e.LeftButton != MouseButtonState.Pressed) return;
-        var y = e.GetPosition(AccountList).Y;
-
-        foreach (var item in _view.Cast<Account>())
+        if (_dragging == null || _dragContainer == null) return;
+        if (e.LeftButton != MouseButtonState.Pressed)
         {
-            if (item == _dragging) continue;
-            if (AccountList.ItemContainerGenerator.ContainerFromItem(item) is not ListBoxItem container) continue;
+            EndDrag(commit: false);
+            return;
+        }
 
-            var top = container.TranslatePoint(new Point(0, 0), AccountList).Y;
-            if (y < top || y > top + container.ActualHeight) continue;
+        var y = e.GetPosition(DragLayer).Y;
+        Canvas.SetTop(DragGhost, y - _grabOffset);
 
-            var from = AppState.Accounts.IndexOf(_dragging);
-            var to = AppState.Accounts.IndexOf(item);
-            var middle = top + container.ActualHeight / 2;
-            // Only swap once the pointer passes the middle of the neighbouring card (prevents flicker).
-            if ((to > from && y > middle) || (to < from && y < middle))
-                AppState.Accounts.Move(from, to);
-            break;
+        // Find the gap the pointer is closest to.
+        var cards = VisibleCards().ToList();
+        _dropBefore = null;
+        double lineY = 0;
+        var found = false;
+        foreach (var (account, container, top) in cards)
+        {
+            if (y < top + container.ActualHeight / 2)
+            {
+                _dropBefore = account;
+                lineY = top - 5;
+                found = true;
+                break;
+            }
+        }
+        if (!found && cards.Count > 0)
+        {
+            var last = cards[^1];
+            lineY = last.Top + last.Container.ActualHeight - 3;
+        }
+
+        // Dropping right before or after itself changes nothing – hide the indicator then.
+        var from = AppState.Accounts.IndexOf(_dragging);
+        var target = _dropBefore == null ? AppState.Accounts.Count : AppState.Accounts.IndexOf(_dropBefore);
+        _dropValid = target != from && target != from + 1;
+
+        DropIndicator.Visibility = _dropValid ? Visibility.Visible : Visibility.Collapsed;
+        Canvas.SetLeft(DropIndicator, 4);
+        DropIndicator.Width = Math.Max(0, AccountList.ActualWidth - 20);
+        Canvas.SetTop(DropIndicator, lineY);
+
+        // Scroll when dragging near the edges.
+        if (FindScrollViewer(AccountList) is { } scroller)
+        {
+            if (y < 30) scroller.ScrollToVerticalOffset(scroller.VerticalOffset - 8);
+            else if (y > DragLayer.ActualHeight - 30) scroller.ScrollToVerticalOffset(scroller.VerticalOffset + 8);
         }
     }
 
     private void Grip_MouseUp(object sender, MouseButtonEventArgs e)
     {
         if (_dragging == null) return;
-        (sender as UIElement)?.ReleaseMouseCapture();
-        if (_dragContainer != null) _dragContainer.Opacity = 1;
+        e.Handled = true;
+        EndDrag(commit: true);
+    }
+
+    private void Grip_LostCapture(object sender, MouseEventArgs e)
+    {
+        if (_dragging != null) EndDrag(commit: false);
+    }
+
+    private void EndDrag(bool commit)
+    {
+        var dragging = _dragging;
+        var container = _dragContainer;
         _dragging = null;
         _dragContainer = null;
+
+        if (container != null)
+        {
+            container.Opacity = 1;
+            Mouse.Capture(null);
+        }
+        DragGhost.Visibility = Visibility.Collapsed;
+        DragGhost.Background = null;
+        DropIndicator.Visibility = Visibility.Collapsed;
+
+        if (!commit || dragging == null || !_dropValid) return;
+
+        var from = AppState.Accounts.IndexOf(dragging);
+        var to = _dropBefore == null ? AppState.Accounts.Count - 1 : AppState.Accounts.IndexOf(_dropBefore);
+        if (_dropBefore != null && from < to) to--;
+        if (from < 0 || to < 0 || from == to) return;
+
+        AppState.Accounts.Move(from, to);
         AppState.SaveAccounts();
-        e.Handled = true;
+    }
+
+    private static ScrollViewer? FindScrollViewer(DependencyObject root)
+    {
+        for (var i = 0; i < VisualTreeHelper.GetChildrenCount(root); i++)
+        {
+            var child = VisualTreeHelper.GetChild(root, i);
+            if (child is ScrollViewer sv) return sv;
+            if (FindScrollViewer(child) is { } found) return found;
+        }
+        return null;
     }
 
     // ---------- Join mode & previews ----------
@@ -407,7 +559,20 @@ public partial class AccountsView : UserControl
 
     private void Join_TextChanged(object sender, TextChangedEventArgs e)
     {
+        if (GameCard == null) return; // during InitializeComponent
+
+        // Update right away: show "no game" instantly, look the game up after a very short pause.
+        var target = JoinTarget.Parse(PlaceBox.Text, ServerBox.Text, out _);
+        if (target == null)
+        {
+            _previewVersion++;
+            _previewTimer.Stop();
+            ShowNoGame();
+            return;
+        }
+        GameMeta.Text = "LOADING…";
         _previewTimer.Stop();
+        _previewTimer.Interval = TimeSpan.FromMilliseconds(150);
         _previewTimer.Start();
     }
 
@@ -435,13 +600,24 @@ public partial class AccountsView : UserControl
         }
     }
 
+    private void ShowNoGame(string title = "No game selected", string detail = "PASTE A PLACE ID OR GAME LINK")
+    {
+        GameName.Text = title;
+        GameName.Foreground = (Brush)FindResource("DimBrush");
+        GameCreator.Text = "";
+        GameCreator.Visibility = Visibility.Collapsed;
+        GameMeta.Text = detail;
+        GameImage.Background = null;
+        GameImageIcon.Visibility = Visibility.Visible;
+    }
+
     private async Task UpdateGamePreviewAsync()
     {
         var version = ++_previewVersion;
         var target = JoinTarget.Parse(PlaceBox.Text, ServerBox.Text, out _);
         if (target == null)
         {
-            GameCard.Visibility = Visibility.Collapsed;
+            ShowNoGame();
             return;
         }
 
@@ -450,10 +626,11 @@ public partial class AccountsView : UserControl
         {
             try { placeId = (await RobloxApi.ResolveServerShareLinkAsync(account.Cookie, target.ShareCode)).PlaceId; }
             catch { /* keep the place id from the first box */ }
+            if (version != _previewVersion) return;
         }
-        if (placeId <= 0 || version != _previewVersion)
+        if (placeId <= 0)
         {
-            if (placeId <= 0) GameCard.Visibility = Visibility.Collapsed;
+            ShowNoGame("Private server", "ADD AN ACCOUNT TO SEE WHICH GAME");
             return;
         }
 
@@ -461,17 +638,20 @@ public partial class AccountsView : UserControl
         if (version != _previewVersion) return;
         if (game == null)
         {
-            GameCard.Visibility = Visibility.Collapsed;
+            ShowNoGame("Game not found", "CHECK THE PLACE ID OR LINK");
             return;
         }
 
         GameName.Text = game.Name;
+        GameName.Foreground = (Brush)FindResource("TextBrush");
         GameCreator.Text = string.IsNullOrEmpty(game.Creator) ? "" : "by " + game.Creator;
+        GameCreator.Visibility = GameCreator.Text.Length > 0 ? Visibility.Visible : Visibility.Collapsed;
         var server = target.ShareCode != null || target.LinkCode != null ? "PRIVATE SERVER"
             : target.JobId != null ? "SPECIFIC SERVER" : "ANY SERVER";
         GameMeta.Text = $"{game.Playing:N0} PLAYING  ·  {server}";
-        GameImage.Background = ImageFrom(game.IconUrl) ?? (Brush)FindResource("Raised2Brush");
-        GameCard.Visibility = Visibility.Visible;
+        var image = ImageFrom(game.IconUrl);
+        GameImage.Background = image;
+        GameImageIcon.Visibility = image == null ? Visibility.Visible : Visibility.Collapsed;
     }
 
     private async Task UpdateFollowPreviewAsync()

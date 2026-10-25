@@ -74,17 +74,14 @@ public sealed class AppSettings
     public int ClickerCps { get; set; } = 10;
     /// <summary>left | right | middle</summary>
     public string ClickerButton { get; set; } = "left";
-    public bool ClickerDouble { get; set; }
     /// <summary>toggle | hold</summary>
     public string ClickerMode { get; set; } = "toggle";
-    /// <summary>Virtual-key code of the hotkey (keyboard key or mouse button 4/5).</summary>
-    public int ClickerHotkeyVk { get; set; } = 0x75; // F6
+    /// <summary>Virtual-key code of the hotkey (keyboard key or mouse button 4/5). 0 = no hotkey.</summary>
+    public int ClickerHotkeyVk { get; set; }
     /// <summary>1 = Ctrl, 2 = Alt, 4 = Shift.</summary>
     public int ClickerHotkeyMods { get; set; }
     /// <summary>Seconds to wait after pressing Start.</summary>
     public int ClickerStartDelay { get; set; } = 3;
-    /// <summary>0 = until stopped.</summary>
-    public int ClickerLimit { get; set; }
     public bool ClickerRobloxOnly { get; set; }
     /// <summary>cursor | fixed | background</summary>
     public string ClickerTarget { get; set; } = "cursor";

@@ -724,6 +724,16 @@
         </Setter>
     </Style>
 
+    <Style x:Key="{x:Static MenuItem.SeparatorStyleKey}" TargetType="Separator">
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="Separator">
+                    <Border Height="1" Margin="6,4" Background="{StaticResource LineBrush}"/>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
     <!-- ============ Sidebar navigation ============ -->
     <Style x:Key="NavItem" TargetType="ListBoxItem">
         <Setter Property="Foreground" Value="{StaticResource DimBrush}"/>

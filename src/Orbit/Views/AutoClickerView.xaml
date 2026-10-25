@@ -50,7 +50,7 @@
                         <StackPanel Style="{StaticResource RowText}">
                             <TextBlock Style="{StaticResource RowTitle}" Text="Hotkey"/>
                             <TextBlock x:Name="HotkeyDesc" Style="{StaticResource RowDesc}"
-                                       Text="Click the button, then press the key you want (Ctrl/Alt/Shift combos and mouse buttons 4/5 work). Esc cancels."/>
+                                       Text="Click the button, then press the key you want (Ctrl/Alt/Shift combos and mouse buttons 4/5 work). Press Esc to remove the hotkey."/>
                         </StackPanel>
                     </DockPanel>
                 </Border>
@@ -97,26 +97,7 @@
                     </DockPanel>
                 </Border>
 
-                <Border Style="{StaticResource Row}" Tag="Double click|click type">
-                    <DockPanel>
-                        <CheckBox x:Name="DoubleToggle" DockPanel.Dock="Right" Style="{StaticResource Toggle}" Click="Changed"/>
-                        <StackPanel Style="{StaticResource RowText}">
-                            <TextBlock Style="{StaticResource RowTitle}" Text="Double click"/>
-                            <TextBlock Style="{StaticResource RowDesc}" Text="Every click becomes a double click."/>
-                        </StackPanel>
-                    </DockPanel>
-                </Border>
 
-                <Border Style="{StaticResource Row}" Tag="Click limit|stop after number of clicks repeat">
-                    <DockPanel>
-                        <TextBox x:Name="LimitBox" DockPanel.Dock="Right" Width="120" Style="{StaticResource NumberBox}"
-                                 local:Numeric.IntegerOnly="True" LostKeyboardFocus="Changed"/>
-                        <StackPanel Style="{StaticResource RowText}">
-                            <TextBlock Style="{StaticResource RowTitle}" Text="Click limit"/>
-                            <TextBlock Style="{StaticResource RowDesc}" Text="Stop automatically after this many clicks. 0 = until you stop it."/>
-                        </StackPanel>
-                    </DockPanel>
-                </Border>
 
                 <TextBlock Text="// WHERE TO CLICK" Style="{StaticResource Section}"/>
 

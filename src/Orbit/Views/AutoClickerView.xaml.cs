@@ -38,8 +38,6 @@ public partial class AutoClickerView : UserControl, IPage
         var s = AppState.Settings;
         CpsSlider.Value = Math.Clamp(s.ClickerCps, 1, 1000);
         Option.Select(ButtonCombo, s.ClickerButton);
-        DoubleToggle.IsChecked = s.ClickerDouble;
-        LimitBox.Text = s.ClickerLimit.ToString();
         Option.Select(ModeCombo, s.ClickerMode);
         DelaySlider.Value = Math.Clamp(s.ClickerStartDelay, 0, 10);
         Option.Select(TargetCombo, s.ClickerTarget);
@@ -55,8 +53,6 @@ public partial class AutoClickerView : UserControl, IPage
         var s = AppState.Settings;
         s.ClickerCps = CpsSlider.IntValue;
         s.ClickerButton = Option.Get(ButtonCombo, "left");
-        s.ClickerDouble = DoubleToggle.IsChecked == true;
-        s.ClickerLimit = Math.Max(0, Numeric.Parse(LimitBox.Text, 0));
         s.ClickerMode = Option.Get(ModeCombo, "toggle");
         s.ClickerStartDelay = DelaySlider.IntValue;
         s.ClickerTarget = Option.Get(TargetCombo, "cursor");
@@ -96,8 +92,10 @@ public partial class AutoClickerView : UserControl, IPage
         var s = AppState.Settings;
         var key = ClickerHotkey.Describe(s.ClickerHotkeyVk, s.ClickerHotkeyMods);
         if (!_capturing) HotkeyButton.Content = key;
-        HotkeyHint.Text = s.ClickerMode == "hold" ? $"Hold {key} to click" : $"Press {key} to start / stop";
-        StartButton.IsEnabled = s.ClickerMode != "hold";
+        HotkeyHint.Text = s.ClickerHotkeyVk == 0
+            ? "No hotkey set – use the Start button or set one below"
+            : s.ClickerMode == "hold" ? $"Hold {key} to click" : $"Press {key} to start / stop";
+        StartButton.IsEnabled = s.ClickerMode != "hold" || s.ClickerHotkeyVk == 0;
     }
 
     private void UpdateTargetUi()
@@ -172,7 +170,7 @@ public partial class AutoClickerView : UserControl, IPage
         s.ClickerHotkeyMods = mods;
         AppState.SaveSettings();
         EndCapture();
-        HotkeyDesc.Text = $"Hotkey set to {ClickerHotkey.Describe(vk, mods)}. Click the button to change it again.";
+        if (vk != 0) HotkeyDesc.Text = $"Hotkey set to {ClickerHotkey.Describe(vk, mods)}. Click the button to change it, Esc to remove it.";
     }
 
     private void Hotkey_KeyDown(object sender, KeyEventArgs e)
@@ -183,7 +181,9 @@ public partial class AutoClickerView : UserControl, IPage
         var key = e.Key == Key.System ? e.SystemKey : e.Key;
         if (key == Key.Escape)
         {
-            EndCapture();
+            // Esc removes the hotkey.
+            Assign(0, 0);
+            HotkeyDesc.Text = "No hotkey. Click the button and press a key to set one.";
             return;
         }
 

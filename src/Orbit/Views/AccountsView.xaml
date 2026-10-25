@@ -7,32 +7,44 @@
         <local:UrlToImageConverter x:Key="UrlToImage"/>
         <local:NotEmptyToVisibilityConverter x:Key="NotEmpty"/>
 
-        <ContextMenu x:Key="AccountMenu">
-            <MenuItem Header="Open browser (logged in)" Click="Menu_Browser_Click"/>
-            <MenuItem Header="Set alias…" Click="Menu_Alias_Click"/>
-            <MenuItem Header="Open profile page" Click="Menu_Profile_Click"/>
-            <MenuItem Header="Check login" Click="Menu_Check_Click"/>
-            <MenuItem Header="Remove" Click="Menu_Remove_Click" Foreground="{StaticResource DangerBrush}"/>
-        </ContextMenu>
 
         <Style x:Key="AccountItem" TargetType="ListBoxItem">
             <Setter Property="IsSelected" Value="{Binding IsSelected, Mode=TwoWay}"/>
             <Setter Property="Foreground" Value="{StaticResource TextBrush}"/>
-            <Setter Property="ContextMenu" Value="{StaticResource AccountMenu}"/>
             <Setter Property="Cursor" Value="Hand"/>
             <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
             <Setter Property="Margin" Value="0,0,0,8"/>
+            <EventSetter Event="PreviewMouseRightButtonDown" Handler="Item_RightButtonDown"/>
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="ListBoxItem">
                         <Border x:Name="card" Background="{StaticResource PanelBrush}" BorderBrush="{StaticResource LineBrush}"
-                                BorderThickness="1" CornerRadius="10" Padding="14,12">
-                            <ContentPresenter/>
+                                BorderThickness="1" CornerRadius="10">
+                            <Grid>
+                                <!-- Drag handle on the left edge of the card -->
+                                <Border x:Name="grip" Width="24" HorizontalAlignment="Left" Background="Transparent" Cursor="Hand"
+                                        CornerRadius="10,0,0,10" ToolTip="Drag to reorder"
+                                        PreviewMouseLeftButtonDown="Grip_MouseDown" MouseMove="Grip_MouseMove"
+                                        PreviewMouseLeftButtonUp="Grip_MouseUp" LostMouseCapture="Grip_LostCapture">
+                                    <UniformGrid x:Name="dots" Columns="2" Rows="3" Width="8" Height="13" VerticalAlignment="Center" HorizontalAlignment="Center">
+                                        <Ellipse Width="3" Height="3" Fill="{StaticResource FaintBrush}"/>
+                                        <Ellipse Width="3" Height="3" Fill="{StaticResource FaintBrush}"/>
+                                        <Ellipse Width="3" Height="3" Fill="{StaticResource FaintBrush}"/>
+                                        <Ellipse Width="3" Height="3" Fill="{StaticResource FaintBrush}"/>
+                                        <Ellipse Width="3" Height="3" Fill="{StaticResource FaintBrush}"/>
+                                        <Ellipse Width="3" Height="3" Fill="{StaticResource FaintBrush}"/>
+                                    </UniformGrid>
+                                </Border>
+                                <ContentPresenter Margin="26,12,14,12"/>
+                            </Grid>
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
                                 <Setter TargetName="card" Property="BorderBrush" Value="{StaticResource LineStrongBrush}"/>
                                 <Setter TargetName="card" Property="Background" Value="{StaticResource RaisedBrush}"/>
+                            </Trigger>
+                            <Trigger SourceName="grip" Property="IsMouseOver" Value="True">
+                                <Setter TargetName="grip" Property="Background" Value="{StaticResource SignalTintHoverBrush}"/>
                             </Trigger>
                             <Trigger Property="IsSelected" Value="True">
                                 <Setter TargetName="card" Property="BorderBrush" Value="{StaticResource SignalBorderBrush}"/>
@@ -48,24 +60,12 @@
             <Grid>
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="Auto"/>
-                    <ColumnDefinition Width="Auto"/>
                     <ColumnDefinition Width="*"/>
                     <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
 
-                <!-- Drag handle -->
-                <Border Background="Transparent" Cursor="SizeNS" Width="22" Margin="-6,-6,8,-6" ToolTip="Drag to reorder"
-                        PreviewMouseLeftButtonDown="Grip_MouseDown" MouseMove="Grip_MouseMove" PreviewMouseLeftButtonUp="Grip_MouseUp">
-                    <TextBlock Text="&#xE76F;" FontFamily="{StaticResource IconFont}" FontSize="14" HorizontalAlignment="Center"
-                               VerticalAlignment="Center" Foreground="{StaticResource FaintBrush}" RenderTransformOrigin="0.5,0.5">
-                        <TextBlock.RenderTransform>
-                            <RotateTransform Angle="90"/>
-                        </TextBlock.RenderTransform>
-                    </TextBlock>
-                </Border>
-
                 <!-- Avatar with online dot -->
-                <Grid Grid.Column="1" Width="48" Height="48">
+                <Grid Width="48" Height="48">
                     <Ellipse Fill="{StaticResource Raised2Brush}"/>
                     <TextBlock Text="{Binding Initial}" HorizontalAlignment="Center" VerticalAlignment="Center"
                                FontSize="18" FontWeight="SemiBold" Foreground="{StaticResource SignalLightBrush}"/>
@@ -79,7 +79,7 @@
                              ToolTip="{Binding PresenceText}"/>
                 </Grid>
 
-                <StackPanel Grid.Column="2" Margin="14,0,10,0" VerticalAlignment="Center">
+                <StackPanel Grid.Column="1" Margin="14,0,10,0" VerticalAlignment="Center">
                     <StackPanel Orientation="Horizontal">
                         <TextBlock Text="{Binding Title}" FontSize="14.5" FontWeight="SemiBold"/>
                         <TextBlock Text="{Binding Subtitle}" Margin="8,0,0,0" FontSize="12.5" VerticalAlignment="Bottom"
@@ -94,7 +94,7 @@
                                TextWrapping="Wrap" Visibility="{Binding Status, Converter={StaticResource NotEmpty}}"/>
                 </StackPanel>
 
-                <CheckBox Grid.Column="3" Style="{StaticResource CheckSquare}" VerticalAlignment="Center" IsHitTestVisible="False"
+                <CheckBox Grid.Column="2" Style="{StaticResource CheckSquare}" VerticalAlignment="Center" IsHitTestVisible="False"
                           IsChecked="{Binding IsSelected, Mode=OneWay}"/>
             </Grid>
             <DataTemplate.Triggers>
@@ -165,6 +165,24 @@
                     </ListBox.Template>
                 </ListBox>
 
+                <!-- Drag & drop overlay: floating card + drop indicator -->
+                <Canvas x:Name="DragLayer" IsHitTestVisible="False" ClipToBounds="True">
+                    <Border x:Name="DropIndicator" Height="3" CornerRadius="1.5" Background="{StaticResource AccentTextBrush}" Visibility="Collapsed">
+                        <Border.Effect>
+                            <DropShadowEffect Color="#A855F7" BlurRadius="12" ShadowDepth="0" Opacity="0.9"/>
+                        </Border.Effect>
+                    </Border>
+                    <Border x:Name="DragGhost" Visibility="Collapsed" CornerRadius="10" Opacity="0.95"
+                            BorderBrush="{StaticResource SignalBrush}" BorderThickness="1">
+                        <Border.Effect>
+                            <DropShadowEffect Color="#000000" BlurRadius="28" ShadowDepth="8" Opacity="0.6"/>
+                        </Border.Effect>
+                        <Border.RenderTransform>
+                            <RotateTransform Angle="-1"/>
+                        </Border.RenderTransform>
+                    </Border>
+                </Canvas>
+
                 <Border x:Name="EmptyState" Style="{StaticResource Panel}" VerticalAlignment="Top" Padding="32" Visibility="Collapsed">
                     <StackPanel HorizontalAlignment="Center">
                         <Image Source="/Assets/logo.png" Width="72" Height="72" RenderOptions.BitmapScalingMode="HighQuality"/>
@@ -197,9 +215,14 @@
                     <!-- Join game -->
                     <StackPanel x:Name="GamePanel">
                         <Border x:Name="GameCard" Background="{StaticResource RaisedBrush}" BorderBrush="{StaticResource LineBrush}" BorderThickness="1"
-                                CornerRadius="10" Padding="10" Margin="0,14,0,0" Visibility="Collapsed">
+                                CornerRadius="10" Padding="10" Margin="0,14,0,0">
                             <DockPanel>
-                                <Border x:Name="GameImage" Width="58" Height="58" CornerRadius="8" Background="{StaticResource Raised2Brush}"/>
+                                <Grid Width="58" Height="58">
+                                    <Border CornerRadius="8" Background="{StaticResource Raised2Brush}"/>
+                                    <TextBlock x:Name="GameImageIcon" Text="&#xE7FC;" Style="{StaticResource Icon}" FontSize="20"
+                                               HorizontalAlignment="Center" Foreground="{StaticResource FaintBrush}"/>
+                                    <Border x:Name="GameImage" CornerRadius="8"/>
+                                </Grid>
                                 <StackPanel Margin="12,0,0,0" VerticalAlignment="Center">
                                     <TextBlock x:Name="GameName" FontSize="14" FontWeight="SemiBold" TextTrimming="CharacterEllipsis"/>
                                     <TextBlock x:Name="GameCreator" Style="{StaticResource RowDesc}" Margin="0,2,0,0" TextTrimming="CharacterEllipsis"/>
