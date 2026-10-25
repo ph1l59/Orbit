@@ -35,6 +35,10 @@ public partial class MainWindow : Window
     };
 
     private readonly Dictionary<string, UserControl> _pages = new();
+    private readonly DispatcherTimer _updateTimer = new() { Interval = TimeSpan.FromHours(4) };
+    private UpdateInfo? _update;
+    private bool _updateDismissed;
+    private bool _updating;
     private readonly List<SearchHit> _index = new();
     private bool _switching;
 
@@ -64,7 +68,11 @@ public partial class MainWindow : Window
             ClickerHotkey.Start();
             Integrations.Start(Dispatcher);
             await AppState.RefreshAvatarsAsync();
+            await CheckForUpdateAsync();
         };
+
+        _updateTimer.Tick += async (_, _) => await CheckForUpdateAsync();
+        _updateTimer.Start();
 
         Nav.SelectedIndex = 0;
     }
@@ -235,5 +243,87 @@ public partial class MainWindow : Window
         AutoClicker.Instance.Stop();
         Integrations.Stop();
         base.OnClosed(e);
+    }
+
+    // ---------------- Updates ----------------
+
+    private async Task CheckForUpdateAsync()
+    {
+        if (!AppState.Settings.CheckForUpdates || _updateDismissed || _updating || _update != null) return;
+
+        var update = await Updater.CheckAsync();
+        if (update == null || !AppState.Settings.CheckForUpdates || _updateDismissed) return;
+
+        _update = update;
+        UpdateTitle.Text = $"Orbit v{update.Version}";
+        UpdateText.Text = $"A new version is ready. You're on v{Updater.CurrentVersion}.";
+        ShowUpdateCard(true);
+    }
+
+    private void ShowUpdateCard(bool show)
+    {
+        var duration = TimeSpan.FromMilliseconds(show ? 420 : 260);
+        var ease = new System.Windows.Media.Animation.CubicEase
+        {
+            EasingMode = show ? System.Windows.Media.Animation.EasingMode.EaseOut : System.Windows.Media.Animation.EasingMode.EaseIn,
+        };
+        var slide = new System.Windows.Media.Animation.DoubleAnimation(show ? -380 : 0, show ? 0 : -380, duration) { EasingFunction = ease };
+        var fade = new System.Windows.Media.Animation.DoubleAnimation(show ? 0 : 1, show ? 1 : 0, duration);
+
+        if (show) UpdateCard.Visibility = Visibility.Visible;
+        else fade.Completed += (_, _) => UpdateCard.Visibility = Visibility.Collapsed;
+
+        UpdateCardShift.BeginAnimation(TranslateTransform.XProperty, slide);
+        UpdateCard.BeginAnimation(OpacityProperty, fade);
+    }
+
+    private void UpdateLater_Click(object sender, RoutedEventArgs e)
+    {
+        // Gone until Orbit is started again.
+        _updateDismissed = true;
+        ShowUpdateCard(false);
+    }
+
+    private async void UpdateNow_Click(object sender, RoutedEventArgs e)
+    {
+        if (_update is not { } update || _updating) return;
+
+        if (!Updater.CanUpdateInPlace())
+        {
+            Dialog.Info(this, "Update",
+                "Orbit can't update itself in this folder (no write access). The new version is downloaded in your browser instead – " +
+                "replace your Orbit.exe with it.");
+            System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(Updater.DownloadUrl) { UseShellExecute = true });
+            return;
+        }
+
+        _updating = true;
+        UpdateButtons.Visibility = Visibility.Collapsed;
+        UpdateProgress.Value = 0;
+        UpdateProgress.Visibility = Visibility.Visible;
+        UpdateText.Text = "Downloading…";
+
+        try
+        {
+            var progress = new Progress<double>(p =>
+            {
+                UpdateProgress.Value = p;
+                UpdateText.Text = $"Downloading… {p:0}%";
+            });
+            await Updater.DownloadAndInstallAsync(update, progress);
+
+            UpdateText.Text = "Restarting Orbit…";
+            await Task.Delay(400);
+            Updater.Restart();
+            Application.Current.Shutdown();
+        }
+        catch (Exception ex)
+        {
+            _updating = false;
+            UpdateProgress.Visibility = Visibility.Collapsed;
+            UpdateButtons.Visibility = Visibility.Visible;
+            UpdateNowButton.Content = "Try again";
+            UpdateText.Text = "Update failed: " + ex.Message;
+        }
     }
 }

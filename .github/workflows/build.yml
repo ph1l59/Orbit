@@ -30,6 +30,10 @@ jobs:
       - name: Publish Orbit.exe
         run: dotnet publish src/Orbit/Orbit.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -o publish
 
+      - name: Checksum
+        shell: pwsh
+        run: (Get-FileHash publish/Orbit.exe -Algorithm SHA256).Hash.ToLower() | Out-File -Encoding ascii -NoNewline publish/Orbit.exe.sha256
+
       - name: Upload build
         uses: actions/upload-artifact@v4
         with:
@@ -41,4 +45,6 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ github.event.release.tag_name || inputs.tag }}
-          files: publish/Orbit.exe
+          files: |
+            publish/Orbit.exe
+            publish/Orbit.exe.sha256

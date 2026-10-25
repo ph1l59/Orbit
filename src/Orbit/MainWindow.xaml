@@ -116,6 +116,37 @@
 
                 <ContentControl x:Name="ContentHost" Grid.Row="1" Margin="40,0,40,26" Focusable="False"/>
             </Grid>
+
+            <!-- Update notice: slides in from the bottom left when a new release is out -->
+            <Border x:Name="UpdateCard" HorizontalAlignment="Left" VerticalAlignment="Bottom" Margin="24,0,0,24" Width="330"
+                    Background="{StaticResource RaisedBrush}" BorderBrush="{StaticResource SignalBorderBrush}" BorderThickness="1"
+                    CornerRadius="12" Padding="18,14,18,16" Visibility="Collapsed">
+                <Border.Effect>
+                    <DropShadowEffect Color="#000000" BlurRadius="30" ShadowDepth="6" Opacity="0.55"/>
+                </Border.Effect>
+                <Border.RenderTransform>
+                    <TranslateTransform x:Name="UpdateCardShift"/>
+                </Border.RenderTransform>
+                <StackPanel>
+                    <DockPanel>
+                        <Ellipse Width="8" Height="8" Fill="{StaticResource SignalBrush}" VerticalAlignment="Center" Margin="0,0,8,0">
+                            <Ellipse.Effect>
+                                <DropShadowEffect Color="#A855F7" BlurRadius="10" ShadowDepth="0" Opacity="0.9"/>
+                            </Ellipse.Effect>
+                        </Ellipse>
+                        <TextBlock Text="UPDATE AVAILABLE" Style="{StaticResource Crumb}" Foreground="{StaticResource SignalLightBrush}"/>
+                    </DockPanel>
+                    <TextBlock x:Name="UpdateTitle" Text="Orbit v0.0.0" FontFamily="{StaticResource DisplayFont}" FontSize="19"
+                               FontWeight="Bold" Margin="0,6,0,0"/>
+                    <TextBlock x:Name="UpdateText" Style="{StaticResource RowDesc}" Text="A new version of Orbit is ready."/>
+                    <ProgressBar x:Name="UpdateProgress" Maximum="100" Margin="0,12,0,0" Visibility="Collapsed"/>
+                    <StackPanel x:Name="UpdateButtons" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,14,0,0">
+                        <Button x:Name="UpdateLaterButton" Content="Not Now" Click="UpdateLater_Click"/>
+                        <Button x:Name="UpdateNowButton" Content="Update Now" Style="{StaticResource PrimaryButton}" Margin="8,0,0,0"
+                                Click="UpdateNow_Click"/>
+                    </StackPanel>
+                </StackPanel>
+            </Border>
         </Grid>
     </Grid>
 </Window>

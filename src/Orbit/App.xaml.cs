@@ -29,14 +29,22 @@ public partial class App : Application
             return;
         }
 
-        // Only one Orbit window at a time.
+        // Only one Orbit window at a time. Right after an update the old Orbit may still be closing,
+        // so the new one waits for it instead of complaining.
         _singleInstance = new Mutex(true, SingleInstanceName, out var isFirst);
+        if (!isFirst && e.Args.Contains(Updater.UpdatedFlag))
+        {
+            try { isFirst = _singleInstance.WaitOne(TimeSpan.FromSeconds(20)); }
+            catch (AbandonedMutexException) { isFirst = true; }
+        }
         if (!isFirst)
         {
             Dialog.Info(null, "Already running", "Orbit is already open – look for it in the taskbar.");
             Shutdown();
             return;
         }
+
+        Updater.CleanupLeftovers();
 
         var loadError = AppState.Load();
         var s = AppState.Settings;

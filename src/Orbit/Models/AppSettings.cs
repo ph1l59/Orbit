@@ -17,6 +17,10 @@ public sealed class AppSettings
     public string LastPlace { get; set; } = "";
     public string LastServer { get; set; } = "";
 
+    // ===== Updates =====
+    /// <summary>Look for a new Orbit release on GitHub at start (and every few hours).</summary>
+    public bool CheckForUpdates { get; set; } = true;
+
     // ===== Create accounts =====
     /// <summary>Birthday filled into Roblox's sign-up form (entered once, used for every new account).</summary>
     public DateTime? SignupBirthday { get; set; }

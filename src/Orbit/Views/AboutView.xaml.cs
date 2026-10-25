@@ -15,6 +15,13 @@ public partial class AboutView : UserControl
         InitializeComponent();
         var version = Assembly.GetExecutingAssembly().GetName().Version;
         if (version != null) VersionText.Text = $"VERSION {version.Major}.{version.Minor}.{version.Build}";
+        UpdatesToggle.IsChecked = AppState.Settings.CheckForUpdates;
+    }
+
+    private void Updates_Click(object sender, RoutedEventArgs e)
+    {
+        AppState.Settings.CheckForUpdates = UpdatesToggle.IsChecked == true;
+        AppState.SaveSettings();
     }
 
     private static void Open(string url) => Process.Start(new ProcessStartInfo(url) { UseShellExecute = true });

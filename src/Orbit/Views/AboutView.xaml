@@ -34,7 +34,18 @@
                 </StackPanel>
             </Grid>
 
-            <TextBlock Text="// DATA" Style="{StaticResource Section}" Margin="2,40,0,10"/>
+            <TextBlock Text="// UPDATES" Style="{StaticResource Section}" Margin="2,40,0,10"/>
+            <Border Style="{StaticResource Row}" Tag="Check for updates|auto update new version release">
+                <DockPanel>
+                    <CheckBox x:Name="UpdatesToggle" DockPanel.Dock="Right" Style="{StaticResource Toggle}" Click="Updates_Click"/>
+                    <StackPanel Style="{StaticResource RowText}">
+                        <TextBlock Style="{StaticResource RowTitle}" Text="Check for updates"/>
+                        <TextBlock Style="{StaticResource RowDesc}" Text="When a new version of Orbit is out, a notice pops up in the bottom left. One click updates and restarts Orbit."/>
+                    </StackPanel>
+                </DockPanel>
+            </Border>
+
+            <TextBlock Text="// DATA" Style="{StaticResource Section}"/>
             <Button Style="{StaticResource LinkRow}" Click="Data_Click" Tag="Orbit data folder|settings accounts file">
                 <DockPanel>
                     <TextBlock Text="&#xE838;" Style="{StaticResource Icon}" FontSize="18" Margin="0,0,16,0" Foreground="{StaticResource SignalLightBrush}"/>
