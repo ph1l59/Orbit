@@ -32,7 +32,7 @@
                             <TextBlock FontFamily="{StaticResource DisplayFont}" FontSize="18" FontWeight="Bold">
                                 <Run Text="Orbit"/><Run Text="." Foreground="{StaticResource SignalBrush}"/>
                             </TextBlock>
-                            <TextBlock Text="by Floshiii" Style="{StaticResource Crumb}" Margin="0,-1,0,0"/>
+                            <TextBlock Text="by ph1l59" Style="{StaticResource Crumb}" Margin="0,-1,0,0"/>
                         </StackPanel>
                     </StackPanel>
 
