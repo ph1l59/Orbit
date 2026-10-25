@@ -1,0 +1,116 @@
+<UserControl x:Class="Orbit.Views.SettingsView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <StackPanel Margin="0,0,0,18">
+            <TextBlock Text="Einstellungen" Style="{StaticResource H1}"/>
+            <TextBlock Style="{StaticResource Sub}" Margin="0,2,0,0" Text="Wie Orbit Roblox startet."/>
+        </StackPanel>
+
+        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" Padding="0,0,8,0">
+            <StackPanel>
+
+                <TextBlock Text="START" FontSize="11" FontWeight="SemiBold" Foreground="{StaticResource SubTextBrush}" Margin="2,0,0,8"/>
+
+                <Border Style="{StaticResource SettingRow}">
+                    <StackPanel>
+                        <DockPanel>
+                            <CheckBox x:Name="MultiToggle" DockPanel.Dock="Right" Style="{StaticResource Toggle}"
+                                      Checked="MultiToggle_Changed" Unchecked="MultiToggle_Changed"/>
+                            <StackPanel Margin="0,0,16,0">
+                                <TextBlock Text="Multi-Roblox" Style="{StaticResource H2}"/>
+                                <TextBlock Style="{StaticResource Sub}"
+                                           Text="Erlaubt mehrere Roblox-Fenster gleichzeitig – nötig, um mehrere Accounts parallel zu spielen. Funktioniert, solange Orbit geöffnet ist."/>
+                            </StackPanel>
+                        </DockPanel>
+                        <Border Background="#2A2113" BorderBrush="#4A3A1A" BorderThickness="1" CornerRadius="8" Padding="12,10" Margin="0,12,0,0">
+                            <DockPanel>
+                                <TextBlock Text="&#xE7BA;" Style="{StaticResource Icon}" Foreground="{StaticResource WarningBrush}"
+                                           VerticalAlignment="Top" Margin="0,1,10,0"/>
+                                <TextBlock Style="{StaticResource Sub}" Foreground="#E8C990"
+                                           Text="Nutzung auf eigenes Risiko. Roblox unterstützt mehrere gleichzeitige Clients offiziell nicht, und laut einem Roblox-Entwickler kann das als verdächtiges Verhalten gewertet werden. Manche Spiele verbieten außerdem Alt-Accounts."/>
+                            </DockPanel>
+                        </Border>
+                        <TextBlock x:Name="MultiStatus" Style="{StaticResource Sub}" Margin="0,8,0,0" Visibility="Collapsed"/>
+                    </StackPanel>
+                </Border>
+
+                <Border Style="{StaticResource SettingRow}">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="200"/>
+                        </Grid.ColumnDefinitions>
+                        <StackPanel VerticalAlignment="Center" Margin="0,0,16,0">
+                            <TextBlock Text="Pause zwischen Accounts" Style="{StaticResource H2}"/>
+                            <TextBlock Style="{StaticResource Sub}"
+                                       Text="Wartezeit beim Starten mehrerer Accounts. Zu kurze Abstände können von Roblox blockiert werden."/>
+                        </StackPanel>
+                        <ComboBox x:Name="DelayCombo" Grid.Column="1" VerticalAlignment="Center" SelectionChanged="DelayCombo_SelectionChanged"/>
+                    </Grid>
+                </Border>
+
+                <Border Style="{StaticResource SettingRow}">
+                    <DockPanel>
+                        <CheckBox x:Name="DirectToggle" DockPanel.Dock="Right" Style="{StaticResource Toggle}"
+                                  Checked="DirectToggle_Changed" Unchecked="DirectToggle_Changed"/>
+                        <StackPanel Margin="0,0,16,0">
+                            <TextBlock Text="Roblox direkt starten (empfohlen)" Style="{StaticResource H2}"/>
+                            <TextBlock Style="{StaticResource Sub}"
+                                       Text="Startet RobloxPlayerBeta.exe direkt. Ausschalten, wenn stattdessen dein Standard-Launcher (z. B. Bloxstrap/Fishstrap) benutzt werden soll – dann überschreibt dieser aber evtl. die Grafik-Einstellungen."/>
+                        </StackPanel>
+                    </DockPanel>
+                </Border>
+
+                <TextBlock Text="WERKZEUGE" FontSize="11" FontWeight="SemiBold" Foreground="{StaticResource SubTextBrush}" Margin="2,14,0,8"/>
+
+                <Border Style="{StaticResource SettingRow}">
+                    <DockPanel>
+                        <Button DockPanel.Dock="Right" Style="{StaticResource DangerButton}" Content="Alle schließen"
+                                Click="CloseRoblox_Click" VerticalAlignment="Center"/>
+                        <StackPanel Margin="0,0,16,0">
+                            <TextBlock Text="Alle Roblox-Fenster schließen" Style="{StaticResource H2}"/>
+                            <TextBlock x:Name="RunningText" Style="{StaticResource Sub}" Text="Beendet alle laufenden Roblox-Clients."/>
+                        </StackPanel>
+                    </DockPanel>
+                </Border>
+
+                <Border Style="{StaticResource SettingRow}">
+                    <DockPanel>
+                        <Button DockPanel.Dock="Right" Content="Ordner öffnen" Click="OpenData_Click" VerticalAlignment="Center"/>
+                        <StackPanel Margin="0,0,16,0">
+                            <TextBlock Text="Orbit-Datenordner" Style="{StaticResource H2}"/>
+                            <TextBlock Style="{StaticResource Sub}"
+                                       Text="Hier liegen deine Einstellungen und die verschlüsselte Account-Datei. Teile accounts.dat niemals mit anderen."/>
+                        </StackPanel>
+                    </DockPanel>
+                </Border>
+
+                <TextBlock Text="ÜBER" FontSize="11" FontWeight="SemiBold" Foreground="{StaticResource SubTextBrush}" Margin="2,14,0,8"/>
+
+                <Border Style="{StaticResource Card}">
+                    <DockPanel>
+                        <Image DockPanel.Dock="Left" Source="/Assets/logo.png" Width="56" Height="56" VerticalAlignment="Top"
+                               RenderOptions.BitmapScalingMode="HighQuality"/>
+                        <StackPanel Margin="16,0,0,0">
+                            <TextBlock Text="Orbit by Floshiii" Style="{StaticResource H2}" FontSize="17"/>
+                            <TextBlock x:Name="AboutVersion" Style="{StaticResource Sub}" Text="Version 1.0.0"/>
+                            <TextBlock Style="{StaticResource Sub}" Margin="0,8,0,0"
+                                       Text="Open Source unter der GNU GPL v3.0. Orbit steht in keiner Verbindung zur Roblox Corporation."/>
+                            <StackPanel Orientation="Horizontal" Margin="0,12,0,0">
+                                <Button Content="GitHub" Click="GitHub_Click"/>
+                                <Button Content="Fehler melden" Margin="8,0,0,0" Click="Issues_Click"/>
+                            </StackPanel>
+                        </StackPanel>
+                    </DockPanel>
+                </Border>
+            </StackPanel>
+        </ScrollViewer>
+    </Grid>
+</UserControl>

@@ -1,0 +1,168 @@
+<UserControl x:Class="Orbit.Views.PerformanceView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <StackPanel Margin="0,0,0,18">
+            <TextBlock Text="Performance" Style="{StaticResource H1}"/>
+            <TextBlock Style="{StaticResource Sub}" Margin="0,2,0,0"
+                       Text="FPS-Limit und Grafik. Wird automatisch vor jedem Start über Orbit angewendet."/>
+        </StackPanel>
+
+        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" Padding="0,0,8,0">
+            <StackPanel>
+
+                <!-- FPS -->
+                <TextBlock Text="BILDRATE" FontSize="11" FontWeight="SemiBold" Foreground="{StaticResource SubTextBrush}" Margin="2,0,0,8"/>
+                <Border Style="{StaticResource SettingRow}">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="220"/>
+                        </Grid.ColumnDefinitions>
+                        <StackPanel VerticalAlignment="Center" Margin="0,0,16,0">
+                            <TextBlock Text="FPS-Limit" Style="{StaticResource H2}"/>
+                            <TextBlock Style="{StaticResource Sub}"
+                                       Text="Maximale Bilder pro Sekunde. Niedriger = weniger Last &amp; Hitze, z. B. für Alt-Accounts. Über 240 FPS kann es zu Physik-Problemen kommen."/>
+                        </StackPanel>
+                        <TextBox x:Name="CustomFpsBox" Grid.Column="1" Width="90" Margin="0,0,8,0" Tag="FPS"
+                                 Visibility="Collapsed" VerticalAlignment="Center"/>
+                        <ComboBox x:Name="FpsCombo" Grid.Column="2" VerticalAlignment="Center" SelectionChanged="FpsCombo_SelectionChanged"/>
+                    </Grid>
+                </Border>
+
+                <!-- Graphics -->
+                <TextBlock Text="GRAFIK" FontSize="11" FontWeight="SemiBold" Foreground="{StaticResource SubTextBrush}" Margin="2,14,0,8"/>
+
+                <Border Style="{StaticResource SettingRow}">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="220"/>
+                        </Grid.ColumnDefinitions>
+                        <StackPanel VerticalAlignment="Center" Margin="0,0,16,0">
+                            <TextBlock Text="Grafikqualität" Style="{StaticResource H2}"/>
+                            <TextBlock Style="{StaticResource Sub}" Text="Erzwingt eine feste Qualitätsstufe statt der Automatik. 1 = minimal (beste FPS)."/>
+                        </StackPanel>
+                        <ComboBox x:Name="QualityCombo" Grid.Column="1" VerticalAlignment="Center"/>
+                    </Grid>
+                </Border>
+
+                <Border Style="{StaticResource SettingRow}">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="220"/>
+                        </Grid.ColumnDefinitions>
+                        <StackPanel VerticalAlignment="Center" Margin="0,0,16,0">
+                            <TextBlock Text="Texturqualität" Style="{StaticResource H2}"/>
+                            <TextBlock Style="{StaticResource Sub}" Text="Niedrige Texturen sparen Grafikspeicher."/>
+                        </StackPanel>
+                        <ComboBox x:Name="TextureCombo" Grid.Column="1" VerticalAlignment="Center"/>
+                    </Grid>
+                </Border>
+
+                <Border Style="{StaticResource SettingRow}">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="220"/>
+                        </Grid.ColumnDefinitions>
+                        <StackPanel VerticalAlignment="Center" Margin="0,0,16,0">
+                            <TextBlock Text="Kantenglättung (MSAA)" Style="{StaticResource H2}"/>
+                            <TextBlock Style="{StaticResource Sub}" Text="Glattere Kanten kosten Leistung."/>
+                        </StackPanel>
+                        <ComboBox x:Name="MsaaCombo" Grid.Column="1" VerticalAlignment="Center"/>
+                    </Grid>
+                </Border>
+
+                <Border Style="{StaticResource SettingRow}">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="220"/>
+                        </Grid.ColumnDefinitions>
+                        <StackPanel VerticalAlignment="Center" Margin="0,0,16,0">
+                            <TextBlock Text="Grafik-API" Style="{StaticResource H2}"/>
+                            <TextBlock Style="{StaticResource Sub}" Text="Nur ändern, wenn Roblox ruckelt oder abstürzt."/>
+                        </StackPanel>
+                        <ComboBox x:Name="RendererCombo" Grid.Column="1" VerticalAlignment="Center"/>
+                    </Grid>
+                </Border>
+
+                <Border Style="{StaticResource SettingRow}">
+                    <DockPanel>
+                        <CheckBox x:Name="DpiToggle" DockPanel.Dock="Right" Style="{StaticResource Toggle}"/>
+                        <StackPanel Margin="0,0,16,0">
+                            <TextBlock Text="Windows-Skalierung ignorieren" Style="{StaticResource H2}"/>
+                            <TextBlock Style="{StaticResource Sub}" Text="Schärferes Bild, wenn in Windows eine Skalierung über 100 % eingestellt ist."/>
+                        </StackPanel>
+                    </DockPanel>
+                </Border>
+
+                <Border Style="{StaticResource SettingRow}">
+                    <DockPanel>
+                        <CheckBox x:Name="FullscreenToggle" DockPanel.Dock="Right" Style="{StaticResource Toggle}"/>
+                        <StackPanel Margin="0,0,16,0">
+                            <TextBlock Text="Echtes Vollbild mit Alt+Enter" Style="{StaticResource H2}"/>
+                            <TextBlock Style="{StaticResource Sub}" Text="Exklusiver Vollbildmodus statt randlosem Fenster – kann etwas mehr FPS bringen."/>
+                        </StackPanel>
+                    </DockPanel>
+                </Border>
+
+                <Border Style="{StaticResource SettingRow}">
+                    <DockPanel>
+                        <CheckBox x:Name="GrassToggle" DockPanel.Dock="Right" Style="{StaticResource Toggle}"/>
+                        <StackPanel Margin="0,0,16,0">
+                            <TextBlock Text="Gras ausblenden" Style="{StaticResource H2}"/>
+                            <TextBlock Style="{StaticResource Sub}" Text="Entfernt animiertes Gras auf Terrain."/>
+                        </StackPanel>
+                    </DockPanel>
+                </Border>
+
+                <Border Style="{StaticResource SettingRow}">
+                    <DockPanel>
+                        <CheckBox x:Name="SkyToggle" DockPanel.Dock="Right" Style="{StaticResource Toggle}"/>
+                        <StackPanel Margin="0,0,16,0">
+                            <TextBlock Text="Grauer Himmel" Style="{StaticResource H2}"/>
+                            <TextBlock Style="{StaticResource Sub}" Text="Ersetzt die Skybox durch einen einfarbigen Himmel."/>
+                        </StackPanel>
+                    </DockPanel>
+                </Border>
+
+                <!-- Advanced -->
+                <TextBlock Text="ERWEITERT" FontSize="11" FontWeight="SemiBold" Foreground="{StaticResource SubTextBrush}" Margin="2,14,0,8"/>
+                <Border Style="{StaticResource SettingRow}">
+                    <StackPanel>
+                        <TextBlock Text="Eigene FastFlags (JSON)" Style="{StaticResource H2}"/>
+                        <TextBlock Style="{StaticResource Sub}" Margin="0,2,0,10"
+                                   Text="Seit September 2025 akzeptiert Roblox nur noch Flags von seiner offiziellen Allowlist. Andere Flags werden einfach ignoriert."/>
+                        <TextBox x:Name="CustomFlagsBox" AcceptsReturn="True" AcceptsTab="True" TextWrapping="NoWrap"
+                                 MinHeight="110" VerticalContentAlignment="Top" Padding="10,8"
+                                 FontFamily="Cascadia Mono, Consolas" FontSize="12.5"
+                                 VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto"
+                                 Tag="{}{ &quot;FIntDebugForceMSAASamples&quot;: &quot;4&quot; }"/>
+                    </StackPanel>
+                </Border>
+            </StackPanel>
+        </ScrollViewer>
+
+        <!-- Footer -->
+        <Border Grid.Row="2" Style="{StaticResource Card}" Margin="0,14,0,0" Padding="16,12">
+            <DockPanel>
+                <Button DockPanel.Dock="Right" Style="{StaticResource PrimaryButton}" Content="Speichern &amp; anwenden"
+                        Click="Apply_Click" MinWidth="180"/>
+                <Button DockPanel.Dock="Right" Content="Zurücksetzen" Margin="0,0,8,0" Click="Reset_Click"/>
+                <TextBlock x:Name="ApplyStatus" Style="{StaticResource Sub}" VerticalAlignment="Center" Margin="0,0,16,0"
+                           Text="Änderungen gelten ab dem nächsten Roblox-Start."/>
+            </DockPanel>
+        </Border>
+    </Grid>
+</UserControl>
