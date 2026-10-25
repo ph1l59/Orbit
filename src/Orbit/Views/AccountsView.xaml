@@ -129,6 +129,13 @@
                         <TextBlock Text="Add account" Margin="8,0,0,0"/>
                     </StackPanel>
                 </Button>
+                <Button DockPanel.Dock="Right" Click="Create_Click" VerticalAlignment="Bottom" Margin="0,0,8,0"
+                        Tag="Create account|sign up register new roblox account">
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Text="&#xE8FA;" Style="{StaticResource Icon}" FontSize="12"/>
+                        <TextBlock Text="Create account" Margin="8,0,0,0"/>
+                    </StackPanel>
+                </Button>
                 <StackPanel>
                     <TextBlock Text="ORBIT / ACCOUNTS" Style="{StaticResource Crumb}"/>
                     <TextBlock Style="{StaticResource PageTitle}">
@@ -189,8 +196,10 @@
                         <TextBlock Text="No accounts yet" FontSize="17" FontWeight="SemiBold" HorizontalAlignment="Center" Margin="0,16,0,6"/>
                         <TextBlock Text="Add your first Roblox account. You log in on the real roblox.com page – Orbit only keeps the login, encrypted on this PC."
                                    Style="{StaticResource PageDesc}" TextAlignment="Center" MaxWidth="400"/>
-                        <Button Style="{StaticResource SolidButton}" Content="Add account" Margin="0,18,0,0"
-                                HorizontalAlignment="Center" Click="Add_Click"/>
+                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,18,0,0">
+                            <Button Style="{StaticResource SolidButton}" Content="Add account" Click="Add_Click"/>
+                            <Button Content="Create a new one" Margin="8,0,0,0" Click="Create_Click"/>
+                        </StackPanel>
                     </StackPanel>
                 </Border>
             </Grid>

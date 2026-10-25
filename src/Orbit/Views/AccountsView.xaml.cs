@@ -17,6 +17,7 @@ public partial class AccountsView : UserControl
 {
     private readonly ICollectionView _view;
     private bool _launching;
+    private bool _cancelRequested;
     private readonly DispatcherTimer _previewTimer = new() { Interval = TimeSpan.FromMilliseconds(450) };
     private readonly DispatcherTimer _followTimer = new() { Interval = TimeSpan.FromMilliseconds(450) };
     private RobloxUser? _followUser;
@@ -72,7 +73,7 @@ public partial class AccountsView : UserControl
         if (selected > 0) text += $"  ·  {selected} selected";
         CountText.Text = text;
 
-        LaunchText.Text = selected switch
+        if (!_launching) LaunchText.Text = selected switch
         {
             0 => "Launch",
             1 => "Launch 1 account",
@@ -106,9 +107,13 @@ public partial class AccountsView : UserControl
 
     // ---------- Add account ----------
 
-    private async void Add_Click(object sender, RoutedEventArgs e)
+    private void Add_Click(object sender, RoutedEventArgs e) => _ = AddAccountAsync(signup: false);
+
+    private void Create_Click(object sender, RoutedEventArgs e) => _ = AddAccountAsync(signup: true);
+
+    private async Task AddAccountAsync(bool signup)
     {
-        var login = new LoginWindow { Owner = Owner };
+        var login = new LoginWindow(signup) { Owner = Owner };
         if (login.ShowDialog() != true || login.Result is not { } user) return;
 
         var existing = AppState.Accounts.FirstOrDefault(a => a.UserId == user.UserId);
@@ -133,7 +138,14 @@ public partial class AccountsView : UserControl
 
     private async void Launch_Click(object sender, RoutedEventArgs e)
     {
-        if (_launching) return;
+        if (_launching)
+        {
+            // The button works as "Cancel" while accounts are launching.
+            _cancelRequested = true;
+            LaunchButton.IsEnabled = false;
+            ShowStatus("Stopping – no more accounts will be launched…", true);
+            return;
+        }
         var s = AppState.Settings;
 
         var accounts = AppState.Accounts.Where(a => a.IsSelected).ToList();
@@ -180,17 +192,19 @@ public partial class AccountsView : UserControl
                     "Without Multi-Roblox every new account closes the previous Roblox window.\n\n" +
                     "Turn on Multi-Roblox now? All Roblox windows have to be closed for that.",
                     "Turn on");
-                if (enable)
+                if (!enable)
                 {
-                    if (!MultiInstance.TryEnable(out var multiError))
-                    {
-                        ShowStatus(multiError ?? "Multi-Roblox could not be turned on.", true);
-                        return;
-                    }
-                    s.MultiRoblox = true;
-                    AppState.SaveSettings();
-                    AppState.NotifyMultiInstanceChanged();
+                    ShowStatus("Launch cancelled. Turn on Multi-Roblox to launch several accounts at once, or select just one account.", true);
+                    return;
                 }
+                if (!MultiInstance.TryEnable(out var multiError))
+                {
+                    ShowStatus(multiError ?? "Multi-Roblox could not be turned on.", true);
+                    return;
+                }
+                s.MultiRoblox = true;
+                AppState.SaveSettings();
+                AppState.NotifyMultiInstanceChanged();
             }
             else if (s.ConfirmLaunchWhenRunning && RobloxPaths.IsRobloxRunning())
             {
@@ -205,7 +219,7 @@ public partial class AccountsView : UserControl
         AppState.SaveSettings();
 
         _launching = true;
-        LaunchButton.IsEnabled = false;
+        _cancelRequested = false;
         LaunchProgress.Visibility = Visibility.Visible;
         LaunchProgress.Value = 0;
 
@@ -228,12 +242,21 @@ public partial class AccountsView : UserControl
                 return;
             }
 
+            if (_cancelRequested)
+            {
+                ShowStatus("Launch cancelled.", true);
+                return;
+            }
+
             Integrations.StartCustomIntegrations();
             LaunchProgress.Visibility = Visibility.Collapsed;
+            LaunchText.Text = "Cancel";
 
             var delay = Math.Clamp(s.LaunchDelaySeconds, 1, 120);
+            var launched = 0;
             for (var i = 0; i < accounts.Count; i++)
             {
+                if (_cancelRequested) break;
                 var account = accounts[i];
                 account.Status = "Launching…";
                 ShowStatus($"Launching {account.Title} ({i + 1}/{accounts.Count})…", false);
@@ -244,6 +267,7 @@ public partial class AccountsView : UserControl
                     account.Status = "";
                     account.LastUsed = DateTime.UtcNow;
                     AppState.SaveAccounts();
+                    launched++;
                 }
                 catch (Exception ex)
                 {
@@ -252,12 +276,19 @@ public partial class AccountsView : UserControl
 
                 if (i < accounts.Count - 1)
                 {
-                    for (var sec = delay; sec > 0; sec--)
+                    for (var sec = delay; sec > 0 && !_cancelRequested; sec--)
                     {
-                        ShowStatus($"Next account in {sec}s…", false);
+                        ShowStatus($"Next account in {sec}s…  (click Cancel to stop)", false);
                         await Task.Delay(1000);
                     }
                 }
+            }
+
+            if (_cancelRequested)
+            {
+                foreach (var a in accounts.Where(a => a.Status == "Launching…")) a.Status = "";
+                ShowStatus($"Cancelled – {launched} of {accounts.Count} account(s) were launched.", true);
+                return;
             }
 
             var failed = accounts.Count(a => a.Status.StartsWith("Error"));
@@ -268,8 +299,10 @@ public partial class AccountsView : UserControl
         finally
         {
             _launching = false;
+            _cancelRequested = false;
             LaunchButton.IsEnabled = true;
             LaunchProgress.Visibility = Visibility.Collapsed;
+            UpdateCounts();
         }
     }
 

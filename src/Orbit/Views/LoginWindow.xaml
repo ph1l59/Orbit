@@ -10,8 +10,8 @@
         <Border DockPanel.Dock="Top" Background="{StaticResource SidebarBrush}" BorderBrush="{StaticResource LineBrush}"
                 BorderThickness="0,0,0,1" Padding="18,14">
             <StackPanel>
-                <TextBlock Text="ORBIT // ADD ACCOUNT" Style="{StaticResource Crumb}" Foreground="{StaticResource SignalLightBrush}"/>
-                <TextBlock Text="Log in to Roblox" FontFamily="{StaticResource DisplayFont}" FontSize="20" FontWeight="Bold" Margin="0,4,0,0"/>
+                <TextBlock x:Name="HeaderCrumb" Text="ORBIT // ADD ACCOUNT" Style="{StaticResource Crumb}" Foreground="{StaticResource SignalLightBrush}"/>
+                <TextBlock x:Name="HeaderTitle" Text="Log in to Roblox" FontFamily="{StaticResource DisplayFont}" FontSize="20" FontWeight="Bold" Margin="0,4,0,0"/>
                 <TextBlock x:Name="StatusText" Style="{StaticResource RowDesc}" Margin="0,4,0,0"
                            Text="Log in like you normally would. Orbit only keeps the login, encrypted on this PC – your password is never stored."/>
             </StackPanel>

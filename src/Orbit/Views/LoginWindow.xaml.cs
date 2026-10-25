@@ -22,10 +22,20 @@ public partial class LoginWindow : Window
     private readonly DispatcherTimer _poll = new() { Interval = TimeSpan.FromSeconds(1.5) };
     private bool _checking;
     private bool _finished;
+    private readonly bool _signup;
 
-    public LoginWindow()
+    /// <param name="signup">True = show Roblox's sign-up page to create a new account.</param>
+    public LoginWindow(bool signup = false)
     {
+        _signup = signup;
         InitializeComponent();
+        if (signup)
+        {
+            Title = "Orbit – Create a Roblox account";
+            HeaderCrumb.Text = "ORBIT // CREATE ACCOUNT";
+            HeaderTitle.Text = "Create a Roblox account";
+            StatusText.Text = "Sign up on the real Roblox page with your own details. When you're done, Orbit adds the new account automatically.";
+        }
         Web.DefaultBackgroundColor = System.Drawing.Color.FromArgb(10, 9, 13);
         Loaded += OnLoaded;
         _poll.Tick += async (_, _) => await CheckForLoginAsync();
@@ -48,7 +58,7 @@ public partial class LoginWindow : Window
                 Web.CoreWebView2.Navigate(args.Uri);
             };
 
-            Web.CoreWebView2.Navigate("https://www.roblox.com/login");
+            Web.CoreWebView2.Navigate(_signup ? "https://www.roblox.com/" : "https://www.roblox.com/login");
             _poll.Start();
         }
         catch (WebView2RuntimeNotFoundException)
