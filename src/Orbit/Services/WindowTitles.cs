@@ -205,7 +205,8 @@ public static class WindowTitles
         {
             // AUMID carries the icon tag so Windows treats each icon version as a new identity
             // and never caches an old icon against this window's taskbar button.
-            var ok = SetTaskbarIdentity(hwnd, $"Orbit.Roblox.{userId}.{_iconTag}", _iconFile);
+            // It's the same for every account, so Windows groups all Roblox windows into one taskbar button.
+            var ok = SetTaskbarIdentity(hwnd, $"Orbit.Roblox.{_iconTag}", _iconFile);
             Log($"window {hwnd}: taskbar identity {(ok ? "set" : "failed")}");
         }
 
