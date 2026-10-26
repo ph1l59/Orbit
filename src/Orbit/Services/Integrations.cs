@@ -90,9 +90,9 @@ public static class Integrations
     /// <summary>The Orbit window was shown (true) or hidden to the tray (false).</summary>
     public static void SetLauncherOpen(bool open)
     {
-        if (open == _launcherOpen) return;
+        if (open == _launcherOpen && (_launcherTimer != null || _ui == null)) return;
+        if (open && !_launcherOpen) _launcherSince = DateTime.UtcNow;
         _launcherOpen = open;
-        if (open) _launcherSince = DateTime.UtcNow;
 
         // Discord may start after Orbit – keep offering the status every few seconds while the window is open.
         if (_launcherTimer == null && _ui != null)
