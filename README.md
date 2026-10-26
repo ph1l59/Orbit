@@ -37,7 +37,7 @@ Can't find a setting? There's a search bar in the sidebar.
 
 ## Download
 
-Get `Orbit.exe` from the **[latest release](../../releases/latest)** and run it. No installer needed. After that, Orbit keeps itself up to date.
+Get `Orbit-Launcher.exe` from the **[latest release](../../releases/latest)** and run it. No installer needed. After that, Orbit keeps itself up to date.
 
 Windows might show a SmartScreen warning the first time, because the app isn't code signed. Click **More info**, then **Run anyway**. All the code is right here if you want to check it.
 

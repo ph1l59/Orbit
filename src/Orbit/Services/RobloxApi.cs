@@ -363,9 +363,11 @@ public static class RobloxApi
         // 1. Settings together with their options.
         using (var response = await SendAsync(() => Request(HttpMethod.Get, UserSettingsApi + "/settings-and-options"), cookie).ConfigureAwait(false))
         {
+            var text = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
+            PrivacyLog($"GET settings-and-options -> HTTP {(int)response.StatusCode}: {Shorten(text, 6000)}");
             if (response.IsSuccessStatusCode)
             {
-                using var doc = JsonDocument.Parse(await response.Content.ReadAsStringAsync().ConfigureAwait(false));
+                using var doc = JsonDocument.Parse(text);
                 foreach (var setting in doc.RootElement.EnumerateObject())
                 {
                     if (!setting.Name.StartsWith("whoCan", StringComparison.OrdinalIgnoreCase) || setting.Value.ValueKind != JsonValueKind.Object)
@@ -385,9 +387,11 @@ public static class RobloxApi
         // 2. Just the values.
         using (var response = await SendAsync(() => Request(HttpMethod.Get, UserSettingsApi), cookie).ConfigureAwait(false))
         {
+            var text = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
+            PrivacyLog($"GET user-settings -> HTTP {(int)response.StatusCode}: {Shorten(text, 3000)}");
             if (!response.IsSuccessStatusCode)
-                throw new RobloxApiException($"Roblox answered with HTTP {(int)response.StatusCode}.");
-            using var doc = JsonDocument.Parse(await response.Content.ReadAsStringAsync().ConfigureAwait(false));
+                throw new RobloxApiException($"HTTP {(int)response.StatusCode} – {ErrorMessage(text) ?? "settings unavailable"}.");
+            using var doc = JsonDocument.Parse(text);
             foreach (var setting in doc.RootElement.EnumerateObject())
                 if (setting.Name.StartsWith("whoCan", StringComparison.OrdinalIgnoreCase) && setting.Value.ValueKind == JsonValueKind.String)
                     result.Add(new PrivacySetting(setting.Name, setting.Value.GetString()!, DefaultPrivacyOptions));
@@ -408,13 +412,47 @@ public static class RobloxApi
         }
     }
 
+    /// <summary>Roblox's own error text from {"errors":[{"message":"…"}]}, if there is one.</summary>
+    private static string? ErrorMessage(string json)
+    {
+        try
+        {
+            using var doc = JsonDocument.Parse(json);
+            if (doc.RootElement.TryGetProperty("errors", out var errors) && errors.ValueKind == JsonValueKind.Array)
+                foreach (var e in errors.EnumerateArray())
+                    if (e.TryGetProperty("message", out var m) && m.GetString() is { Length: > 0 } msg) return msg;
+            if (doc.RootElement.TryGetProperty("message", out var top) && top.GetString() is { Length: > 0 } t) return t;
+        }
+        catch { /* not JSON */ }
+        return null;
+    }
+
+    private static string Shorten(string text, int max = 600) => text.Length <= max ? text : text[..max] + "…";
+
+    /// <summary>Troubleshooting log for privacy settings: %AppData%\Orbit\privacy.log (no login data in it).</summary>
+    private static void PrivacyLog(string line)
+    {
+        try
+        {
+            var file = System.IO.Path.Combine(AppPaths.DataDir, "privacy.log");
+            if (System.IO.File.Exists(file) && new System.IO.FileInfo(file).Length > 128 * 1024) System.IO.File.Delete(file);
+            System.IO.File.AppendAllText(file, $"{DateTime.Now:yyyy-MM-dd HH:mm:ss} {line}{Environment.NewLine}");
+        }
+        catch { /* ignore */ }
+    }
+
     /// <summary>Changes one privacy setting, e.g. ("whoCanSeeMyOnlineStatus", "NoOne").</summary>
     public static async Task SetPrivacySettingAsync(string cookie, string key, string value)
     {
         var body = JsonSerializer.Serialize(new Dictionary<string, string> { [key] = value });
         using var response = await SendAsync(() => Request(HttpMethod.Post, UserSettingsApi, body), cookie).ConfigureAwait(false);
         if (!response.IsSuccessStatusCode)
-            throw new RobloxApiException($"Roblox answered with HTTP {(int)response.StatusCode}.");
+        {
+            var text = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
+            PrivacyLog($"POST {key}={value} -> HTTP {(int)response.StatusCode}: {Shorten(text)}");
+            throw new RobloxApiException($"HTTP {(int)response.StatusCode} – {ErrorMessage(text) ?? "Roblox didn't accept that value"}.");
+        }
+        PrivacyLog($"POST {key}={value} -> OK");
     }
 
     /// <summary>Reads one of the account's privacy settings (e.g. "inventory-privacy" → "inventoryPrivacy").</summary>

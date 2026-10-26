@@ -30,21 +30,29 @@ jobs:
       - name: Publish Orbit.exe
         run: dotnet publish src/Orbit/Orbit.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -o publish
 
+      - name: Name it Orbit-Launcher.exe (Orbit.exe stays as a copy for older Orbit versions' updater)
+        shell: pwsh
+        run: Copy-Item publish/Orbit.exe publish/Orbit-Launcher.exe
+
       - name: Checksum
         shell: pwsh
-        run: (Get-FileHash publish/Orbit.exe -Algorithm SHA256).Hash.ToLower() | Out-File -Encoding ascii -NoNewline publish/Orbit.exe.sha256
+        run: |
+          (Get-FileHash publish/Orbit.exe -Algorithm SHA256).Hash.ToLower() | Out-File -Encoding ascii -NoNewline publish/Orbit.exe.sha256
+          (Get-FileHash publish/Orbit-Launcher.exe -Algorithm SHA256).Hash.ToLower() | Out-File -Encoding ascii -NoNewline publish/Orbit-Launcher.exe.sha256
 
       - name: Upload build
         uses: actions/upload-artifact@v4
         with:
-          name: Orbit
-          path: publish/Orbit.exe
+          name: Orbit-Launcher
+          path: publish/Orbit-Launcher.exe
 
-      - name: Attach Orbit.exe to the release
+      - name: Attach the exe to the release
         if: github.event_name == 'release' || inputs.tag != ''
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ github.event.release.tag_name || inputs.tag }}
           files: |
+            publish/Orbit-Launcher.exe
+            publish/Orbit-Launcher.exe.sha256
             publish/Orbit.exe
             publish/Orbit.exe.sha256

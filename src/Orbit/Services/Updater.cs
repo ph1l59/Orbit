@@ -16,8 +16,9 @@ public sealed record UpdateInfo(Version Version, string Tag, string ExeUrl, long
 public static class Updater
 {
     private const string Repo = "ph1l59/Orbit";
-    private const string AssetName = "Orbit.exe";
-    public const string DownloadUrl = $"https://github.com/{Repo}/releases/latest/download/{AssetName}";
+    /// <summary>Release file names, newest first (Orbit.exe is still attached for older versions).</summary>
+    private static readonly string[] AssetNames = { "Orbit-Launcher.exe", "Orbit.exe" };
+    public const string DownloadUrl = $"https://github.com/{Repo}/releases/latest/download/Orbit-Launcher.exe";
 
     /// <summary>Command-line flag the new Orbit is started with after an update.</summary>
     public const string UpdatedFlag = "--updated";
@@ -69,19 +70,16 @@ public static class Updater
 
             string? exeUrl = null, checksumUrl = null;
             long exeSize = 0;
-            foreach (var asset in root.GetProperty("assets").EnumerateArray())
+            var assets = root.GetProperty("assets").EnumerateArray().ToList();
+            foreach (var wanted in AssetNames)
             {
-                var name = asset.GetProperty("name").GetString();
-                var url = asset.GetProperty("browser_download_url").GetString();
-                if (string.Equals(name, AssetName, StringComparison.OrdinalIgnoreCase))
-                {
-                    exeUrl = url;
-                    exeSize = asset.GetProperty("size").GetInt64();
-                }
-                else if (string.Equals(name, AssetName + ".sha256", StringComparison.OrdinalIgnoreCase))
-                {
-                    checksumUrl = url;
-                }
+                var exe = assets.FirstOrDefault(a => string.Equals(a.GetProperty("name").GetString(), wanted, StringComparison.OrdinalIgnoreCase));
+                if (exe.ValueKind != JsonValueKind.Object) continue;
+                exeUrl = exe.GetProperty("browser_download_url").GetString();
+                exeSize = exe.GetProperty("size").GetInt64();
+                var sum = assets.FirstOrDefault(a => string.Equals(a.GetProperty("name").GetString(), wanted + ".sha256", StringComparison.OrdinalIgnoreCase));
+                checksumUrl = sum.ValueKind == JsonValueKind.Object ? sum.GetProperty("browser_download_url").GetString() : null;
+                break;
             }
 
             // Only trust files that live in Orbit's own GitHub releases.
