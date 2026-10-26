@@ -111,7 +111,7 @@ public partial class PlayView : UserControl, IPage
         if (AvatarImage.Source != null) AvatarHint.Visibility = Visibility.Collapsed;
 
         // ... then the turnable 3D model replaces it.
-        var model = await Avatar3D.LoadAsync(account.UserId);
+        var model = await Avatar3D.LoadAsync(account.UserId, account.Cookie);
         if (version != _avatarVersion) return;
         if (model != null)
         {

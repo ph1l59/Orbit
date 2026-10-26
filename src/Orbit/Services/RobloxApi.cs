@@ -169,6 +169,30 @@ public static class RobloxApi
         return null;
     }
 
+    /// <summary>
+    /// URL of the 3D avatar manifest (mesh, materials, textures). Since March 2026 Roblox only answers
+    /// logged-in requests here, so this goes out with the account's own login.
+    /// Returns (url, null) when ready, (null, reason) otherwise.
+    /// </summary>
+    public static async Task<(string? Url, string? Problem)> GetAvatar3DManifestAsync(long userId, string cookie)
+    {
+        var url = $"https://thumbnails.roblox.com/v1/users/avatar-3d?userId={userId}";
+        for (var attempt = 0; attempt < 8; attempt++)
+        {
+            using var response = await SendAsync(() => Request(HttpMethod.Get, url), cookie).ConfigureAwait(false);
+            if (!response.IsSuccessStatusCode)
+                return (null, $"avatar-3d answered HTTP {(int)response.StatusCode}");
+
+            using var doc = JsonDocument.Parse(await response.Content.ReadAsStringAsync().ConfigureAwait(false));
+            var state = doc.RootElement.TryGetProperty("state", out var st) ? st.GetString() : null;
+            if (state == "Completed" && doc.RootElement.TryGetProperty("imageUrl", out var img) && img.ValueKind == JsonValueKind.String)
+                return (img.GetString(), null);
+            if (state is "Blocked" or "Error") return (null, "avatar-3d state " + state);
+            await Task.Delay(1500).ConfigureAwait(false); // still rendering
+        }
+        return (null, "avatar-3d still pending");
+    }
+
     /// <summary>Online status for the given users (needs any logged-in cookie).</summary>
     public static async Task<List<UserPresence>> GetPresenceAsync(string cookie, IEnumerable<long> userIds)
     {

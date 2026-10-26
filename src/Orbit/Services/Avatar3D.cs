@@ -20,39 +20,57 @@ public static class Avatar3D
 {
     private static readonly Dictionary<long, AvatarModel> Cache = new();
 
-    public static async Task<AvatarModel?> LoadAsync(long userId)
+    /// <summary>Why the last load failed (also written to %AppData%\Orbit\avatar3d.log).</summary>
+    public static string? LastProblem { get; private set; }
+
+    public static async Task<AvatarModel?> LoadAsync(long userId, string cookie)
     {
         lock (Cache)
             if (Cache.TryGetValue(userId, out var cached)) return cached;
 
         try
         {
-            var model = await Task.Run(() => BuildAsync(userId));
+            var model = await Task.Run(() => BuildAsync(userId, cookie));
             if (model != null)
+            {
                 lock (Cache) Cache[userId] = model;
+                Log($"user {userId}: model ready ({model.Model.Children.Count} parts)");
+            }
             return model;
         }
-        catch
+        catch (Exception ex)
         {
+            Fail(userId, ex.GetType().Name + ": " + ex.Message);
             return null; // the Play page falls back to the 2D picture
         }
     }
 
-    private static async Task<AvatarModel?> BuildAsync(long userId)
+    private static void Fail(long userId, string problem)
     {
-        // 1. Ask Roblox for the 3D render (it may still be rendering for a moment).
-        string? manifestUrl = null;
-        for (var attempt = 0; attempt < 6 && manifestUrl == null; attempt++)
+        LastProblem = problem;
+        Log($"user {userId}: {problem}");
+    }
+
+    private static void Log(string line)
+    {
+        try
         {
-            var json = await RobloxApi.Http.GetStringAsync($"https://thumbnails.roblox.com/v1/users/avatar-3d?userId={userId}");
-            using var doc = JsonDocument.Parse(json);
-            var state = doc.RootElement.TryGetProperty("state", out var st) ? st.GetString() : null;
-            if (state == "Completed" && doc.RootElement.TryGetProperty("imageUrl", out var url) && url.ValueKind == JsonValueKind.String)
-                manifestUrl = url.GetString();
-            else if (state is "Blocked" or "Error") return null;
-            else await Task.Delay(1200);
+            var file = System.IO.Path.Combine(AppPaths.DataDir, "avatar3d.log");
+            if (File.Exists(file) && new FileInfo(file).Length > 64 * 1024) File.Delete(file);
+            File.AppendAllText(file, $"{DateTime.Now:yyyy-MM-dd HH:mm:ss} {line}{Environment.NewLine}");
         }
-        if (manifestUrl == null) return null;
+        catch { /* ignore */ }
+    }
+
+    private static async Task<AvatarModel?> BuildAsync(long userId, string cookie)
+    {
+        // 1. Ask Roblox for the 3D render (needs a login since March 2026; may still be rendering for a moment).
+        var (manifestUrl, problem) = await RobloxApi.GetAvatar3DManifestAsync(userId, cookie);
+        if (manifestUrl == null)
+        {
+            Fail(userId, problem ?? "no 3D render");
+            return null;
+        }
 
         // 2. The manifest names the mesh, the materials and the textures by hash.
         using var manifest = JsonDocument.Parse(await RobloxApi.Http.GetStringAsync(manifestUrl));
