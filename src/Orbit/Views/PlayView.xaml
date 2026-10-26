@@ -61,18 +61,38 @@
                     <ControlTemplate TargetType="Button">
                         <Grid x:Name="root" RenderTransformOrigin="0.5,0.5">
 
-                            <!-- body: see-through like NoRisk, with a purple frame and a bright line at the bottom -->
-                            <Border x:Name="body" CornerRadius="14" BorderThickness="1.5" BorderBrush="#CCA855F7">
+                            <!-- glow -->
+                            <Border x:Name="glow" CornerRadius="18" Background="#A855F7" Opacity="0.35" Margin="10,14,10,0">
+                                <Border.Effect>
+                                    <BlurEffect Radius="28"/>
+                                </Border.Effect>
+                            </Border>
+
+                            <!-- body -->
+                            <Border CornerRadius="18" BorderThickness="1">
+                                <Border.BorderBrush>
+                                    <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
+                                        <GradientStop Color="#66FFFFFF" Offset="0"/>
+                                        <GradientStop Color="#11FFFFFF" Offset="1"/>
+                                    </LinearGradientBrush>
+                                </Border.BorderBrush>
                                 <Border.Background>
-                                    <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
-                                        <GradientStop Color="#552E1065" Offset="0"/>
-                                        <GradientStop Color="#665B21B6" Offset="1"/>
+                                    <LinearGradientBrush x:Name="fill" StartPoint="0,0" EndPoint="1,1">
+                                        <GradientStop Color="#995B21B6" Offset="0"/>
+                                        <GradientStop Color="#999333EA" Offset="0.55"/>
+                                        <GradientStop Color="#99D946EF" Offset="1"/>
                                     </LinearGradientBrush>
                                 </Border.Background>
                             </Border>
-                            <Border x:Name="hoverFill" CornerRadius="14" Background="#A855F7" Opacity="0" IsHitTestVisible="False"/>
-                            <Border CornerRadius="0,0,14,14" Height="3" VerticalAlignment="Bottom" Margin="1.5,0,1.5,1.5"
-                                    Background="#C084FC" IsHitTestVisible="False"/>
+                            <!-- shine on the upper half -->
+                            <Border CornerRadius="18,18,40,40" Margin="1,1,1,38" IsHitTestVisible="False">
+                                <Border.Background>
+                                    <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
+                                        <GradientStop Color="#33FFFFFF" Offset="0"/>
+                                        <GradientStop Color="#00FFFFFF" Offset="1"/>
+                                    </LinearGradientBrush>
+                                </Border.Background>
+                            </Border>
 
                             <!-- content: play icon + text -->
                             <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
@@ -111,7 +131,7 @@
                                             <DoubleAnimation Storyboard.TargetName="iconScale" Storyboard.TargetProperty="ScaleX" To="1.12" Duration="0:0:0.18"/>
                                             <DoubleAnimation Storyboard.TargetName="iconScale" Storyboard.TargetProperty="ScaleY" To="1.12" Duration="0:0:0.18"/>
                                             <DoubleAnimation Storyboard.TargetName="iconShift" Storyboard.TargetProperty="X" To="-4" Duration="0:0:0.18"/>
-                                            <DoubleAnimation Storyboard.TargetName="hoverFill" Storyboard.TargetProperty="Opacity" To="0.18" Duration="0:0:0.2"/>
+                                            <DoubleAnimation Storyboard.TargetName="glow" Storyboard.TargetProperty="Opacity" To="0.85" Duration="0:0:0.2"/>
                                         </Storyboard>
                                     </BeginStoryboard>
                                 </Trigger.EnterActions>
@@ -123,7 +143,7 @@
                                             <DoubleAnimation Storyboard.TargetName="iconScale" Storyboard.TargetProperty="ScaleX" To="1" Duration="0:0:0.2"/>
                                             <DoubleAnimation Storyboard.TargetName="iconScale" Storyboard.TargetProperty="ScaleY" To="1" Duration="0:0:0.2"/>
                                             <DoubleAnimation Storyboard.TargetName="iconShift" Storyboard.TargetProperty="X" To="0" Duration="0:0:0.2"/>
-                                            <DoubleAnimation Storyboard.TargetName="hoverFill" Storyboard.TargetProperty="Opacity" To="0" Duration="0:0:0.25"/>
+                                            <DoubleAnimation Storyboard.TargetName="glow" Storyboard.TargetProperty="Opacity" To="0.35" Duration="0:0:0.25"/>
                                         </Storyboard>
                                     </BeginStoryboard>
                                 </Trigger.ExitActions>
@@ -250,7 +270,7 @@
                                HorizontalAlignment="Center" VerticalAlignment="Center"/>
                 </Grid>
 
-                <StackPanel Grid.Row="2" HorizontalAlignment="Center" Margin="0,-74,0,0">
+                <StackPanel Grid.Row="2" HorizontalAlignment="Center" Margin="0,8,0,0">
                     <Button x:Name="LaunchButton" Style="{StaticResource LaunchButton}" Content="Roblox app" Click="Launch_Click"
                             Tag="Launch Roblox|play start app"/>
                     <TextBlock x:Name="StatusText" Style="{StaticResource RowDesc}" HorizontalAlignment="Center" Margin="0,10,0,0"/>
