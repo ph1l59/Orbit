@@ -168,7 +168,7 @@ public partial class FriendsDrawer : UserControl
             catch { requestIds = new(); }
 
             var all = friendIds.Concat(requestIds).ToList();
-            var users = await RobloxApi.GetUsersAsync(all);
+            var users = await RobloxApi.GetUsersAsync(all, account.Cookie);
             var pictures = await RobloxApi.GetHeadshotsAsync(all);
             if (version != _version) return;
 
@@ -190,6 +190,9 @@ public partial class FriendsDrawer : UserControl
             RequestCountChanged?.Invoke(_requests.Count);
             await RefreshPresenceAsync(force: true);
             if (version == _version) Fill(null);
+
+            if (users.Count < all.Distinct().Count() || pictures.Count < all.Distinct().Count())
+                _ = FillMissingLaterAsync(version);
         }
         catch (Exception ex)
         {
@@ -202,6 +205,47 @@ public partial class FriendsDrawer : UserControl
                 _loading = false;
                 RefreshButton.IsEnabled = true;
             }
+        }
+    }
+
+    /// <summary>Names/pictures that Roblox didn't deliver at first (busy right after start) are fetched again.</summary>
+    private async Task FillMissingLaterAsync(int version)
+    {
+        for (var round = 0; round < 3; round++)
+        {
+            await Task.Delay(TimeSpan.FromSeconds(3 + round * 4));
+            if (version != _version || _account is not { } account) return;
+
+            var people = _friends.Concat(_requests).ToList();
+            var noName = people.Where(p => p.Name == p.Id.ToString()).Select(p => p.Id).ToList();
+            var noPicture = people.Where(p => string.IsNullOrEmpty(p.AvatarUrl)).Select(p => p.Id).ToList();
+            if (noName.Count == 0 && noPicture.Count == 0) return;
+
+            var users = noName.Count > 0 ? await RobloxApi.GetUsersAsync(noName, account.Cookie) : new();
+            var pictures = noPicture.Count > 0 ? await RobloxApi.GetHeadshotsAsync(noPicture) : new();
+            if (version != _version) return;
+
+            PersonItem Fix(PersonItem p)
+            {
+                var name = p.Name;
+                var title = p.Title;
+                if (users.TryGetValue(p.Id, out var u))
+                {
+                    name = u.Name;
+                    title = string.IsNullOrWhiteSpace(u.DisplayName) ? u.Name : u.DisplayName;
+                }
+                if (name == p.Name && title == p.Title && (p.AvatarUrl != null || !pictures.ContainsKey(p.Id))) return p;
+                return new PersonItem
+                {
+                    Id = p.Id, Name = name, Title = title, IsRequest = p.IsRequest,
+                    AvatarUrl = pictures.TryGetValue(p.Id, out var pic) ? pic : p.AvatarUrl,
+                    Presence = p.Presence, Location = p.Location,
+                };
+            }
+
+            _friends = _friends.Select(Fix).ToList();
+            _requests = _requests.Select(Fix).ToList();
+            Fill(null);
         }
     }
 

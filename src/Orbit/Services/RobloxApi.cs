@@ -246,20 +246,35 @@ public static class RobloxApi
     }
 
     /// <summary>Names and display names for user ids.</summary>
-    public static async Task<Dictionary<long, FriendInfo>> GetUsersAsync(IEnumerable<long> userIds)
+    public static async Task<Dictionary<long, FriendInfo>> GetUsersAsync(IEnumerable<long> userIds, string? cookie = null)
     {
         var result = new Dictionary<long, FriendInfo>();
         foreach (var chunk in userIds.Distinct().Chunk(100))
         {
             var body = JsonSerializer.Serialize(new { userIds = chunk, excludeBannedUsers = false });
-            using var response = await SendAsync(
-                () => Request(HttpMethod.Post, "https://users.roblox.com/v1/users", body), null).ConfigureAwait(false);
-            if (!response.IsSuccessStatusCode) continue;
-            using var doc = JsonDocument.Parse(await response.Content.ReadAsStringAsync().ConfigureAwait(false));
-            foreach (var u in doc.RootElement.GetProperty("data").EnumerateArray())
+
+            // Right after Orbit starts, many requests go out at once and Roblox sometimes answers
+            // "too many requests" – try again a few times instead of showing bare ids.
+            for (var attempt = 0; attempt < 4; attempt++)
             {
-                var id = u.GetProperty("id").GetInt64();
-                result[id] = new FriendInfo(id, u.GetProperty("name").GetString() ?? "", u.GetProperty("displayName").GetString() ?? "");
+                if (attempt > 0) await Task.Delay(800 * attempt).ConfigureAwait(false);
+                try
+                {
+                    using var response = await SendAsync(
+                        () => Request(HttpMethod.Post, "https://users.roblox.com/v1/users", body), cookie).ConfigureAwait(false);
+                    if (!response.IsSuccessStatusCode) continue;
+                    using var doc = JsonDocument.Parse(await response.Content.ReadAsStringAsync().ConfigureAwait(false));
+                    foreach (var u in doc.RootElement.GetProperty("data").EnumerateArray())
+                    {
+                        var id = u.GetProperty("id").GetInt64();
+                        result[id] = new FriendInfo(id, u.GetProperty("name").GetString() ?? "", u.GetProperty("displayName").GetString() ?? "");
+                    }
+                    break;
+                }
+                catch
+                {
+                    // network hiccup – next attempt
+                }
             }
         }
         return result;
