@@ -264,8 +264,32 @@
                     </StackPanel>
                 </Border>
 
-                <Grid Grid.Row="1" Width="340" Height="340" Margin="0,6,0,0">
+                <Grid Grid.Row="1" Width="360" Height="360" Margin="0,6,0,0">
+                    <!-- 2D picture: shown while the 3D model loads, or if it can't be loaded -->
                     <Image x:Name="AvatarImage" Stretch="Uniform" RenderOptions.BitmapScalingMode="HighQuality"/>
+
+                    <!-- 3D avatar, turned by dragging with the mouse -->
+                    <Viewport3D x:Name="AvatarView" Visibility="Collapsed" IsHitTestVisible="False">
+                        <Viewport3D.Camera>
+                            <PerspectiveCamera x:Name="AvatarCamera" FieldOfView="30" UpDirection="0,1,0"/>
+                        </Viewport3D.Camera>
+                        <ModelVisual3D>
+                            <ModelVisual3D.Content>
+                                <Model3DGroup>
+                                    <AmbientLight Color="#7A7A86"/>
+                                    <DirectionalLight x:Name="KeyLight" Color="#F2F2F2" Direction="0,-0.5,1"/>
+                                    <DirectionalLight x:Name="RimLight" Color="#6B46C1" Direction="0,0.2,-1"/>
+                                </Model3DGroup>
+                            </ModelVisual3D.Content>
+                        </ModelVisual3D>
+                        <ModelVisual3D x:Name="AvatarVisual"/>
+                    </Viewport3D>
+
+                    <Border x:Name="DragSurface" Background="Transparent" Visibility="Collapsed" Cursor="SizeWE"
+                            ToolTip="Drag to turn · double-click to reset"
+                            MouseLeftButtonDown="Avatar_MouseDown" MouseMove="Avatar_MouseMove" MouseLeftButtonUp="Avatar_MouseUp"
+                            LostMouseCapture="Avatar_LostCapture"/>
+
                     <TextBlock x:Name="AvatarHint" Text="Loading avatar…" Style="{StaticResource RowDesc}"
                                HorizontalAlignment="Center" VerticalAlignment="Center"/>
                 </Grid>

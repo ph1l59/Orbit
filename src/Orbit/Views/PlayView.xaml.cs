@@ -2,6 +2,7 @@ using System.Collections.Specialized;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media.Imaging;
+using System.Windows.Media.Media3D;
 using Orbit.Models;
 using Orbit.Services;
 
@@ -94,20 +95,159 @@ public partial class PlayView : UserControl, IPage
     private async Task LoadFullBodyAsync(Account account)
     {
         var version = ++_avatarVersion;
+        ShowModel(null);
         AvatarImage.Source = null;
         AvatarHint.Text = "Loading avatar…";
         AvatarHint.Visibility = Visibility.Visible;
 
+        // The flat picture comes first (fast) ...
         if (!FullBodyCache.TryGetValue(account.UserId, out var url))
         {
             url = await RobloxApi.GetFullBodyAvatarAsync(account.UserId) ?? "";
             if (url.Length > 0) FullBodyCache[account.UserId] = url;
         }
         if (version != _avatarVersion) return; // another account was picked meanwhile
-
         AvatarImage.Source = Load(url);
         if (AvatarImage.Source != null) AvatarHint.Visibility = Visibility.Collapsed;
-        else AvatarHint.Text = "Avatar couldn't be loaded";
+
+        // ... then the turnable 3D model replaces it.
+        var model = await Avatar3D.LoadAsync(account.UserId);
+        if (version != _avatarVersion) return;
+        if (model != null)
+        {
+            ShowModel(model);
+            AvatarHint.Visibility = Visibility.Collapsed;
+        }
+        else if (AvatarImage.Source == null)
+        {
+            AvatarHint.Text = "Avatar couldn't be loaded";
+        }
+    }
+
+    // ---------- 3D avatar ----------
+
+    private AvatarModel? _model;
+    private readonly AxisAngleRotation3D _yaw = new(new Vector3D(0, 1, 0), 0);
+    private readonly AxisAngleRotation3D _pitch = new(new Vector3D(1, 0, 0), 0);
+    private double _yawAngle, _pitchAngle, _velocity;
+    private Point? _dragLast;
+    private DateTime _dragTime;
+    private bool _spinning;
+
+    private void ShowModel(AvatarModel? model)
+    {
+        _model = model;
+        if (model == null)
+        {
+            AvatarVisual.Content = null;
+            AvatarView.Visibility = Visibility.Collapsed;
+            DragSurface.Visibility = Visibility.Collapsed;
+            AvatarImage.Visibility = Visibility.Visible;
+            return;
+        }
+
+        var b = model.Bounds;
+        var center = new Point3D(b.X + b.SizeX / 2, b.Y + b.SizeY / 2, b.Z + b.SizeZ / 2);
+        var front = model.Front;
+        var up = new Vector3D(0, 1, 0);
+        var side = Vector3D.CrossProduct(up, front);
+        side.Normalize();
+
+        // Turn around the model's own middle: left/right around "up", a little tilt around the side axis.
+        _yaw.Axis = up;
+        _pitch.Axis = side;
+        var transform = new Transform3DGroup();
+        transform.Children.Add(new RotateTransform3D(_yaw, center));
+        transform.Children.Add(new RotateTransform3D(_pitch, center));
+        AvatarVisual.Content = model.Model;
+        AvatarVisual.Transform = transform;
+        ResetRotation();
+
+        // Camera in front of the avatar, far enough away to fit it (plus some room for turning).
+        var size = Math.Max(b.SizeY, Math.Max(b.SizeX, b.SizeZ) * 1.15);
+        var distance = size / 2 / Math.Tan(AvatarCamera.FieldOfView / 2 * Math.PI / 180) * 1.12;
+        AvatarCamera.Position = center + front * distance + new Vector3D(0, b.SizeY * 0.04, 0);
+        AvatarCamera.LookDirection = center - AvatarCamera.Position;
+        AvatarCamera.NearPlaneDistance = 0.1;
+        AvatarCamera.FarPlaneDistance = distance * 10;
+
+        // Main light from the front-top-left, a purple rim light from behind.
+        KeyLight.Direction = -front + new Vector3D(0, -0.55, 0) + side * 0.35;
+        RimLight.Direction = front + new Vector3D(0, -0.2, 0);
+
+        AvatarImage.Visibility = Visibility.Collapsed;
+        AvatarView.Visibility = Visibility.Visible;
+        DragSurface.Visibility = Visibility.Visible;
+    }
+
+    private void ResetRotation()
+    {
+        _yawAngle = _pitchAngle = _velocity = 0;
+        _yaw.Angle = 0;
+        _pitch.Angle = 0;
+    }
+
+    private void Avatar_MouseDown(object sender, System.Windows.Input.MouseButtonEventArgs e)
+    {
+        if (_model == null) return;
+        if (e.ClickCount == 2) { ResetRotation(); return; }
+        _dragLast = e.GetPosition(DragSurface);
+        _dragTime = DateTime.UtcNow;
+        _velocity = 0;
+        DragSurface.CaptureMouse();
+    }
+
+    private void Avatar_MouseMove(object sender, System.Windows.Input.MouseEventArgs e)
+    {
+        if (_dragLast is not { } last) return;
+        var now = e.GetPosition(DragSurface);
+        var dx = now.X - last.X;
+        var dy = now.Y - last.Y;
+
+        _yawAngle += dx * 0.6;
+        _pitchAngle = Math.Clamp(_pitchAngle + dy * 0.25, -18, 18);
+        _yaw.Angle = _yawAngle;
+        _pitch.Angle = _pitchAngle;
+
+        var seconds = Math.Max(0.001, (DateTime.UtcNow - _dragTime).TotalSeconds);
+        _velocity = dx * 0.6 / seconds; // degrees per second, for the spin after letting go
+        _dragTime = DateTime.UtcNow;
+        _dragLast = now;
+    }
+
+    private void Avatar_MouseUp(object sender, System.Windows.Input.MouseButtonEventArgs e) => DragSurface.ReleaseMouseCapture();
+
+    private void Avatar_LostCapture(object sender, System.Windows.Input.MouseEventArgs e)
+    {
+        if (_dragLast == null) return;
+        _dragLast = null;
+        // A quick flick keeps turning and slows down smoothly.
+        if ((DateTime.UtcNow - _dragTime).TotalMilliseconds > 80) _velocity = 0;
+        _velocity = Math.Clamp(_velocity, -900, 900);
+        if (Math.Abs(_velocity) > 20 && !_spinning)
+        {
+            _spinning = true;
+            _lastFrame = DateTime.UtcNow;
+            System.Windows.Media.CompositionTarget.Rendering += Spin;
+        }
+    }
+
+    private DateTime _lastFrame;
+
+    private void Spin(object? sender, EventArgs e)
+    {
+        var now = DateTime.UtcNow;
+        var dt = (now - _lastFrame).TotalSeconds;
+        _lastFrame = now;
+        if (_dragLast != null || Math.Abs(_velocity) < 5 || _model == null)
+        {
+            _spinning = false;
+            System.Windows.Media.CompositionTarget.Rendering -= Spin;
+            return;
+        }
+        _yawAngle += _velocity * dt;
+        _yaw.Angle = _yawAngle;
+        _velocity *= Math.Pow(0.08, dt); // friction
     }
 
     private static BitmapImage? Load(string? url)
