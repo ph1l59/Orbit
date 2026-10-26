@@ -455,7 +455,8 @@ public static class RobloxApi
     public static async Task SetPrivacySettingAsync(string cookie, long userId, long browserTrackerId, string key, string value)
     {
         var body = JsonSerializer.Serialize(new Dictionary<string, string> { [key] = value });
-        var tracker = $"RBXEventTrackerV2=CreateDate={DateTime.UtcNow:M/d/yyyy h:mm:ss tt}&rbxid={userId}&browserid={browserTrackerId}";
+        var created = DateTime.UtcNow.ToString("M/d/yyyy h:mm:ss tt", System.Globalization.CultureInfo.InvariantCulture);
+        var tracker = $"RBXEventTrackerV2=CreateDate={created}&rbxid={userId}&browserid={browserTrackerId}";
         using var response = await SendAsync(() =>
         {
             var request = Request(HttpMethod.Post, UserSettingsApi, body);
