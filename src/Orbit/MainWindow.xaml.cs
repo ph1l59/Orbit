@@ -116,12 +116,12 @@ public partial class MainWindow : Window
     // ---------------- Page entrance ----------------
 
     /// <summary>
-    /// The page glides up from 36 px below and fades in (about half a second, slowing down towards the end).
+    /// The page glides up from 36 px below and fades in (one second, slowing down towards the end).
     /// While it moves it's drawn from a cached picture, so the shadows don't have to be redrawn every frame.
     /// </summary>
     private void AnimateIn(FrameworkElement page)
     {
-        var duration = TimeSpan.FromMilliseconds(560);
+        var duration = TimeSpan.FromMilliseconds(1000);
         var dpi = VisualTreeHelper.GetDpi(ContentHost).DpiScaleX;
         ContentHost.CacheMode = new BitmapCache(dpi) { SnapsToDevicePixels = true };
 
@@ -133,7 +133,7 @@ public partial class MainWindow : Window
             EasingFunction = new System.Windows.Media.Animation.QuarticEase { EasingMode = System.Windows.Media.Animation.EasingMode.EaseOut },
         };
         slide.Completed += (_, _) => ContentHost.CacheMode = null; // back to sharp, live drawing
-        var fade = new System.Windows.Media.Animation.DoubleAnimation(0, 1, TimeSpan.FromMilliseconds(420))
+        var fade = new System.Windows.Media.Animation.DoubleAnimation(0, 1, TimeSpan.FromMilliseconds(650))
         {
             EasingFunction = new System.Windows.Media.Animation.CubicEase { EasingMode = System.Windows.Media.Animation.EasingMode.EaseOut },
         };
