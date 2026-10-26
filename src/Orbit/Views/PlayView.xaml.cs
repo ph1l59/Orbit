@@ -54,7 +54,7 @@ public partial class PlayView : UserControl, IPage
         {
             PickerName.Text = "No account";
             PickerUser.Text = "Add one under Accounts";
-            PickerAvatar.Source = null;
+            PickerAvatar.ImageSource = null;
             NameTag.Text = "—";
             AvatarImage.Source = null;
             return;
@@ -62,7 +62,7 @@ public partial class PlayView : UserControl, IPage
 
         PickerName.Text = account.Title;
         PickerUser.Text = account.Subtitle;
-        PickerAvatar.Source = Load(account.AvatarUrl);
+        PickerAvatar.ImageSource = Load(account.AvatarUrl);
         NameTag.Text = account.Title;
 
         if (save)
