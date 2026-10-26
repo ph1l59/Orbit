@@ -48,7 +48,9 @@ public partial class PlayView : UserControl, IPage
     private void Select(Account? account, bool save)
     {
         var changed = account?.UserId != _account?.UserId;
+        if (_account != null) _account.PropertyChanged -= OnAccountChanged;
         _account = account;
+        if (account != null) account.PropertyChanged += OnAccountChanged;
 
         if (account == null)
         {
@@ -72,6 +74,21 @@ public partial class PlayView : UserControl, IPage
         }
 
         if (changed || AvatarImage.Source == null) _ = LoadFullBodyAsync(account);
+    }
+
+    /// <summary>The profile picture often arrives a moment after the page is built (right after Orbit starts).</summary>
+    private void OnAccountChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
+    {
+        if (sender is not Account account || account != _account) return;
+        Dispatcher.InvokeAsync(() =>
+        {
+            if (e.PropertyName == nameof(Account.AvatarUrl)) PickerAvatar.ImageSource = Load(account.AvatarUrl);
+            if (e.PropertyName is nameof(Account.Alias) or nameof(Account.DisplayName) or nameof(Account.Title))
+            {
+                PickerName.Text = account.Title;
+                NameTag.Text = account.Title;
+            }
+        });
     }
 
     private async Task LoadFullBodyAsync(Account account)
