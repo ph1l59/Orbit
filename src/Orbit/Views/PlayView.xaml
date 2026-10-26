@@ -227,7 +227,7 @@
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="Button">
-                        <Border x:Name="bd" CornerRadius="28" Background="{StaticResource RaisedBrush}" BorderBrush="{StaticResource LineStrongBrush}"
+                        <Border x:Name="bd" CornerRadius="14" Background="{StaticResource RaisedBrush}" BorderBrush="{StaticResource LineStrongBrush}"
                                 BorderThickness="1" RenderTransformOrigin="0.5,0.5">
                             <Border.RenderTransform>
                                 <ScaleTransform x:Name="grow" ScaleX="1" ScaleY="1"/>

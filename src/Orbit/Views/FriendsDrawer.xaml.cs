@@ -70,26 +70,11 @@ public partial class FriendsDrawer : UserControl
     private readonly DispatcherTimer _presenceTimer = new() { Interval = TimeSpan.FromSeconds(30) };
     private readonly DispatcherTimer _searchDelay = new() { Interval = TimeSpan.FromMilliseconds(450) };
 
-    private static readonly (string Value, string Label)[] InventoryOptions =
-    {
-        ("AllUsers", "Everyone"), ("AllAuthenticatedUsers", "Everyone on Roblox"),
-        ("FriendsFollowingAndFollowers", "Friends, following and followers"), ("FriendsAndFollowing", "Friends and following"),
-        ("Friends", "Friends"), ("NoOne", "No one"),
-    };
-
-    private static readonly (string Value, string Label)[] TradeOptions =
-    {
-        ("All", "Everyone"), ("Followers", "Followers"), ("Following", "Following"), ("Friends", "Friends"),
-        ("TopFriends", "Top friends"), ("NoOne", "No one"),
-    };
-
     public bool IsOpen { get; set; }
 
     public FriendsDrawer()
     {
         InitializeComponent();
-        foreach (var o in InventoryOptions) InventoryPrivacy.Items.Add(new ComboBoxItem { Content = o.Label, Tag = o.Value });
-        foreach (var o in TradeOptions) TradePrivacy.Items.Add(new ComboBoxItem { Content = o.Label, Tag = o.Value });
         _presenceTimer.Tick += async (_, _) => { if (IsOpen) await RefreshPresenceAsync(); };
         _presenceTimer.Start();
         _searchDelay.Tick += async (_, _) => { _searchDelay.Stop(); await SearchUsersAsync(); };
@@ -268,15 +253,19 @@ public partial class FriendsDrawer : UserControl
 
     private void FriendSearch_TextChanged(object sender, TextChangedEventArgs e) => Fill(null);
 
-    private void Person_Click(object sender, RoutedEventArgs e)
+    private void Person_MouseUp(object sender, MouseButtonEventArgs e)
     {
+        // Clicks on Join / Add / accept / decline are handled by those buttons.
+        for (var d = e.OriginalSource as DependencyObject; d != null && d != sender; d = VisualTreeHelper.GetParent(d))
+            if (d is Button) return;
         if (_account is { } account && (sender as FrameworkElement)?.Tag is PersonItem p)
             new BrowserWindow(account, $"https://www.roblox.com/users/{p.Id}/profile").Show();
     }
 
     private void Join_Click(object sender, RoutedEventArgs e)
     {
-        e.Handled = true; // don't also open the profile
+        e.Handled = true;
+        if (sender is Button b) b.IsEnabled = false; // one click is enough
         if ((sender as FrameworkElement)?.Tag is PersonItem p) JoinRequested?.Invoke(p);
     }
 
@@ -307,10 +296,6 @@ public partial class FriendsDrawer : UserControl
         }
     }
 
-    private void Chat_Click(object sender, RoutedEventArgs e)
-    {
-        if (_account is { } account) new BrowserWindow(account, "https://www.roblox.com/home").Show();
-    }
 
     // ---------- Add friend ----------
 
@@ -448,15 +433,77 @@ public partial class FriendsDrawer : UserControl
             ProfileStatus.Text = "Status unavailable";
         }
 
+        await LoadPrivacyAsync(account);
+    }
+
+    private static readonly Dictionary<string, string> SettingNames = new(StringComparer.OrdinalIgnoreCase)
+    {
+        ["whoCanSeeMyOnlineStatus"] = "Who can see when I'm online",
+        ["whoCanJoinMeInExperiences"] = "Who can join me in experiences",
+        ["whoCanSeeMyInventory"] = "Who can see my inventory",
+        ["whoCanTradeWithMe"] = "Who can trade with me",
+        ["whoCanSeeMySocialNetworks"] = "Who can see my social links",
+        ["whoCanChatWithMeInApp"] = "Who can chat with me in the app",
+        ["whoCanChatWithMeInExperiences"] = "Who can chat with me in experiences",
+        ["whoCanOneOnOnePartyWithMe"] = "Who can party with me (1 on 1)",
+        ["whoCanGroupPartyWithMe"] = "Who can invite me to group parties",
+    };
+
+    private static readonly Dictionary<string, string> ValueNames = new(StringComparer.OrdinalIgnoreCase)
+    {
+        ["AllUsers"] = "Everyone", ["All"] = "Everyone", ["Everyone"] = "Everyone",
+        ["AllAuthenticatedUsers"] = "Everyone on Roblox", ["NoOne"] = "No one",
+        ["FriendsFollowingAndFollowers"] = "Friends, following and followers",
+        ["FriendsAndFollowing"] = "Friends and following", ["TopFriends"] = "Top friends",
+    };
+
+    /// <summary>"whoCanSeeMyThing" → "Who can see my thing"</summary>
+    private static string Humanize(string key, Dictionary<string, string> known)
+    {
+        if (known.TryGetValue(key, out var name)) return name;
+        var words = System.Text.RegularExpressions.Regex.Replace(key, "(?<=[a-z])(?=[A-Z])", " ").ToLowerInvariant();
+        return words.Length == 0 ? key : char.ToUpperInvariant(words[0]) + words[1..];
+    }
+
+    /// <summary>Online status and join settings first, the rest after.</summary>
+    private static int SettingOrder(string key) => key switch
+    {
+        "whoCanSeeMyOnlineStatus" => 0,
+        "whoCanJoinMeInExperiences" => 1,
+        "whoCanSeeMyInventory" => 2,
+        "whoCanTradeWithMe" => 3,
+        _ => 10,
+    };
+
+    private async Task LoadPrivacyAsync(Account account)
+    {
+        PrivacyList.Children.Clear();
+        PrivacyStatus.Text = "Loading…";
         _privacyLoading = true;
         try
         {
-            Select(InventoryPrivacy, await RobloxApi.GetPrivacyAsync(account.Cookie, "inventory-privacy", "inventoryPrivacy"));
-            Select(TradePrivacy, await RobloxApi.GetPrivacyAsync(account.Cookie, "trade-privacy", "tradePrivacy"));
+            var settings = await RobloxApi.GetPrivacySettingsAsync(account.Cookie);
+            foreach (var setting in settings.OrderBy(x => SettingOrder(x.Key)).ThenBy(x => x.Key))
+            {
+                PrivacyList.Children.Add(new TextBlock
+                {
+                    Text = Humanize(setting.Key, SettingNames),
+                    FontSize = 13.5,
+                    Margin = new Thickness(0, PrivacyList.Children.Count == 0 ? 0 : 16, 0, 0),
+                });
+                var box = new ComboBox { MinWidth = 0, Margin = new Thickness(0, 8, 0, 0), Tag = setting.Key };
+                var options = setting.Options.Contains(setting.Current) ? setting.Options : setting.Options.Append(setting.Current);
+                foreach (var option in options)
+                    box.Items.Add(new ComboBoxItem { Content = Humanize(option, ValueNames), Tag = option });
+                box.SelectedItem = box.Items.OfType<ComboBoxItem>().FirstOrDefault(i => (string)i.Tag == setting.Current);
+                box.SelectionChanged += Privacy_Changed;
+                PrivacyList.Children.Add(box);
+            }
+            PrivacyStatus.Text = settings.Count == 0 ? "Roblox didn't send any privacy settings." : "";
         }
-        catch
+        catch (Exception ex)
         {
-            PrivacyStatus.Text = "Privacy settings couldn't be loaded.";
+            PrivacyStatus.Text = "Privacy settings couldn't be loaded: " + ex.Message;
         }
         finally
         {
@@ -464,25 +511,24 @@ public partial class FriendsDrawer : UserControl
         }
     }
 
-    private static void Select(ComboBox box, string? value)
-    {
-        box.SelectedItem = box.Items.OfType<ComboBoxItem>().FirstOrDefault(i => (string)i.Tag == value);
-        box.IsEnabled = value != null;
-    }
-
     private async void Privacy_Changed(object sender, SelectionChangedEventArgs e)
     {
-        if (_privacyLoading || _account is not { } account || sender is not ComboBox box || box.SelectedItem is not ComboBoxItem item) return;
-        var (endpoint, field) = box == InventoryPrivacy ? ("inventory-privacy", "inventoryPrivacy") : ("trade-privacy", "tradePrivacy");
+        if (_privacyLoading || _account is not { } account || sender is not ComboBox { Tag: string key } box ||
+            box.SelectedItem is not ComboBoxItem { Tag: string value }) return;
         PrivacyStatus.Text = "Saving…";
+        box.IsEnabled = false;
         try
         {
-            await RobloxApi.SetPrivacyAsync(account.Cookie, endpoint, field, (string)item.Tag);
+            await RobloxApi.SetPrivacySettingAsync(account.Cookie, key, value);
             PrivacyStatus.Text = "Saved ✓";
         }
         catch (Exception ex)
         {
             PrivacyStatus.Text = "Couldn't save: " + ex.Message;
+        }
+        finally
+        {
+            box.IsEnabled = true;
         }
     }
 

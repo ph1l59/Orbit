@@ -20,6 +20,9 @@ public sealed record ProfileInfo(long Id, string Name, string DisplayName, strin
 
 public enum FriendRequestResult { Sent, AlreadyFriends, NeedsCheck, Failed }
 
+/// <summary>One privacy setting of the account, e.g. who can see that I'm online.</summary>
+public sealed record PrivacySetting(string Key, string Current, IReadOnlyList<string> Options);
+
 public sealed record GameInfo(long UniverseId, string Name, string Creator, string? IconUrl, long Playing);
 
 public sealed class RobloxApiException(string message) : Exception(message);
@@ -341,6 +344,77 @@ public static class RobloxApi
         var followers = Count($"https://friends.roblox.com/v1/users/{userId}/followers/count");
         var following = Count($"https://friends.roblox.com/v1/users/{userId}/followings/count");
         return (await friends, await followers, await following);
+    }
+
+    private const string UserSettingsApi = "https://apis.roblox.com/user-settings-api/v1/user-settings";
+
+    /// <summary>Usual choices, used when Roblox doesn't send its own list of options.</summary>
+    private static readonly string[] DefaultPrivacyOptions =
+        { "AllUsers", "FriendsFollowingAndFollowers", "FriendsAndFollowing", "Friends", "NoOne" };
+
+    /// <summary>
+    /// The account's privacy settings ("whoCan…") with their current value and the allowed values.
+    /// Uses Roblox's user-settings API (the old accountsettings endpoints answer 403 now).
+    /// </summary>
+    public static async Task<List<PrivacySetting>> GetPrivacySettingsAsync(string cookie)
+    {
+        var result = new List<PrivacySetting>();
+
+        // 1. Settings together with their options.
+        using (var response = await SendAsync(() => Request(HttpMethod.Get, UserSettingsApi + "/settings-and-options"), cookie).ConfigureAwait(false))
+        {
+            if (response.IsSuccessStatusCode)
+            {
+                using var doc = JsonDocument.Parse(await response.Content.ReadAsStringAsync().ConfigureAwait(false));
+                foreach (var setting in doc.RootElement.EnumerateObject())
+                {
+                    if (!setting.Name.StartsWith("whoCan", StringComparison.OrdinalIgnoreCase) || setting.Value.ValueKind != JsonValueKind.Object)
+                        continue;
+                    var current = setting.Value.TryGetProperty("currentValue", out var cv) && cv.ValueKind == JsonValueKind.String ? cv.GetString() : null;
+                    var options = new List<string>();
+                    if (setting.Value.TryGetProperty("options", out var opts) && opts.ValueKind == JsonValueKind.Array)
+                        foreach (var o in opts.EnumerateArray())
+                            if (FindValue(o) is { } v) options.Add(v);
+                    if (current != null)
+                        result.Add(new PrivacySetting(setting.Name, current, options.Count > 0 ? options : DefaultPrivacyOptions));
+                }
+            }
+        }
+        if (result.Count > 0) return result;
+
+        // 2. Just the values.
+        using (var response = await SendAsync(() => Request(HttpMethod.Get, UserSettingsApi), cookie).ConfigureAwait(false))
+        {
+            if (!response.IsSuccessStatusCode)
+                throw new RobloxApiException($"Roblox answered with HTTP {(int)response.StatusCode}.");
+            using var doc = JsonDocument.Parse(await response.Content.ReadAsStringAsync().ConfigureAwait(false));
+            foreach (var setting in doc.RootElement.EnumerateObject())
+                if (setting.Name.StartsWith("whoCan", StringComparison.OrdinalIgnoreCase) && setting.Value.ValueKind == JsonValueKind.String)
+                    result.Add(new PrivacySetting(setting.Name, setting.Value.GetString()!, DefaultPrivacyOptions));
+        }
+        return result;
+
+        // An option may be a plain string or an object such as { "option": { "optionValue": "Friends" } }.
+        static string? FindValue(JsonElement e)
+        {
+            if (e.ValueKind == JsonValueKind.String) return e.GetString();
+            if (e.ValueKind != JsonValueKind.Object) return null;
+            foreach (var p in e.EnumerateObject())
+                if (p.Value.ValueKind == JsonValueKind.String && p.Name.Contains("value", StringComparison.OrdinalIgnoreCase))
+                    return p.Value.GetString();
+            foreach (var p in e.EnumerateObject())
+                if (p.Value.ValueKind == JsonValueKind.Object && FindValue(p.Value) is { } inner) return inner;
+            return null;
+        }
+    }
+
+    /// <summary>Changes one privacy setting, e.g. ("whoCanSeeMyOnlineStatus", "NoOne").</summary>
+    public static async Task SetPrivacySettingAsync(string cookie, string key, string value)
+    {
+        var body = JsonSerializer.Serialize(new Dictionary<string, string> { [key] = value });
+        using var response = await SendAsync(() => Request(HttpMethod.Post, UserSettingsApi, body), cookie).ConfigureAwait(false);
+        if (!response.IsSuccessStatusCode)
+            throw new RobloxApiException($"Roblox answered with HTTP {(int)response.StatusCode}.");
     }
 
     /// <summary>Reads one of the account's privacy settings (e.g. "inventory-privacy" → "inventoryPrivacy").</summary>
