@@ -35,6 +35,7 @@ public partial class App : Application
     {
         base.OnStartup(e);
         DispatcherUnhandledException += OnUnhandledException;
+        SmoothScroll.Enable();
 
         // Started by a roblox-player:// or roblox:// link (Orbit is the default launcher).
         var link = e.Args.FirstOrDefault(a =>
