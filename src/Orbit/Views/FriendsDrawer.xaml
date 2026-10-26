@@ -1,0 +1,349 @@
+<UserControl x:Class="Orbit.Views.FriendsDrawer"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <UserControl.Resources>
+        <!-- Round icon buttons in the header: grow a little on hover -->
+        <Style x:Key="DrawerIcon" TargetType="Button">
+            <Setter Property="Foreground" Value="{StaticResource DimBrush}"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+            <Setter Property="Width" Value="36"/>
+            <Setter Property="Height" Value="36"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="bd" CornerRadius="10" Background="{StaticResource RaisedBrush}" BorderBrush="{StaticResource LineStrongBrush}"
+                                BorderThickness="1" RenderTransformOrigin="0.5,0.5">
+                            <Border.RenderTransform>
+                                <ScaleTransform x:Name="grow" ScaleX="1" ScaleY="1"/>
+                            </Border.RenderTransform>
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="bd" Property="BorderBrush" Value="{StaticResource SignalBorderBrush}"/>
+                                <Setter TargetName="bd" Property="Background" Value="{StaticResource SignalTintBrush}"/>
+                                <Setter Property="Foreground" Value="{StaticResource TextBrush}"/>
+                                <Trigger.EnterActions>
+                                    <BeginStoryboard>
+                                        <Storyboard>
+                                            <DoubleAnimation Storyboard.TargetName="grow" Storyboard.TargetProperty="ScaleX" To="1.15" Duration="0:0:0.15"/>
+                                            <DoubleAnimation Storyboard.TargetName="grow" Storyboard.TargetProperty="ScaleY" To="1.15" Duration="0:0:0.15"/>
+                                        </Storyboard>
+                                    </BeginStoryboard>
+                                </Trigger.EnterActions>
+                                <Trigger.ExitActions>
+                                    <BeginStoryboard>
+                                        <Storyboard>
+                                            <DoubleAnimation Storyboard.TargetName="grow" Storyboard.TargetProperty="ScaleX" To="1" Duration="0:0:0.15"/>
+                                            <DoubleAnimation Storyboard.TargetName="grow" Storyboard.TargetProperty="ScaleY" To="1" Duration="0:0:0.15"/>
+                                        </Storyboard>
+                                    </BeginStoryboard>
+                                </Trigger.ExitActions>
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter TargetName="bd" Property="Opacity" Value="0.4"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- One person row -->
+        <Style x:Key="PersonRow" TargetType="Button">
+            <Setter Property="Foreground" Value="{StaticResource TextBrush}"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+            <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="bd" Height="56" CornerRadius="10" Padding="8,0,10,0" Background="Transparent">
+                            <ContentPresenter VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="bd" Property="Background" Value="{StaticResource SignalTintBrush}"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- Small action button (Join, Add, accept, decline) -->
+        <Style x:Key="SmallAction" TargetType="Button">
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+            <Setter Property="Height" Value="28"/>
+            <Setter Property="MinWidth" Value="28"/>
+            <Setter Property="Padding" Value="11,0"/>
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Background" Value="#7C3AED"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="bd" CornerRadius="7" Background="{TemplateBinding Background}" Padding="{TemplateBinding Padding}"
+                                RenderTransformOrigin="0.5,0.5">
+                            <Border.RenderTransform>
+                                <ScaleTransform x:Name="grow" ScaleX="1" ScaleY="1"/>
+                            </Border.RenderTransform>
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Trigger.EnterActions>
+                                    <BeginStoryboard>
+                                        <Storyboard>
+                                            <DoubleAnimation Storyboard.TargetName="grow" Storyboard.TargetProperty="ScaleX" To="1.08" Duration="0:0:0.12"/>
+                                            <DoubleAnimation Storyboard.TargetName="grow" Storyboard.TargetProperty="ScaleY" To="1.08" Duration="0:0:0.12"/>
+                                        </Storyboard>
+                                    </BeginStoryboard>
+                                </Trigger.EnterActions>
+                                <Trigger.ExitActions>
+                                    <BeginStoryboard>
+                                        <Storyboard>
+                                            <DoubleAnimation Storyboard.TargetName="grow" Storyboard.TargetProperty="ScaleX" To="1" Duration="0:0:0.12"/>
+                                            <DoubleAnimation Storyboard.TargetName="grow" Storyboard.TargetProperty="ScaleY" To="1" Duration="0:0:0.12"/>
+                                        </Storyboard>
+                                    </BeginStoryboard>
+                                </Trigger.ExitActions>
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter TargetName="bd" Property="Opacity" Value="0.45"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- Avatar circle used in every list -->
+        <DataTemplate x:Key="PersonAvatar">
+            <Grid Width="40" Height="40">
+                <Ellipse Fill="{StaticResource Raised2Brush}"/>
+                <Ellipse>
+                    <Ellipse.Fill>
+                        <ImageBrush ImageSource="{Binding AvatarUrl, TargetNullValue={x:Null}}" Stretch="UniformToFill"/>
+                    </Ellipse.Fill>
+                </Ellipse>
+                <Ellipse Width="13" Height="13" HorizontalAlignment="Right" VerticalAlignment="Bottom"
+                         Fill="{Binding StatusBrush}" Stroke="#100E16" StrokeThickness="2.5" Visibility="{Binding DotVisibility}"/>
+            </Grid>
+        </DataTemplate>
+    </UserControl.Resources>
+
+    <Border Background="#F7100E16" BorderBrush="{StaticResource LineStrongBrush}" BorderThickness="1,0,0,0">
+        <Border.Effect>
+            <DropShadowEffect Color="Black" BlurRadius="40" ShadowDepth="0" Opacity="0.7"/>
+        </Border.Effect>
+        <Grid>
+            <Border Background="{StaticResource GlowTopRight}" IsHitTestVisible="False" Opacity="0.7"/>
+
+            <DockPanel Margin="18,16,18,18">
+                <!-- ===== Header: gear / back, title, refresh, close ===== -->
+                <DockPanel DockPanel.Dock="Top">
+                    <Button DockPanel.Dock="Right" Style="{StaticResource DrawerIcon}" Click="Close_Click" ToolTip="Close" Margin="8,0,0,0">
+                        <TextBlock Text="&#xE8BB;" Style="{StaticResource Icon}" FontSize="12"/>
+                    </Button>
+                    <Button x:Name="RefreshButton" DockPanel.Dock="Right" Style="{StaticResource DrawerIcon}" Click="Refresh_Click" ToolTip="Refresh">
+                        <TextBlock Text="&#xE72C;" Style="{StaticResource Icon}" FontSize="14"/>
+                    </Button>
+
+                    <Button x:Name="GearButton" DockPanel.Dock="Left" Style="{StaticResource DrawerIcon}" Click="Gear_Click" ToolTip="Your profile and privacy">
+                        <TextBlock Text="&#xE713;" Style="{StaticResource Icon}" FontSize="15"/>
+                    </Button>
+                    <Button x:Name="BackButton" DockPanel.Dock="Left" Style="{StaticResource DrawerIcon}" Click="Back_Click" ToolTip="Back"
+                            Visibility="Collapsed">
+                        <TextBlock Text="&#xE72B;" Style="{StaticResource Icon}" FontSize="14"/>
+                    </Button>
+
+                    <TextBlock x:Name="HeaderTitle" Text="FRIENDS" FontFamily="{StaticResource DisplayFont}" FontSize="19" FontWeight="Bold"
+                               VerticalAlignment="Center" Margin="12,0,0,0"/>
+                </DockPanel>
+
+                <TextBlock x:Name="AccountLine" DockPanel.Dock="Top" Style="{StaticResource Crumb}" Margin="2,10,0,0"/>
+
+                <Grid Margin="0,14,0,0">
+                    <!-- ===================== Friends + requests ===================== -->
+                    <DockPanel x:Name="ListPage">
+                        <Border DockPanel.Dock="Top" Background="{StaticResource InputBrush}" BorderBrush="{StaticResource LineBrush}" BorderThickness="1"
+                                CornerRadius="9" Padding="3">
+                            <UniformGrid Columns="2">
+                                <RadioButton x:Name="FriendsTab" Style="{StaticResource Segment}" IsChecked="True" Checked="Tab_Changed">
+                                    <TextBlock x:Name="FriendsTabText" Text="Friends"/>
+                                </RadioButton>
+                                <RadioButton x:Name="RequestsTab" Style="{StaticResource Segment}" Checked="Tab_Changed">
+                                    <TextBlock x:Name="RequestsTabText" Text="Requests"/>
+                                </RadioButton>
+                            </UniformGrid>
+                        </Border>
+
+                        <TextBox x:Name="FriendSearch" DockPanel.Dock="Top" Tag="Search friends…" Margin="0,10,0,0" TextChanged="FriendSearch_TextChanged"/>
+
+                        <UniformGrid DockPanel.Dock="Bottom" Columns="2" Margin="0,12,0,0">
+                            <Button Margin="0,0,5,0" Click="AddFriend_Click" Height="38">
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="&#xE8FA;" Style="{StaticResource Icon}" FontSize="13" VerticalAlignment="Center"/>
+                                    <TextBlock Text="Add friend" Margin="8,0,0,0" VerticalAlignment="Center"/>
+                                </StackPanel>
+                            </Button>
+                            <Button Margin="5,0,0,0" Click="Chat_Click" Height="38" ToolTip="Opens Roblox chat in Orbit's browser, logged in as this account">
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="&#xE8BD;" Style="{StaticResource Icon}" FontSize="13" VerticalAlignment="Center"/>
+                                    <TextBlock Text="Chat" Margin="8,0,0,0" VerticalAlignment="Center"/>
+                                </StackPanel>
+                            </Button>
+                        </UniformGrid>
+
+                        <TextBlock x:Name="ListStatus" DockPanel.Dock="Bottom" Style="{StaticResource RowDesc}" TextAlignment="Center"
+                                   Margin="0,8,0,0" Visibility="Collapsed"/>
+
+                        <Grid Margin="0,10,0,0">
+                            <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="0,0,4,0">
+                                <ItemsControl x:Name="FriendsList">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate>
+                                            <Button Style="{StaticResource PersonRow}" Tag="{Binding}" Click="Person_Click" ToolTip="Open profile">
+                                                <DockPanel>
+                                                    <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center">
+                                                        <Button Style="{StaticResource SmallAction}" Content="Join" Tag="{Binding}" Click="Join_Click"
+                                                                Visibility="{Binding JoinVisibility}" ToolTip="Join this friend's server"/>
+                                                        <Button Style="{StaticResource SmallAction}" Tag="{Binding}" Click="Accept_Click" Background="#16A34A"
+                                                                Visibility="{Binding RequestVisibility}" ToolTip="Accept" Padding="0" Width="30">
+                                                            <TextBlock Text="&#xE73E;" Style="{StaticResource Icon}" FontSize="11"/>
+                                                        </Button>
+                                                        <Button Style="{StaticResource SmallAction}" Tag="{Binding}" Click="Decline_Click" Background="#3A2F4A"
+                                                                Visibility="{Binding RequestVisibility}" ToolTip="Decline" Padding="0" Width="30" Margin="6,0,0,0">
+                                                            <TextBlock Text="&#xE711;" Style="{StaticResource Icon}" FontSize="10"/>
+                                                        </Button>
+                                                    </StackPanel>
+                                                    <ContentPresenter Content="{Binding}" ContentTemplate="{StaticResource PersonAvatar}"/>
+                                                    <StackPanel Margin="12,0,8,0" VerticalAlignment="Center">
+                                                        <TextBlock Text="{Binding Title}" FontWeight="SemiBold" FontSize="13.5" TextTrimming="CharacterEllipsis"/>
+                                                        <TextBlock Text="{Binding StatusText}" Foreground="{Binding StatusBrush}" FontSize="11.5" Margin="0,2,0,0"
+                                                                   TextTrimming="CharacterEllipsis"/>
+                                                    </StackPanel>
+                                                </DockPanel>
+                                            </Button>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                            </ScrollViewer>
+
+                            <StackPanel x:Name="EmptyState" VerticalAlignment="Center" HorizontalAlignment="Center" Visibility="Collapsed">
+                                <Border Width="60" Height="60" CornerRadius="14" Background="{StaticResource SignalTintBrush}"
+                                        BorderBrush="{StaticResource SignalBorderBrush}" BorderThickness="1" HorizontalAlignment="Center">
+                                    <TextBlock Text="&#xE716;" Style="{StaticResource Icon}" FontSize="24" Foreground="{StaticResource SignalLightBrush}"
+                                               HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                </Border>
+                                <TextBlock x:Name="EmptyTitle" Text="No friends yet" FontWeight="SemiBold" FontSize="14.5"
+                                           HorizontalAlignment="Center" Margin="0,12,0,2"/>
+                                <TextBlock x:Name="EmptyText" Text="ADD SOME!" Style="{StaticResource Crumb}" HorizontalAlignment="Center"/>
+                            </StackPanel>
+                        </Grid>
+                    </DockPanel>
+
+                    <!-- ===================== Add friend ===================== -->
+                    <DockPanel x:Name="AddPage" Visibility="Collapsed">
+                        <TextBlock DockPanel.Dock="Top" Style="{StaticResource RowDesc}" Margin="2,0,0,10"
+                                   Text="Search for a username or display name and send a friend request."/>
+                        <TextBox x:Name="UserSearch" DockPanel.Dock="Top" Tag="Username…" KeyDown="UserSearch_KeyDown" TextChanged="UserSearch_TextChanged"/>
+                        <TextBlock x:Name="AddStatus" DockPanel.Dock="Top" Style="{StaticResource RowDesc}" Margin="2,8,0,0"/>
+                        <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="0,0,4,0" Margin="0,8,0,0">
+                            <ItemsControl x:Name="SearchList">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <Button Style="{StaticResource PersonRow}" Tag="{Binding}" Click="Person_Click" ToolTip="Open profile">
+                                            <DockPanel>
+                                                <Button DockPanel.Dock="Right" Style="{StaticResource SmallAction}" Content="{Binding AddText}"
+                                                        IsEnabled="{Binding CanAdd}" Tag="{Binding}" Click="SendRequest_Click"/>
+                                                <ContentPresenter Content="{Binding}" ContentTemplate="{StaticResource PersonAvatar}"/>
+                                                <StackPanel Margin="12,0,8,0" VerticalAlignment="Center">
+                                                    <TextBlock Text="{Binding Title}" FontWeight="SemiBold" FontSize="13.5" TextTrimming="CharacterEllipsis"/>
+                                                    <TextBlock Text="{Binding StatusText}" Foreground="{Binding StatusBrush}" FontSize="11.5" Margin="0,2,0,0"
+                                                               TextTrimming="CharacterEllipsis"/>
+                                                </StackPanel>
+                                            </DockPanel>
+                                        </Button>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </ScrollViewer>
+                    </DockPanel>
+
+                    <!-- ===================== Your profile + privacy ===================== -->
+                    <ScrollViewer x:Name="ProfilePage" Visibility="Collapsed" VerticalScrollBarVisibility="Auto" Padding="0,0,4,0">
+                        <StackPanel>
+                            <TextBlock Text="// YOUR PROFILE" Style="{StaticResource Section}" Margin="2,0,0,10"/>
+                            <Border Background="{StaticResource RaisedBrush}" BorderBrush="{StaticResource LineStrongBrush}" BorderThickness="1"
+                                    CornerRadius="12" Padding="16">
+                                <StackPanel>
+                                    <DockPanel>
+                                        <Grid Width="64" Height="64">
+                                            <Ellipse Fill="{StaticResource Raised2Brush}"/>
+                                            <Ellipse>
+                                                <Ellipse.Fill>
+                                                    <ImageBrush x:Name="ProfileAvatar" Stretch="UniformToFill"/>
+                                                </Ellipse.Fill>
+                                            </Ellipse>
+                                            <Ellipse x:Name="ProfileDot" Width="16" Height="16" HorizontalAlignment="Right" VerticalAlignment="Bottom"
+                                                     Stroke="#1A1722" StrokeThickness="3" Fill="{StaticResource FaintBrush}"/>
+                                        </Grid>
+                                        <StackPanel Margin="14,0,0,0" VerticalAlignment="Center">
+                                            <TextBlock x:Name="ProfileName" Text="—" FontFamily="{StaticResource DisplayFont}" FontSize="19" FontWeight="Bold"
+                                                       TextTrimming="CharacterEllipsis"/>
+                                            <TextBlock x:Name="ProfileUser" Style="{StaticResource Crumb}" Margin="0,3,0,0"/>
+                                            <TextBlock x:Name="ProfileStatus" FontSize="12" Margin="0,5,0,0" Foreground="{StaticResource DimBrush}"/>
+                                        </StackPanel>
+                                    </DockPanel>
+
+                                    <UniformGrid Columns="3" Margin="0,16,0,0">
+                                        <StackPanel>
+                                            <TextBlock x:Name="CountFriends" Text="–" FontSize="17" FontWeight="Bold" HorizontalAlignment="Center"/>
+                                            <TextBlock Text="FRIENDS" Style="{StaticResource Crumb}" HorizontalAlignment="Center"/>
+                                        </StackPanel>
+                                        <StackPanel>
+                                            <TextBlock x:Name="CountFollowers" Text="–" FontSize="17" FontWeight="Bold" HorizontalAlignment="Center"/>
+                                            <TextBlock Text="FOLLOWERS" Style="{StaticResource Crumb}" HorizontalAlignment="Center"/>
+                                        </StackPanel>
+                                        <StackPanel>
+                                            <TextBlock x:Name="CountFollowing" Text="–" FontSize="17" FontWeight="Bold" HorizontalAlignment="Center"/>
+                                            <TextBlock Text="FOLLOWING" Style="{StaticResource Crumb}" HorizontalAlignment="Center"/>
+                                        </StackPanel>
+                                    </UniformGrid>
+
+                                    <TextBlock x:Name="ProfileJoined" Style="{StaticResource Crumb}" HorizontalAlignment="Center" Margin="0,14,0,0"/>
+                                    <TextBlock x:Name="ProfileAbout" Style="{StaticResource RowDesc}" Margin="0,10,0,0" TextAlignment="Center"
+                                               Visibility="Collapsed"/>
+                                </StackPanel>
+                            </Border>
+
+                            <TextBlock Text="// PRIVACY" Style="{StaticResource Section}"/>
+                            <Border Background="{StaticResource RaisedBrush}" BorderBrush="{StaticResource LineStrongBrush}" BorderThickness="1"
+                                    CornerRadius="12" Padding="16,14">
+                                <StackPanel>
+                                    <TextBlock Text="Who can see my inventory" FontSize="13.5"/>
+                                    <ComboBox x:Name="InventoryPrivacy" MinWidth="0" Margin="0,8,0,0" SelectionChanged="Privacy_Changed"/>
+                                    <TextBlock Text="Who can trade with me" FontSize="13.5" Margin="0,16,0,0"/>
+                                    <ComboBox x:Name="TradePrivacy" MinWidth="0" Margin="0,8,0,0" SelectionChanged="Privacy_Changed"/>
+                                    <TextBlock x:Name="PrivacyStatus" Style="{StaticResource RowDesc}" Margin="0,10,0,0"/>
+                                </StackPanel>
+                            </Border>
+
+                            <Button Margin="0,12,0,0" Height="38" Click="AllPrivacy_Click">
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="&#xE72E;" Style="{StaticResource Icon}" FontSize="13" VerticalAlignment="Center"/>
+                                    <TextBlock Text="All privacy settings on roblox.com" Margin="8,0,0,0" VerticalAlignment="Center"/>
+                                </StackPanel>
+                            </Button>
+                        </StackPanel>
+                    </ScrollViewer>
+                </Grid>
+            </DockPanel>
+        </Grid>
+    </Border>
+</UserControl>

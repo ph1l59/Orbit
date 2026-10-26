@@ -18,8 +18,6 @@ public sealed class AppSettings
     public string LastServer { get; set; } = "";
     /// <summary>Account picked on the Play page.</summary>
     public long PlayAccountId { get; set; }
-    /// <summary>Friends panel on the Play page is open.</summary>
-    public bool ShowFriendsPanel { get; set; } = true;
     /// <summary>Show the account's alias/display name instead of "Roblox" on windows Orbit launched.</summary>
     public bool ShowAccountNameOnWindows { get; set; } = true;
     /// <summary>Give Roblox windows Orbit launched the icon from Assets\roblox-window.ico.</summary>

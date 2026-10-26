@@ -217,6 +217,49 @@
                 </Setter.Value>
             </Setter>
         </Style>
+        <!-- Round friends button: grows on hover -->
+        <Style x:Key="FriendsButton" TargetType="Button">
+            <Setter Property="Foreground" Value="{StaticResource SignalLightBrush}"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+            <Setter Property="Width" Value="56"/>
+            <Setter Property="Height" Value="56"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="bd" CornerRadius="28" Background="{StaticResource RaisedBrush}" BorderBrush="{StaticResource LineStrongBrush}"
+                                BorderThickness="1" RenderTransformOrigin="0.5,0.5">
+                            <Border.RenderTransform>
+                                <ScaleTransform x:Name="grow" ScaleX="1" ScaleY="1"/>
+                            </Border.RenderTransform>
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="bd" Property="BorderBrush" Value="{StaticResource SignalBorderBrush}"/>
+                                <Setter TargetName="bd" Property="Background" Value="{StaticResource SignalTintBrush}"/>
+                                <Trigger.EnterActions>
+                                    <BeginStoryboard>
+                                        <Storyboard>
+                                            <DoubleAnimation Storyboard.TargetName="grow" Storyboard.TargetProperty="ScaleX" To="1.12" Duration="0:0:0.16"/>
+                                            <DoubleAnimation Storyboard.TargetName="grow" Storyboard.TargetProperty="ScaleY" To="1.12" Duration="0:0:0.16"/>
+                                        </Storyboard>
+                                    </BeginStoryboard>
+                                </Trigger.EnterActions>
+                                <Trigger.ExitActions>
+                                    <BeginStoryboard>
+                                        <Storyboard>
+                                            <DoubleAnimation Storyboard.TargetName="grow" Storyboard.TargetProperty="ScaleX" To="1" Duration="0:0:0.16"/>
+                                            <DoubleAnimation Storyboard.TargetName="grow" Storyboard.TargetProperty="ScaleY" To="1" Duration="0:0:0.16"/>
+                                        </Storyboard>
+                                    </BeginStoryboard>
+                                </Trigger.ExitActions>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
     </UserControl.Resources>
 
     <Grid>
@@ -282,20 +325,18 @@
                 </Popup>
             </Grid>
 
-            <Button x:Name="FriendsToggle" DockPanel.Dock="Right" Style="{StaticResource PickerButton}" Margin="0,0,10,0"
-                    VerticalAlignment="Top" Click="FriendsToggle_Click" ToolTip="Show or hide friends"
-                    Tag="Friends|friend list requests online join">
-                <StackPanel Orientation="Horizontal" Margin="4,0,0,0">
-                    <TextBlock Text="&#xE716;" Style="{StaticResource Icon}" FontSize="16" VerticalAlignment="Center"
-                               Foreground="{StaticResource SignalLightBrush}"/>
-                    <TextBlock x:Name="FriendsToggleText" Text="Friends" FontWeight="SemiBold" FontSize="13.5" Margin="9,0,0,0" VerticalAlignment="Center"/>
-                    <Border x:Name="RequestBadge" Background="#E879F9" CornerRadius="9" MinWidth="18" Height="18" Padding="5,0"
-                            Margin="8,0,0,0" VerticalAlignment="Center" Visibility="Collapsed">
-                        <TextBlock x:Name="RequestBadgeText" Text="0" FontSize="11" FontWeight="Bold" Foreground="White"
-                                   HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                    </Border>
-                </StackPanel>
-            </Button>
+            <Grid DockPanel.Dock="Right" Margin="0,0,12,0" VerticalAlignment="Top">
+                <Button x:Name="FriendsToggle" Style="{StaticResource FriendsButton}" Click="FriendsToggle_Click" ToolTip="Friends"
+                        Tag="Friends|friend list requests online join add">
+                    <TextBlock Text="&#xE716;" Style="{StaticResource Icon}" FontSize="22"/>
+                </Button>
+                <Border x:Name="RequestBadge" Background="#E879F9" CornerRadius="10" MinWidth="20" Height="20" Padding="5,0"
+                        HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,-6,-6,0" Visibility="Collapsed"
+                        BorderBrush="{StaticResource BgBrush}" BorderThickness="2" IsHitTestVisible="False">
+                    <TextBlock x:Name="RequestBadgeText" Text="0" FontSize="10.5" FontWeight="Bold" Foreground="White"
+                               HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                </Border>
+            </Grid>
 
             <StackPanel>
                 <TextBlock Text="ORBIT / PLAY" Style="{StaticResource Crumb}"/>
@@ -387,110 +428,6 @@
                 </StackPanel>
             </Border>
 
-            <!-- ================= Friends panel ================= -->
-            <Border x:Name="FriendsPanel" Grid.Column="1" Width="320" Margin="20,0,0,0" CornerRadius="14" Padding="14"
-                    Background="#E6131119" BorderBrush="{StaticResource LineStrongBrush}" BorderThickness="1">
-                <DockPanel>
-                    <!-- header -->
-                    <DockPanel DockPanel.Dock="Top">
-                        <Button DockPanel.Dock="Right" Style="{StaticResource IconRound}" Click="FriendsToggle_Click" ToolTip="Hide"
-                                Margin="6,0,0,0">
-                            <TextBlock Text="&#xE8BB;" Style="{StaticResource Icon}" FontSize="10"/>
-                        </Button>
-                        <Button x:Name="FriendsRefresh" DockPanel.Dock="Right" Style="{StaticResource IconRound}" Click="FriendsRefresh_Click" ToolTip="Refresh">
-                            <TextBlock Text="&#xE72C;" Style="{StaticResource Icon}" FontSize="12"/>
-                        </Button>
-                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                            <TextBlock Text="&#xE716;" Style="{StaticResource Icon}" FontSize="15" Foreground="{StaticResource SignalLightBrush}" VerticalAlignment="Center"/>
-                            <TextBlock Text="FRIENDS" FontFamily="{StaticResource DisplayFont}" FontSize="16" FontWeight="Bold" Margin="9,0,0,0" VerticalAlignment="Center"/>
-                        </StackPanel>
-                    </DockPanel>
-
-                    <!-- tabs -->
-                    <Border DockPanel.Dock="Top" Background="{StaticResource InputBrush}" BorderBrush="{StaticResource LineBrush}" BorderThickness="1"
-                            CornerRadius="8" Padding="3" Margin="0,14,0,0">
-                        <UniformGrid Columns="2">
-                            <RadioButton x:Name="FriendsTab" Style="{StaticResource Segment}" IsChecked="True" Checked="Tab_Changed">
-                                <TextBlock x:Name="FriendsTabText" Text="Friends"/>
-                            </RadioButton>
-                            <RadioButton x:Name="RequestsTab" Style="{StaticResource Segment}" Checked="Tab_Changed">
-                                <TextBlock x:Name="RequestsTabText" Text="Requests"/>
-                            </RadioButton>
-                        </UniformGrid>
-                    </Border>
-
-                    <!-- search -->
-                    <TextBox x:Name="FriendSearch" DockPanel.Dock="Top" Tag="Search friends…" Margin="0,10,0,0" TextChanged="FriendSearch_TextChanged"/>
-
-                    <!-- footer -->
-                    <UniformGrid DockPanel.Dock="Bottom" Columns="2" Margin="0,10,0,0">
-                        <Button Content="Add friend" Margin="0,0,4,0" Click="AddFriend_Click" ToolTip="Find people on roblox.com"/>
-                        <Button Content="Chat" Margin="4,0,0,0" Click="Chat_Click" ToolTip="Open Roblox chat in the browser, logged in as this account"/>
-                    </UniformGrid>
-
-                    <TextBlock x:Name="FriendsStatus" DockPanel.Dock="Bottom" Style="{StaticResource RowDesc}" TextAlignment="Center" Margin="0,8,0,0"
-                               Visibility="Collapsed"/>
-
-                    <!-- list -->
-                    <Grid Margin="0,10,0,0">
-                        <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="0,0,4,0">
-                            <ItemsControl x:Name="FriendsList">
-                                <ItemsControl.ItemTemplate>
-                                    <DataTemplate>
-                                        <Button Style="{StaticResource PickerItem}" Tag="{Binding}" Click="Friend_Click" ToolTip="Open profile">
-                                            <DockPanel>
-                                                <!-- actions -->
-                                                <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center">
-                                                    <Button Style="{StaticResource SmallAction}" Content="Join" Tag="{Binding}" Click="Join_Click"
-                                                            Visibility="{Binding JoinVisibility}" ToolTip="Join this friend's server"/>
-                                                    <Button Style="{StaticResource SmallAction}" Tag="{Binding}" Click="Accept_Click" Background="#16A34A"
-                                                            Visibility="{Binding RequestVisibility}" ToolTip="Accept" Padding="0" Width="28">
-                                                        <TextBlock Text="&#xE73E;" Style="{StaticResource Icon}" FontSize="11"/>
-                                                    </Button>
-                                                    <Button Style="{StaticResource SmallAction}" Tag="{Binding}" Click="Decline_Click" Background="#3A2F4A"
-                                                            Visibility="{Binding RequestVisibility}" ToolTip="Decline" Padding="0" Width="28" Margin="6,0,0,0">
-                                                        <TextBlock Text="&#xE711;" Style="{StaticResource Icon}" FontSize="10"/>
-                                                    </Button>
-                                                </StackPanel>
-
-                                                <!-- avatar with status dot -->
-                                                <Grid Width="38" Height="38">
-                                                    <Ellipse Fill="{StaticResource Raised2Brush}"/>
-                                                    <Ellipse>
-                                                        <Ellipse.Fill>
-                                                            <ImageBrush ImageSource="{Binding AvatarUrl, TargetNullValue={x:Null}}" Stretch="UniformToFill"/>
-                                                        </Ellipse.Fill>
-                                                    </Ellipse>
-                                                    <Ellipse Width="12" Height="12" HorizontalAlignment="Right" VerticalAlignment="Bottom"
-                                                             Fill="{Binding StatusBrush}" Stroke="#131119" StrokeThickness="2.5"
-                                                             Visibility="{Binding DotVisibility}"/>
-                                                </Grid>
-
-                                                <StackPanel Margin="11,0,8,0" VerticalAlignment="Center">
-                                                    <TextBlock Text="{Binding Title}" FontWeight="SemiBold" FontSize="13.5" TextTrimming="CharacterEllipsis"/>
-                                                    <TextBlock Text="{Binding StatusText}" Foreground="{Binding StatusBrush}" FontSize="11.5" Margin="0,2,0,0"
-                                                               TextTrimming="CharacterEllipsis"/>
-                                                </StackPanel>
-                                            </DockPanel>
-                                        </Button>
-                                    </DataTemplate>
-                                </ItemsControl.ItemTemplate>
-                            </ItemsControl>
-                        </ScrollViewer>
-
-                        <StackPanel x:Name="FriendsEmpty" VerticalAlignment="Center" HorizontalAlignment="Center" Visibility="Collapsed">
-                            <Border Width="56" Height="56" CornerRadius="12" Background="{StaticResource SignalTintBrush}"
-                                    BorderBrush="{StaticResource SignalBorderBrush}" BorderThickness="1" HorizontalAlignment="Center">
-                                <TextBlock Text="&#xE716;" Style="{StaticResource Icon}" FontSize="22" Foreground="{StaticResource SignalLightBrush}"
-                                           HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                            </Border>
-                            <TextBlock x:Name="FriendsEmptyTitle" Text="No friends yet" FontWeight="SemiBold" FontSize="14"
-                                       HorizontalAlignment="Center" Margin="0,12,0,2"/>
-                            <TextBlock x:Name="FriendsEmptyText" Text="ADD SOME!" Style="{StaticResource Crumb}" HorizontalAlignment="Center"/>
-                        </StackPanel>
-                    </Grid>
-                </DockPanel>
-            </Border>
         </Grid>
     </Grid>
 </UserControl>

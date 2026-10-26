@@ -25,7 +25,6 @@ public partial class PlayView : UserControl, IPage
     {
         InitializeComponent();
         PickerList.ItemsSource = AppState.Accounts;
-        InitFriends();
         AppState.Accounts.CollectionChanged += (_, _) => Dispatcher.InvokeAsync(Refresh);
         Refresh();
     }
@@ -52,6 +51,7 @@ public partial class PlayView : UserControl, IPage
     private void Select(Account? account, bool save)
     {
         var changed = account?.UserId != _account?.UserId;
+        if (changed) Dispatcher.InvokeAsync(() => AccountChanged?.Invoke(account));
         if (_account != null) _account.PropertyChanged -= OnAccountChanged;
         _account = account;
         if (account != null) account.PropertyChanged += OnAccountChanged;
@@ -78,7 +78,7 @@ public partial class PlayView : UserControl, IPage
         }
 
         if (changed || AvatarImage.Source == null) _ = LoadFullBodyAsync(account);
-        if (changed && FriendsPanel.Visibility == Visibility.Visible) _ = LoadFriendsAsync(account);
+
     }
 
     /// <summary>The profile picture often arrives a moment after the page is built (right after Orbit starts).</summary>
@@ -352,245 +352,26 @@ public partial class PlayView : UserControl, IPage
         }
     }
 
-    // ---------- Friends ----------
+    // ---------- Friends (the drawer itself lives in the main window) ----------
 
-    public sealed class FriendItem
+    /// <summary>The account picked on this page changed.</summary>
+    public event Action<Account?>? AccountChanged;
+    /// <summary>The friends button was clicked.</summary>
+    public event Action? FriendsRequested;
+
+    public Account? CurrentAccount => _account;
+
+    private void FriendsToggle_Click(object sender, RoutedEventArgs e) => FriendsRequested?.Invoke();
+
+    /// <summary>Number of open friend requests, shown on the friends button.</summary>
+    public void SetRequestCount(int count)
     {
-        public long Id { get; init; }
-        public string Title { get; init; } = "";
-        public string Name { get; init; } = "";
-        public string? AvatarUrl { get; set; }
-        public int Presence { get; set; } = -1;
-        public string Location { get; set; } = "";
-        public bool IsRequest { get; init; }
-
-        public string StatusText => IsRequest ? "@" + Name : Presence switch
-        {
-            2 => string.IsNullOrWhiteSpace(Location) ? "In game" : "Playing " + Location,
-            3 => "In Studio",
-            1 => "Online",
-            _ => "Offline",
-        };
-
-        public Brush StatusBrush => IsRequest ? Res("DimBrush") : Presence switch
-        {
-            2 => Res("OkBrush"),
-            3 => Res("WarnBrush"),
-            1 => new SolidColorBrush(Color.FromRgb(0x60, 0xA5, 0xFA)),
-            _ => Res("FaintBrush"),
-        };
-
-        public Visibility DotVisibility => IsRequest ? Visibility.Collapsed : Visibility.Visible;
-        public Visibility JoinVisibility => !IsRequest && Presence == 2 ? Visibility.Visible : Visibility.Collapsed;
-        public Visibility RequestVisibility => IsRequest ? Visibility.Visible : Visibility.Collapsed;
-
-        /// <summary>Playing first, then Studio, online, offline – alphabetically within each group.</summary>
-        public int SortGroup => Presence switch { 2 => 0, 3 => 1, 1 => 2, _ => 3 };
-
-        private static Brush Res(string key) => (Brush)Application.Current.FindResource(key);
+        RequestBadge.Visibility = count > 0 ? Visibility.Visible : Visibility.Collapsed;
+        RequestBadgeText.Text = count > 99 ? "99+" : count.ToString();
     }
 
-    private List<FriendItem> _friends = new();
-    private List<FriendItem> _requests = new();
-    private int _friendsVersion;
-    private bool _friendsLoading;
-    private readonly DispatcherTimer _presenceTimer = new() { Interval = TimeSpan.FromSeconds(30) };
-
-    private void InitFriends()
-    {
-        FriendsPanel.Visibility = AppState.Settings.ShowFriendsPanel ? Visibility.Visible : Visibility.Collapsed;
-        _presenceTimer.Tick += async (_, _) => await RefreshPresenceAsync();
-        IsVisibleChanged += (_, _) =>
-        {
-            if (IsVisible) _presenceTimer.Start();
-            else _presenceTimer.Stop();
-        };
-    }
-
-    private void FriendsToggle_Click(object sender, RoutedEventArgs e)
-    {
-        var show = FriendsPanel.Visibility != Visibility.Visible;
-        FriendsPanel.Visibility = show ? Visibility.Visible : Visibility.Collapsed;
-        AppState.Settings.ShowFriendsPanel = show;
-        AppState.SaveSettings();
-        if (show && _friends.Count == 0 && _account != null) _ = LoadFriendsAsync(_account);
-    }
-
-    private void FriendsRefresh_Click(object sender, RoutedEventArgs e)
-    {
-        if (_account != null) _ = LoadFriendsAsync(_account);
-    }
-
-    private async Task LoadFriendsAsync(Account account)
-    {
-        var version = ++_friendsVersion;
-        _friendsLoading = true;
-        FriendsRefresh.IsEnabled = false;
-        _friends = new();
-        _requests = new();
-        ShowFriends("Loading friends…");
-
-        try
-        {
-            var friendIds = await RobloxApi.GetFriendIdsAsync(account.UserId, account.Cookie);
-            List<long> requestIds;
-            try { requestIds = await RobloxApi.GetFriendRequestIdsAsync(account.Cookie); }
-            catch { requestIds = new(); }
-
-            var users = await RobloxApi.GetUsersAsync(friendIds.Concat(requestIds));
-            var pictures = await RobloxApi.GetHeadshotsAsync(friendIds.Concat(requestIds));
-            if (version != _friendsVersion) return;
-
-            FriendItem Make(long id, bool request)
-            {
-                users.TryGetValue(id, out var u);
-                return new FriendItem
-                {
-                    Id = id,
-                    Name = u?.Name ?? id.ToString(),
-                    Title = string.IsNullOrWhiteSpace(u?.DisplayName) ? u?.Name ?? id.ToString() : u!.DisplayName,
-                    AvatarUrl = pictures.TryGetValue(id, out var pic) ? pic : null,
-                    IsRequest = request,
-                };
-            }
-
-            _friends = friendIds.Select(id => Make(id, false)).ToList();
-            _requests = requestIds.Select(id => Make(id, true)).ToList();
-            await RefreshPresenceAsync(version);
-            if (version != _friendsVersion) return;
-            ShowFriends(null);
-        }
-        catch (Exception ex)
-        {
-            if (version == _friendsVersion) ShowFriends("Couldn't load friends: " + ex.Message);
-        }
-        finally
-        {
-            if (version == _friendsVersion)
-            {
-                _friendsLoading = false;
-                FriendsRefresh.IsEnabled = true;
-            }
-        }
-    }
-
-    private async Task RefreshPresenceAsync(int? version = null)
-    {
-        if (_account is not { } account || _friends.Count == 0) return;
-        if (version == null && (_friendsLoading || FriendsPanel.Visibility != Visibility.Visible)) return;
-        try
-        {
-            var presence = await RobloxApi.GetPresenceAsync(account.Cookie, _friends.Select(f => f.Id));
-            var byId = presence.ToDictionary(p => p.UserId);
-            foreach (var f in _friends)
-            {
-                if (!byId.TryGetValue(f.Id, out var p)) continue;
-                f.Presence = p.Type == 4 ? 0 : p.Type; // 4 = invisible, shown as offline
-                f.Location = p.Location;
-            }
-            if (version == null) ShowFriends(null);
-        }
-        catch { /* keep the last known status */ }
-    }
-
-    /// <summary>Fills the list for the open tab and search text.</summary>
-    private void ShowFriends(string? message)
-    {
-        var online = _friends.Count(f => f.Presence > 0);
-        FriendsTabText.Text = _friends.Count == 0 ? "Friends" : $"Friends ({online}/{_friends.Count})";
-        RequestsTabText.Text = _requests.Count == 0 ? "Requests" : $"Requests ({_requests.Count})";
-        RequestBadge.Visibility = _requests.Count > 0 ? Visibility.Visible : Visibility.Collapsed;
-        RequestBadgeText.Text = _requests.Count > 99 ? "99+" : _requests.Count.ToString();
-
-        FriendsStatus.Text = message ?? "";
-        FriendsStatus.Visibility = message == null ? Visibility.Collapsed : Visibility.Visible;
-
-        var query = FriendSearch.Text.Trim();
-        var showRequests = RequestsTab.IsChecked == true;
-        var source = showRequests ? _requests : _friends;
-        var items = source
-            .Where(f => query.Length == 0 ||
-                        f.Title.Contains(query, StringComparison.OrdinalIgnoreCase) ||
-                        f.Name.Contains(query, StringComparison.OrdinalIgnoreCase))
-            .OrderBy(f => f.IsRequest ? 0 : f.SortGroup)
-            .ThenBy(f => f.Title, StringComparer.OrdinalIgnoreCase)
-            .ToList();
-
-        FriendsList.ItemsSource = null;
-        FriendsList.ItemsSource = items;
-
-        var empty = items.Count == 0 && message == null;
-        FriendsEmpty.Visibility = empty ? Visibility.Visible : Visibility.Collapsed;
-        if (empty)
-        {
-            (FriendsEmptyTitle.Text, FriendsEmptyText.Text) = (query.Length > 0, showRequests) switch
-            {
-                (true, _) => ("Nobody found", "TRY ANOTHER NAME"),
-                (false, true) => ("No requests", "ALL CAUGHT UP"),
-                _ => ("No friends yet", "ADD SOME!"),
-            };
-        }
-    }
-
-    private void Tab_Changed(object sender, RoutedEventArgs e)
-    {
-        if (IsInitialized && FriendsList != null) ShowFriends(FriendsStatus.Visibility == Visibility.Visible ? FriendsStatus.Text : null);
-    }
-
-    private void FriendSearch_TextChanged(object sender, TextChangedEventArgs e) => ShowFriends(null);
-
-    private void Friend_Click(object sender, RoutedEventArgs e)
-    {
-        if (_account is { } account && (sender as FrameworkElement)?.Tag is FriendItem f)
-            new BrowserWindow(account, $"https://www.roblox.com/users/{f.Id}/profile").Show();
-    }
-
-    private void Join_Click(object sender, RoutedEventArgs e)
-    {
-        e.Handled = true; // don't also open the profile
-        if ((sender as FrameworkElement)?.Tag is not FriendItem f) return;
-        _ = RunLaunchAsync((account, exe) => RobloxLauncher.LaunchAccountAsync(account, JoinTarget.Follow(f.Id), exe),
-            $"Joining {f.Title}…");
-    }
-
-    private async void Accept_Click(object sender, RoutedEventArgs e) => await AnswerAsync(sender, e, accept: true);
-    private async void Decline_Click(object sender, RoutedEventArgs e) => await AnswerAsync(sender, e, accept: false);
-
-    private async Task AnswerAsync(object sender, RoutedEventArgs e, bool accept)
-    {
-        e.Handled = true;
-        if (_account is not { } account || (sender as FrameworkElement)?.Tag is not FriendItem f) return;
-        if (sender is Button b) b.IsEnabled = false;
-        try
-        {
-            await RobloxApi.AnswerFriendRequestAsync(account.Cookie, f.Id, accept);
-            _requests.Remove(f);
-            if (accept)
-            {
-                _friends.Add(new FriendItem { Id = f.Id, Name = f.Name, Title = f.Title, AvatarUrl = f.AvatarUrl });
-                await RefreshPresenceAsync(_friendsVersion);
-            }
-            ShowFriends(null);
-        }
-        catch (Exception ex)
-        {
-            if (sender is Button b2) b2.IsEnabled = true;
-            ShowFriends("Couldn't answer the request: " + ex.Message);
-        }
-    }
-
-    private void AddFriend_Click(object sender, RoutedEventArgs e)
-    {
-        if (_account is not { } account) return;
-        var query = FriendSearch.Text.Trim();
-        var url = query.Length > 0
-            ? "https://www.roblox.com/search/users?keyword=" + Uri.EscapeDataString(query)
-            : "https://www.roblox.com/search/users";
-        new BrowserWindow(account, url).Show();
-    }
-
-    private void Chat_Click(object sender, RoutedEventArgs e)
-    {
-        if (_account is { } account) new BrowserWindow(account, "https://www.roblox.com/home").Show();
-    }
+    /// <summary>Joins a friend's server with the account picked on this page.</summary>
+    public void Join(PersonItem friend) =>
+        _ = RunLaunchAsync((account, exe) => RobloxLauncher.LaunchAccountAsync(account, JoinTarget.Follow(friend.Id), exe),
+            $"Joining {friend.Title}…");
 }

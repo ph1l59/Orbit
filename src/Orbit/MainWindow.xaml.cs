@@ -57,6 +57,11 @@ public partial class MainWindow : Window
             _pages[page.Key] = page.Create();
 
         BuildSearchIndex();
+        WireFriends();
+        PreviewKeyDown += (_, e) =>
+        {
+            if (e.Key == Key.Escape && DrawerLayer.Visibility == Visibility.Visible) { CloseDrawer(); e.Handled = true; }
+        };
 
         StateChanged += (_, _) => UpdateMaximizedState();
         AppState.MultiInstanceChanged += UpdateMultiStatus;
@@ -336,4 +341,55 @@ public partial class MainWindow : Window
             UpdateText.Text = "Update failed: " + ex.Message;
         }
     }
+
+    // ---------------- Friends drawer ----------------
+
+    private PlayView? _play;
+
+    private void WireFriends()
+    {
+        _play = _pages["play"] as PlayView;
+        if (_play == null) return;
+        _play.AccountChanged += account => Friends.SetAccount(account);
+        _play.FriendsRequested += OpenDrawer;
+        Friends.RequestCountChanged += count => _play.SetRequestCount(count);
+        Friends.JoinRequested += friend => { CloseDrawer(); _play.Join(friend); };
+        Friends.CloseRequested += CloseDrawer;
+        Friends.SetAccount(_play.CurrentAccount);
+    }
+
+    private readonly System.Windows.Media.Effects.BlurEffect _blur = new() { Radius = 0 };
+
+    private void OpenDrawer()
+    {
+        DrawerLayer.Visibility = Visibility.Visible;
+        SidebarRoot.Effect = _blur;
+        ContentRoot.Effect = _blur;
+        var ease = new System.Windows.Media.Animation.CubicEase { EasingMode = System.Windows.Media.Animation.EasingMode.EaseOut };
+        var duration = TimeSpan.FromMilliseconds(320);
+        DrawerShift.BeginAnimation(TranslateTransform.XProperty, new System.Windows.Media.Animation.DoubleAnimation(420, 0, duration) { EasingFunction = ease });
+        DrawerShade.BeginAnimation(OpacityProperty, new System.Windows.Media.Animation.DoubleAnimation(0, 1, duration));
+        _blur.BeginAnimation(System.Windows.Media.Effects.BlurEffect.RadiusProperty, new System.Windows.Media.Animation.DoubleAnimation(0, 10, duration));
+        Friends.Opened();
+    }
+
+    private void CloseDrawer()
+    {
+        if (DrawerLayer.Visibility != Visibility.Visible) return;
+        Friends.IsOpen = false;
+        var ease = new System.Windows.Media.Animation.CubicEase { EasingMode = System.Windows.Media.Animation.EasingMode.EaseIn };
+        var duration = TimeSpan.FromMilliseconds(240);
+        var slide = new System.Windows.Media.Animation.DoubleAnimation(0, 420, duration) { EasingFunction = ease };
+        slide.Completed += (_, _) =>
+        {
+            DrawerLayer.Visibility = Visibility.Collapsed;
+            SidebarRoot.Effect = null;
+            ContentRoot.Effect = null;
+        };
+        DrawerShift.BeginAnimation(TranslateTransform.XProperty, slide);
+        DrawerShade.BeginAnimation(OpacityProperty, new System.Windows.Media.Animation.DoubleAnimation(1, 0, duration));
+        _blur.BeginAnimation(System.Windows.Media.Effects.BlurEffect.RadiusProperty, new System.Windows.Media.Animation.DoubleAnimation(10, 0, duration));
+    }
+
+    private void DrawerShade_Click(object sender, MouseButtonEventArgs e) => CloseDrawer();
 }

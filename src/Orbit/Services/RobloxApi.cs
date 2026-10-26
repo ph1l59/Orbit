@@ -15,6 +15,11 @@ public sealed record UserPresence(long UserId, int Type, string Location);
 /// <summary>A friend (or someone who sent a friend request).</summary>
 public sealed record FriendInfo(long Id, string Name, string DisplayName);
 
+/// <summary>Public profile details.</summary>
+public sealed record ProfileInfo(long Id, string Name, string DisplayName, string Description, DateTime Created);
+
+public enum FriendRequestResult { Sent, AlreadyFriends, NeedsCheck, Failed }
+
 public sealed record GameInfo(long UniverseId, string Name, string Creator, string? IconUrl, long Playing);
 
 public sealed class RobloxApiException(string message) : Exception(message);
@@ -274,6 +279,88 @@ public static class RobloxApi
             if (string.IsNullOrEmpty(cursor)) break;
         }
         return ids;
+    }
+
+    /// <summary>Finds users by (part of) their name.</summary>
+    public static async Task<List<FriendInfo>> SearchUsersAsync(string keyword, string cookie)
+    {
+        var url = "https://users.roblox.com/v1/users/search?limit=10&keyword=" + Uri.EscapeDataString(keyword);
+        using var response = await SendAsync(() => Request(HttpMethod.Get, url), cookie).ConfigureAwait(false);
+        if ((int)response.StatusCode == 429) throw new RobloxApiException("Too many searches – wait a few seconds.");
+        if (!response.IsSuccessStatusCode) throw new RobloxApiException($"Roblox answered with HTTP {(int)response.StatusCode}.");
+        using var doc = JsonDocument.Parse(await response.Content.ReadAsStringAsync().ConfigureAwait(false));
+        var list = new List<FriendInfo>();
+        foreach (var u in doc.RootElement.GetProperty("data").EnumerateArray())
+            list.Add(new FriendInfo(u.GetProperty("id").GetInt64(), u.GetProperty("name").GetString() ?? "",
+                u.GetProperty("displayName").GetString() ?? ""));
+        return list;
+    }
+
+    /// <summary>Sends a friend request. Roblox sometimes wants a human check first – then the caller opens the profile.</summary>
+    public static async Task<FriendRequestResult> SendFriendRequestAsync(string cookie, long targetId)
+    {
+        using var response = await SendAsync(() => Request(HttpMethod.Post,
+            $"https://friends.roblox.com/v1/users/{targetId}/request-friendship",
+            "{\"friendshipOriginSourceType\":\"PlayerSearch\"}"), cookie).ConfigureAwait(false);
+
+        if (response.IsSuccessStatusCode) return FriendRequestResult.Sent;
+        if (response.Headers.Contains("rblx-challenge-id") || response.Headers.Contains("rblx-challenge-type"))
+            return FriendRequestResult.NeedsCheck;
+
+        var body = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
+        if (body.Contains("already", StringComparison.OrdinalIgnoreCase)) return FriendRequestResult.AlreadyFriends;
+        if (body.Contains("captcha", StringComparison.OrdinalIgnoreCase) || body.Contains("challenge", StringComparison.OrdinalIgnoreCase))
+            return FriendRequestResult.NeedsCheck;
+        return FriendRequestResult.Failed;
+    }
+
+    /// <summary>Name, about text and join date of a user.</summary>
+    public static async Task<ProfileInfo?> GetProfileAsync(long userId)
+    {
+        using var doc = await GetJsonAsync($"https://users.roblox.com/v1/users/{userId}").ConfigureAwait(false);
+        if (doc == null) return null;
+        var r = doc.RootElement;
+        return new ProfileInfo(userId, r.GetProperty("name").GetString() ?? "", r.GetProperty("displayName").GetString() ?? "",
+            r.TryGetProperty("description", out var d) ? d.GetString() ?? "" : "",
+            r.TryGetProperty("created", out var c) && c.TryGetDateTime(out var created) ? created : DateTime.MinValue);
+    }
+
+    /// <summary>Friends, followers and followings count (-1 if unknown).</summary>
+    public static async Task<(int Friends, int Followers, int Following)> GetCountsAsync(long userId)
+    {
+        async Task<int> Count(string url)
+        {
+            try
+            {
+                using var doc = await GetJsonAsync(url).ConfigureAwait(false);
+                return doc != null && doc.RootElement.TryGetProperty("count", out var c) ? c.GetInt32() : -1;
+            }
+            catch { return -1; }
+        }
+        var friends = Count($"https://friends.roblox.com/v1/users/{userId}/friends/count");
+        var followers = Count($"https://friends.roblox.com/v1/users/{userId}/followers/count");
+        var following = Count($"https://friends.roblox.com/v1/users/{userId}/followings/count");
+        return (await friends, await followers, await following);
+    }
+
+    /// <summary>Reads one of the account's privacy settings (e.g. "inventory-privacy" → "inventoryPrivacy").</summary>
+    public static async Task<string?> GetPrivacyAsync(string cookie, string endpoint, string field)
+    {
+        using var response = await SendAsync(
+            () => Request(HttpMethod.Get, $"https://accountsettings.roblox.com/v1/{endpoint}"), cookie).ConfigureAwait(false);
+        if (!response.IsSuccessStatusCode) return null;
+        using var doc = JsonDocument.Parse(await response.Content.ReadAsStringAsync().ConfigureAwait(false));
+        return doc.RootElement.TryGetProperty(field, out var v) ? v.GetString() : null;
+    }
+
+    /// <summary>Changes one of the account's privacy settings.</summary>
+    public static async Task SetPrivacyAsync(string cookie, string endpoint, string field, string value)
+    {
+        var body = JsonSerializer.Serialize(new Dictionary<string, string> { [field] = value });
+        using var response = await SendAsync(
+            () => Request(HttpMethod.Post, $"https://accountsettings.roblox.com/v1/{endpoint}", body), cookie).ConfigureAwait(false);
+        if (!response.IsSuccessStatusCode)
+            throw new RobloxApiException($"Roblox answered with HTTP {(int)response.StatusCode}.");
     }
 
     /// <summary>Accepts or declines a friend request.</summary>
