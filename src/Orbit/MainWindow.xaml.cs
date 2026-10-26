@@ -345,9 +345,11 @@ public partial class MainWindow : Window
     // ---------------- Friends drawer ----------------
 
     private PlayView? _play;
+    private readonly TranslateTransform DrawerShift = new(420, 0);
 
     private void WireFriends()
     {
+        Friends.RenderTransform = DrawerShift;
         _play = _pages["play"] as PlayView;
         if (_play == null) return;
         _play.AccountChanged += account => Friends.SetAccount(account);

@@ -155,11 +155,7 @@
         <Grid x:Name="DrawerLayer" Grid.ColumnSpan="2" Panel.ZIndex="200" Visibility="Collapsed"
               WindowChrome.IsHitTestVisibleInChrome="True">
             <Border x:Name="DrawerShade" Background="#73000000" MouseLeftButtonDown="DrawerShade_Click"/>
-            <views:FriendsDrawer x:Name="Friends" HorizontalAlignment="Right" Width="390">
-                <views:FriendsDrawer.RenderTransform>
-                    <TranslateTransform x:Name="DrawerShift" X="420"/>
-                </views:FriendsDrawer.RenderTransform>
-            </views:FriendsDrawer>
+            <views:FriendsDrawer x:Name="Friends" HorizontalAlignment="Right" Width="390"/>
         </Grid>
     </Grid>
 </Window>
