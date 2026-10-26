@@ -12,6 +12,7 @@
   <a href="../../releases/latest"><img src="https://img.shields.io/github/v/release/ph1l59/Orbit?color=a855f7&label=download&cacheSeconds=300" alt="Download"></a>
   <img src="https://img.shields.io/badge/windows-10%20%7C%2011-a855f7" alt="Windows 10 | 11">
   <img src="https://img.shields.io/github/license/ph1l59/Orbit?color=a855f7" alt="License">
+  <a href="../../releases"><img src="https://img.shields.io/github/downloads/ph1l59/Orbit/total?color=a855f7&label=downloads&cacheSeconds=3600" alt="Downloads"></a>
 </p>
 
 <br>
