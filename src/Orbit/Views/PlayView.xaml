@@ -405,6 +405,41 @@
                             MouseLeftButtonDown="Avatar_MouseDown" MouseMove="Avatar_MouseMove" MouseLeftButtonUp="Avatar_MouseUp"
                             LostMouseCapture="Avatar_LostCapture"/>
 
+                    <!-- Loading placeholder: a blocky avatar in Orbit purple with a light sweeping over it -->
+                    <Grid x:Name="Placeholder" Width="150" Height="300" HorizontalAlignment="Center" VerticalAlignment="Center"
+                          IsHitTestVisible="False">
+                        <Path x:Name="PlaceholderShape" Stretch="Fill" StrokeThickness="1.5" Stroke="#99C084FC"
+                              Data="M 50,0 H 100 V 50 H 50 Z M 25,55 H 125 V 160 H 25 Z M 0,55 H 22 V 160 H 0 Z M 128,55 H 150 V 160 H 128 Z M 25,163 H 73 V 300 H 25 Z M 77,163 H 125 V 300 H 77 Z">
+                            <Path.Fill>
+                                <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
+                                    <GradientStop Color="#665B21B6" Offset="0"/>
+                                    <GradientStop Color="#559333EA" Offset="0.6"/>
+                                    <GradientStop Color="#44D946EF" Offset="1"/>
+                                </LinearGradientBrush>
+                            </Path.Fill>
+                            <Path.Effect>
+                                <DropShadowEffect Color="#A855F7" BlurRadius="30" ShadowDepth="0" Opacity="0.55"/>
+                            </Path.Effect>
+                        </Path>
+                        <Grid x:Name="PlaceholderShine" ClipToBounds="True">
+                            <Rectangle x:Name="ShineBar" Width="90" HorizontalAlignment="Left">
+                                <Rectangle.RenderTransform>
+                                    <TransformGroup>
+                                        <SkewTransform AngleX="-20"/>
+                                        <TranslateTransform x:Name="ShineMove" X="-120"/>
+                                    </TransformGroup>
+                                </Rectangle.RenderTransform>
+                                <Rectangle.Fill>
+                                    <LinearGradientBrush StartPoint="0,0.5" EndPoint="1,0.5">
+                                        <GradientStop Color="#00FFFFFF" Offset="0"/>
+                                        <GradientStop Color="#66F0E0FF" Offset="0.5"/>
+                                        <GradientStop Color="#00FFFFFF" Offset="1"/>
+                                    </LinearGradientBrush>
+                                </Rectangle.Fill>
+                            </Rectangle>
+                        </Grid>
+                    </Grid>
+
                     <TextBlock x:Name="AvatarHint" Text="Loading avatar…" Style="{StaticResource RowDesc}"
                                HorizontalAlignment="Center" VerticalAlignment="Center"/>
                 </Grid>

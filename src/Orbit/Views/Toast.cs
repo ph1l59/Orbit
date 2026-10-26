@@ -12,7 +12,7 @@ namespace Orbit.Views;
 
 /// <summary>
 /// Small notification card in the bottom-right corner of the screen. It slides in from the right,
-/// a light sweeps over it once, a thin bar shows the time left, and it slides out again.
+/// a light sweeps over it every couple of seconds, a thin bar shows the time left, and it slides out again.
 /// Several notifications stack upwards.
 /// </summary>
 public static class Toast
@@ -163,11 +163,17 @@ public static class Toast
             var ease = new CubicEase { EasingMode = EasingMode.EaseOut };
             slide.BeginAnimation(TranslateTransform.XProperty, new DoubleAnimation(CardWidth + 40, 0, TimeSpan.FromMilliseconds(380)) { EasingFunction = ease });
 
-            // One sweep of light shortly after it arrives.
-            shimmerMove.BeginAnimation(TranslateTransform.XProperty, new DoubleAnimation(-220, CardWidth + 60, TimeSpan.FromMilliseconds(900))
+            // A sweep of light that comes back every couple of seconds while the notification is open.
+            var sweep = new DoubleAnimationUsingKeyFrames
             {
-                BeginTime = TimeSpan.FromMilliseconds(320), EasingFunction = new SineEase { EasingMode = EasingMode.EaseInOut },
-            });
+                BeginTime = TimeSpan.FromMilliseconds(320),
+                RepeatBehavior = RepeatBehavior.Forever,
+            };
+            sweep.KeyFrames.Add(new DiscreteDoubleKeyFrame(-220, KeyTime.FromTimeSpan(TimeSpan.Zero)));
+            sweep.KeyFrames.Add(new EasingDoubleKeyFrame(CardWidth + 60, KeyTime.FromTimeSpan(TimeSpan.FromMilliseconds(1000)),
+                new SineEase { EasingMode = EasingMode.EaseInOut }));
+            sweep.KeyFrames.Add(new DiscreteDoubleKeyFrame(CardWidth + 60, KeyTime.FromTimeSpan(TimeSpan.FromMilliseconds(2400))));
+            shimmerMove.BeginAnimation(TranslateTransform.XProperty, sweep);
 
             StartTimeBar(timeBar, ShowTime);
             timer.Start();

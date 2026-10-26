@@ -116,21 +116,27 @@ public partial class MainWindow : Window
     // ---------------- Page entrance ----------------
 
     /// <summary>
-    /// The page glides up from 30 px below and fades in (300 ms, slowing down towards the end).
+    /// The page glides up from 36 px below and fades in (about half a second, slowing down towards the end).
     /// While it moves it's drawn from a cached picture, so the shadows don't have to be redrawn every frame.
     /// </summary>
     private void AnimateIn(FrameworkElement page)
     {
-        var duration = TimeSpan.FromMilliseconds(300);
+        var duration = TimeSpan.FromMilliseconds(560);
         var dpi = VisualTreeHelper.GetDpi(ContentHost).DpiScaleX;
         ContentHost.CacheMode = new BitmapCache(dpi) { SnapsToDevicePixels = true };
 
-        var shift = new TranslateTransform(0, 30);
+        var shift = new TranslateTransform(0, 36);
         ContentHost.RenderTransform = shift;
 
-        var slide = new System.Windows.Media.Animation.DoubleAnimation(30, 0, duration) { DecelerationRatio = 0.7 };
+        var slide = new System.Windows.Media.Animation.DoubleAnimation(36, 0, duration)
+        {
+            EasingFunction = new System.Windows.Media.Animation.QuarticEase { EasingMode = System.Windows.Media.Animation.EasingMode.EaseOut },
+        };
         slide.Completed += (_, _) => ContentHost.CacheMode = null; // back to sharp, live drawing
-        var fade = new System.Windows.Media.Animation.DoubleAnimation(0, 1, duration) { DecelerationRatio = 0.7 };
+        var fade = new System.Windows.Media.Animation.DoubleAnimation(0, 1, TimeSpan.FromMilliseconds(420))
+        {
+            EasingFunction = new System.Windows.Media.Animation.CubicEase { EasingMode = System.Windows.Media.Animation.EasingMode.EaseOut },
+        };
 
         shift.BeginAnimation(TranslateTransform.YProperty, slide);
         ContentHost.BeginAnimation(OpacityProperty, fade);

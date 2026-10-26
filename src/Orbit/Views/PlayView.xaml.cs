@@ -101,30 +101,81 @@ public partial class PlayView : UserControl, IPage
         var version = ++_avatarVersion;
         ShowModel(null);
         AvatarImage.Source = null;
-        AvatarHint.Text = "Loading avatar…";
-        AvatarHint.Visibility = Visibility.Visible;
+        AvatarImage.Visibility = Visibility.Collapsed;
+        AvatarHint.Visibility = Visibility.Collapsed;
+        ShowPlaceholder(true);
 
-        // The flat picture comes first (fast) ...
-        if (!FullBodyCache.TryGetValue(account.UserId, out var url))
-        {
-            url = await RobloxApi.GetFullBodyAvatarAsync(account.UserId) ?? "";
-            if (url.Length > 0) FullBodyCache[account.UserId] = url;
-        }
-        if (version != _avatarVersion) return; // another account was picked meanwhile
-        AvatarImage.Source = Load(url);
-        if (AvatarImage.Source != null) AvatarHint.Visibility = Visibility.Collapsed;
-
-        // ... then the turnable 3D model replaces it.
+        // The flat picture is only a fallback if the 3D model can't be loaded.
+        var pictureTask = FullBodyCache.TryGetValue(account.UserId, out var cachedUrl)
+            ? Task.FromResult<string?>(cachedUrl)
+            : RobloxApi.GetFullBodyAvatarAsync(account.UserId);
         var model = await Avatar3D.LoadAsync(account.UserId, account.Cookie);
-        if (version != _avatarVersion) return;
+        if (version != _avatarVersion) return; // another account was picked meanwhile
+
         if (model != null)
         {
+            ShowPlaceholder(false);
             ShowModel(model);
-            AvatarHint.Visibility = Visibility.Collapsed;
+            return;
         }
-        else if (AvatarImage.Source == null)
+
+        var url = await pictureTask ?? "";
+        if (url.Length > 0) FullBodyCache[account.UserId] = url;
+        if (version != _avatarVersion) return;
+        ShowPlaceholder(false);
+        AvatarImage.Source = Load(url);
+        if (AvatarImage.Source != null)
+        {
+            AvatarImage.Visibility = Visibility.Visible;
+            AvatarImage.BeginAnimation(OpacityProperty, new System.Windows.Media.Animation.DoubleAnimation(0, 1, TimeSpan.FromMilliseconds(400)));
+        }
+        else
         {
             AvatarHint.Text = "Avatar couldn't be loaded";
+            AvatarHint.Visibility = Visibility.Visible;
+        }
+    }
+
+    // ---------- Loading placeholder ----------
+
+    private void ShowPlaceholder(bool show)
+    {
+        if (show)
+        {
+            Placeholder.BeginAnimation(OpacityProperty, null);
+            Placeholder.Opacity = 1;
+            Placeholder.Visibility = Visibility.Visible;
+            Dispatcher.InvokeAsync(() =>
+            {
+                // The light only shows inside the avatar shape.
+                PlaceholderShine.Clip = PlaceholderShape.RenderedGeometry.Clone();
+                var sweep = new System.Windows.Media.Animation.DoubleAnimationUsingKeyFrames { RepeatBehavior = System.Windows.Media.Animation.RepeatBehavior.Forever };
+                sweep.KeyFrames.Add(new System.Windows.Media.Animation.DiscreteDoubleKeyFrame(-120, System.Windows.Media.Animation.KeyTime.FromTimeSpan(TimeSpan.Zero)));
+                sweep.KeyFrames.Add(new System.Windows.Media.Animation.EasingDoubleKeyFrame(200, System.Windows.Media.Animation.KeyTime.FromTimeSpan(TimeSpan.FromMilliseconds(1100)),
+                    new System.Windows.Media.Animation.SineEase { EasingMode = System.Windows.Media.Animation.EasingMode.EaseInOut }));
+                sweep.KeyFrames.Add(new System.Windows.Media.Animation.DiscreteDoubleKeyFrame(200, System.Windows.Media.Animation.KeyTime.FromTimeSpan(TimeSpan.FromMilliseconds(1500))));
+                ShineMove.BeginAnimation(TranslateTransform.XProperty, sweep);
+
+                // and the shape breathes softly
+                var pulse = new System.Windows.Media.Animation.DoubleAnimation(0.65, 1, TimeSpan.FromMilliseconds(900))
+                {
+                    AutoReverse = true, RepeatBehavior = System.Windows.Media.Animation.RepeatBehavior.Forever,
+                    EasingFunction = new System.Windows.Media.Animation.SineEase(),
+                };
+                PlaceholderShape.BeginAnimation(OpacityProperty, pulse);
+            }, System.Windows.Threading.DispatcherPriority.Loaded);
+        }
+        else if (Placeholder.Visibility == Visibility.Visible)
+        {
+            var fade = new System.Windows.Media.Animation.DoubleAnimation(1, 0, TimeSpan.FromMilliseconds(350));
+            fade.Completed += (_, _) =>
+            {
+                if (Placeholder.Opacity > 0.01) return; // shown again meanwhile
+                Placeholder.Visibility = Visibility.Collapsed;
+                ShineMove.BeginAnimation(TranslateTransform.XProperty, null);
+                PlaceholderShape.BeginAnimation(OpacityProperty, null);
+            };
+            Placeholder.BeginAnimation(OpacityProperty, fade);
         }
     }
 
@@ -143,10 +194,10 @@ public partial class PlayView : UserControl, IPage
         _model = model;
         if (model == null)
         {
+            StopIdle();
             AvatarVisual.Content = null;
             AvatarView.Visibility = Visibility.Collapsed;
             DragSurface.Visibility = Visibility.Collapsed;
-            AvatarImage.Visibility = Visibility.Visible;
             return;
         }
 
@@ -160,12 +211,21 @@ public partial class PlayView : UserControl, IPage
         // Turn around the model's own middle: left/right around "up", a little tilt around the side axis.
         _yaw.Axis = up;
         _pitch.Axis = side;
+        var feet = new Point3D(center.X, b.Y, center.Z);
+        _idleScale.CenterX = feet.X; _idleScale.CenterY = feet.Y; _idleScale.CenterZ = feet.Z;
+        _idleYaw.Axis = up;
+        _bobUnit = b.SizeY;
+
         var transform = new Transform3DGroup();
-        transform.Children.Add(new RotateTransform3D(_yaw, center));
+        transform.Children.Add(_idleScale);                              // breathing + pop-in, from the feet
+        transform.Children.Add(new RotateTransform3D(_idleYaw, center)); // gentle sway
+        transform.Children.Add(new RotateTransform3D(_yaw, center));     // dragged with the mouse
         transform.Children.Add(new RotateTransform3D(_pitch, center));
+        transform.Children.Add(_bob);                                    // small float up and down
         AvatarVisual.Content = model.Model;
         AvatarVisual.Transform = transform;
         ResetRotation();
+        StartIdle();
 
         // Camera in front of the avatar, far enough away to fit it (plus some room for turning).
         var size = Math.Max(b.SizeY, Math.Max(b.SizeX, b.SizeZ) * 1.15);
@@ -189,6 +249,60 @@ public partial class PlayView : UserControl, IPage
     /// <summary>Start view: turned a little to the side, so the avatar looks three-dimensional right away.</summary>
     private const double DefaultYaw = -20;
 
+    // ---------- Idle animation: pop in, breathe, sway, float ----------
+
+    private readonly ScaleTransform3D _idleScale = new(1, 1, 1);
+    private readonly AxisAngleRotation3D _idleYaw = new(new Vector3D(0, 1, 0), 0);
+    private readonly TranslateTransform3D _bob = new();
+    private double _bobUnit = 5;
+    private TimeSpan _idleStart = TimeSpan.MinValue;
+    private double _swayWeight = 1;      // fades to 0 while the user turns the avatar
+    private DateTime _lastTouch = DateTime.MinValue;
+    private bool _idleRunning;
+
+    private void StartIdle()
+    {
+        _idleStart = TimeSpan.MinValue;
+        _swayWeight = 1;
+        if (_idleRunning) return;
+        _idleRunning = true;
+        System.Windows.Media.CompositionTarget.Rendering += Idle;
+    }
+
+    private void StopIdle()
+    {
+        if (!_idleRunning) return;
+        _idleRunning = false;
+        System.Windows.Media.CompositionTarget.Rendering -= Idle;
+    }
+
+    private void Idle(object? sender, EventArgs e)
+    {
+        if (_model == null || !IsVisible) return;
+        var now = ((System.Windows.Media.RenderingEventArgs)e).RenderingTime;
+        if (_idleStart == TimeSpan.MinValue) _idleStart = now;
+        var t = (now - _idleStart).TotalSeconds;
+
+        // Pop in: grows from 85 % with a small overshoot, fades in.
+        var appear = Math.Min(1, t / 0.7);
+        var back = 1 + 2.2 * Math.Pow(appear - 1, 3) + 1.2 * Math.Pow(appear - 1, 2); // ease-out-back
+        var pop = 0.85 + 0.15 * back;
+        AvatarView.Opacity = Math.Min(1, t / 0.35);
+
+        // Breathing (very slight) and floating.
+        var breath = 1 + 0.012 * Math.Sin(t * 2 * Math.PI / 3.2);
+        _idleScale.ScaleX = pop;
+        _idleScale.ScaleZ = pop;
+        _idleScale.ScaleY = pop * breath;
+        _bob.OffsetY = _bobUnit * 0.012 * Math.Sin(t * 2 * Math.PI / 3.2 + 1.2);
+
+        // Gentle sway – paused while the user turns the avatar, comes back slowly afterwards.
+        var touching = _dragLast != null || _spinning || (DateTime.UtcNow - _lastTouch).TotalSeconds < 1.5;
+        var wanted = touching ? 0 : 1;
+        _swayWeight += (wanted - _swayWeight) * Math.Min(1, 0.04);
+        _idleYaw.Angle = _swayWeight * 7 * Math.Sin(t * 2 * Math.PI / 7);
+    }
+
     private void ResetRotation()
     {
         _yawAngle = DefaultYaw;
@@ -199,6 +313,7 @@ public partial class PlayView : UserControl, IPage
 
     private void Avatar_MouseDown(object sender, System.Windows.Input.MouseButtonEventArgs e)
     {
+        _lastTouch = DateTime.UtcNow;
         if (_model == null) return;
         if (e.ClickCount == 2) { ResetRotation(); return; }
         _dragLast = e.GetPosition(DragSurface);
@@ -210,6 +325,7 @@ public partial class PlayView : UserControl, IPage
     private void Avatar_MouseMove(object sender, System.Windows.Input.MouseEventArgs e)
     {
         if (_dragLast is not { } last) return;
+        _lastTouch = DateTime.UtcNow;
         var now = e.GetPosition(DragSurface);
         var dx = now.X - last.X;
         var dy = now.Y - last.Y;
