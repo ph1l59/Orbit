@@ -253,11 +253,10 @@ public static class RobloxApi
         {
             var body = JsonSerializer.Serialize(new { userIds = chunk, excludeBannedUsers = false });
 
-            // Right after Orbit starts, many requests go out at once and Roblox sometimes answers
-            // "too many requests" – try again a few times instead of showing bare ids.
-            for (var attempt = 0; attempt < 4; attempt++)
+            // One quick retry; anything still missing is filled in later by the caller (no long waits here).
+            for (var attempt = 0; attempt < 2; attempt++)
             {
-                if (attempt > 0) await Task.Delay(800 * attempt).ConfigureAwait(false);
+                if (attempt > 0) await Task.Delay(400).ConfigureAwait(false);
                 try
                 {
                     using var response = await SendAsync(

@@ -128,14 +128,15 @@ public partial class MainWindow : Window
         var shift = new TranslateTransform(0, 36);
         ContentHost.RenderTransform = shift;
 
+        // Even speed: starts gently, glides, settles gently – no fast jump at the beginning.
         var slide = new System.Windows.Media.Animation.DoubleAnimation(36, 0, duration)
         {
-            EasingFunction = new System.Windows.Media.Animation.QuarticEase { EasingMode = System.Windows.Media.Animation.EasingMode.EaseOut },
+            EasingFunction = new System.Windows.Media.Animation.SineEase { EasingMode = System.Windows.Media.Animation.EasingMode.EaseInOut },
         };
         slide.Completed += (_, _) => ContentHost.CacheMode = null; // back to sharp, live drawing
-        var fade = new System.Windows.Media.Animation.DoubleAnimation(0, 1, TimeSpan.FromMilliseconds(650))
+        var fade = new System.Windows.Media.Animation.DoubleAnimation(0, 1, TimeSpan.FromMilliseconds(700))
         {
-            EasingFunction = new System.Windows.Media.Animation.CubicEase { EasingMode = System.Windows.Media.Animation.EasingMode.EaseOut },
+            EasingFunction = new System.Windows.Media.Animation.SineEase { EasingMode = System.Windows.Media.Animation.EasingMode.EaseOut },
         };
 
         shift.BeginAnimation(TranslateTransform.YProperty, slide);
@@ -478,9 +479,10 @@ public partial class MainWindow : Window
         Friends.CloseRequested += CloseDrawer;
         Friends.FriendActivity += (friend, playing) =>
         {
+            var who = friend.HasName ? friend.Title : "A friend";
             var text = playing
-                ? (string.IsNullOrWhiteSpace(friend.Location) ? $"{friend.Title} started playing" : $"{friend.Title} is playing {friend.Location}")
-                : $"{friend.Title} is online";
+                ? (string.IsNullOrWhiteSpace(friend.Location) ? $"{who} started playing" : $"{who} is playing {friend.Location}")
+                : $"{who} is online";
             Toast.Show("Friends", text, friend.AvatarUrl, playing ? "Join" : null, playing ? () =>
             {
                 ShowFromTray();

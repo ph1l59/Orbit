@@ -14,6 +14,9 @@ public sealed class PersonItem
     public long Id { get; init; }
     public string Title { get; init; } = "";
     public string Name { get; init; } = "";
+    /// <summary>False until Roblox has told Orbit the name (the row shows "Loading…" meanwhile).</summary>
+    public bool HasName => !string.IsNullOrEmpty(Name);
+    public string DisplayTitle => HasName ? Title : "Loading…";
     public string? AvatarUrl { get; set; }
     public int Presence { get; set; } = -1;
     public string Location { get; set; } = "";
@@ -22,7 +25,7 @@ public sealed class PersonItem
     public string AddText { get; set; } = "Add";
     public bool CanAdd { get; set; } = true;
 
-    public string StatusText => IsRequest || IsSearchResult ? "@" + Name : Presence switch
+    public string StatusText => IsRequest || IsSearchResult ? (HasName ? "@" + Name : "") : Presence switch
     {
         2 => string.IsNullOrWhiteSpace(Location) ? "In game" : "Playing " + Location,
         3 => "In Studio",
@@ -167,31 +170,33 @@ public partial class FriendsDrawer : UserControl
             try { requestIds = await RobloxApi.GetFriendRequestIdsAsync(account.Cookie); }
             catch { requestIds = new(); }
 
-            var all = friendIds.Concat(requestIds).ToList();
-            var users = await RobloxApi.GetUsersAsync(all, account.Cookie);
-            var pictures = await RobloxApi.GetHeadshotsAsync(all);
+            var all = friendIds.Concat(requestIds).Distinct().ToList();
             if (version != _version) return;
 
-            PersonItem Make(long id, bool request)
-            {
-                users.TryGetValue(id, out var u);
-                return new PersonItem
-                {
-                    Id = id,
-                    Name = u?.Name ?? id.ToString(),
-                    Title = string.IsNullOrWhiteSpace(u?.DisplayName) ? u?.Name ?? id.ToString() : u!.DisplayName,
-                    AvatarUrl = pictures.TryGetValue(id, out var pic) ? pic : null,
-                    IsRequest = request,
-                };
-            }
-
+            // 1. Show the list right away with what Orbit already knows (names from earlier visits).
             _friends = friendIds.Select(id => Make(id, false)).ToList();
             _requests = requestIds.Select(id => Make(id, true)).ToList();
             RequestCountChanged?.Invoke(_requests.Count);
-            await RefreshPresenceAsync(force: true);
-            if (version == _version) Fill(null);
 
-            if (users.Count < all.Distinct().Count() || pictures.Count < all.Distinct().Count())
+            // 2. Fresh names, pictures and online status – all at the same time.
+            var usersTask = RobloxApi.GetUsersAsync(all, account.Cookie);
+            var picturesTask = RobloxApi.GetHeadshotsAsync(all);
+            var presenceTask = RefreshPresenceAsync(force: true);
+            if (_friends.Any(f => f.HasName)) Fill(null);
+
+            Dictionary<long, FriendInfo> users;
+            Dictionary<long, string> pictures;
+            try { users = await usersTask; } catch { users = new(); }
+            try { pictures = await picturesTask; } catch { pictures = new(); }
+            await presenceTask;
+            if (version != _version) return;
+
+            PeopleCache.Update(users, pictures);
+            _friends = _friends.Select(p => Refreshed(p)).ToList();
+            _requests = _requests.Select(p => Refreshed(p)).ToList();
+            Fill(null);
+
+            if (_friends.Concat(_requests).Any(p => !p.HasName || p.AvatarUrl == null))
                 _ = FillMissingLaterAsync(version);
         }
         catch (Exception ex)
@@ -208,43 +213,54 @@ public partial class FriendsDrawer : UserControl
         }
     }
 
+    /// <summary>A person with the name/picture Orbit remembers (or a placeholder until Roblox answers).</summary>
+    private static PersonItem Make(long id, bool request)
+    {
+        var known = PeopleCache.Get(id);
+        return new PersonItem
+        {
+            Id = id,
+            Name = known?.Name ?? "",
+            Title = known == null ? "" : string.IsNullOrWhiteSpace(known.DisplayName) ? known.Name : known.DisplayName,
+            AvatarUrl = known?.AvatarUrl,
+            IsRequest = request,
+        };
+    }
+
+    /// <summary>Same person with the latest cached name and picture, keeping the online status.</summary>
+    private static PersonItem Refreshed(PersonItem p)
+    {
+        var fresh = Make(p.Id, p.IsRequest);
+        if (!fresh.HasName && p.HasName) return p;
+        fresh.Presence = p.Presence;
+        fresh.Location = p.Location;
+        fresh.AvatarUrl ??= p.AvatarUrl;
+        return fresh;
+    }
+
     /// <summary>Names/pictures that Roblox didn't deliver at first (busy right after start) are fetched again.</summary>
     private async Task FillMissingLaterAsync(int version)
     {
-        for (var round = 0; round < 3; round++)
+        var waits = new[] { 2, 4, 8, 15, 30, 60 };
+        foreach (var wait in waits)
         {
-            await Task.Delay(TimeSpan.FromSeconds(3 + round * 4));
+            await Task.Delay(TimeSpan.FromSeconds(wait));
             if (version != _version || _account is not { } account) return;
 
             var people = _friends.Concat(_requests).ToList();
-            var noName = people.Where(p => p.Name == p.Id.ToString()).Select(p => p.Id).ToList();
-            var noPicture = people.Where(p => string.IsNullOrEmpty(p.AvatarUrl)).Select(p => p.Id).ToList();
+            var noName = people.Where(p => !p.HasName).Select(p => p.Id).Distinct().ToList();
+            var noPicture = people.Where(p => p.AvatarUrl == null).Select(p => p.Id).Distinct().ToList();
             if (noName.Count == 0 && noPicture.Count == 0) return;
 
-            var users = noName.Count > 0 ? await RobloxApi.GetUsersAsync(noName, account.Cookie) : new();
-            var pictures = noPicture.Count > 0 ? await RobloxApi.GetHeadshotsAsync(noPicture) : new();
+            Dictionary<long, FriendInfo> users = new();
+            Dictionary<long, string> pictures = new();
+            try { if (noName.Count > 0) users = await RobloxApi.GetUsersAsync(noName, account.Cookie); } catch { }
+            try { if (noPicture.Count > 0) pictures = await RobloxApi.GetHeadshotsAsync(noPicture); } catch { }
             if (version != _version) return;
 
-            PersonItem Fix(PersonItem p)
-            {
-                var name = p.Name;
-                var title = p.Title;
-                if (users.TryGetValue(p.Id, out var u))
-                {
-                    name = u.Name;
-                    title = string.IsNullOrWhiteSpace(u.DisplayName) ? u.Name : u.DisplayName;
-                }
-                if (name == p.Name && title == p.Title && (p.AvatarUrl != null || !pictures.ContainsKey(p.Id))) return p;
-                return new PersonItem
-                {
-                    Id = p.Id, Name = name, Title = title, IsRequest = p.IsRequest,
-                    AvatarUrl = pictures.TryGetValue(p.Id, out var pic) ? pic : p.AvatarUrl,
-                    Presence = p.Presence, Location = p.Location,
-                };
-            }
-
-            _friends = _friends.Select(Fix).ToList();
-            _requests = _requests.Select(Fix).ToList();
+            PeopleCache.Update(users, pictures);
+            _friends = _friends.Select(p => Refreshed(p)).ToList();
+            _requests = _requests.Select(p => Refreshed(p)).ToList();
             Fill(null);
         }
     }

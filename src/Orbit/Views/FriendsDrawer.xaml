@@ -207,7 +207,7 @@
                                                     </StackPanel>
                                                     <ContentPresenter Content="{Binding}" ContentTemplate="{StaticResource PersonAvatar}"/>
                                                     <StackPanel Margin="12,0,8,0" VerticalAlignment="Center">
-                                                        <TextBlock Text="{Binding Title}" FontWeight="SemiBold" FontSize="13.5" TextTrimming="CharacterEllipsis"/>
+                                                        <TextBlock Text="{Binding DisplayTitle}" FontWeight="SemiBold" FontSize="13.5" TextTrimming="CharacterEllipsis"/>
                                                         <TextBlock Text="{Binding StatusText}" Foreground="{Binding StatusBrush}" FontSize="11.5" Margin="0,2,0,0"
                                                                    TextTrimming="CharacterEllipsis"/>
                                                     </StackPanel>
@@ -247,7 +247,7 @@
                                                         IsEnabled="{Binding CanAdd}" Tag="{Binding}" Click="SendRequest_Click"/>
                                                 <ContentPresenter Content="{Binding}" ContentTemplate="{StaticResource PersonAvatar}"/>
                                                 <StackPanel Margin="12,0,8,0" VerticalAlignment="Center">
-                                                    <TextBlock Text="{Binding Title}" FontWeight="SemiBold" FontSize="13.5" TextTrimming="CharacterEllipsis"/>
+                                                    <TextBlock Text="{Binding DisplayTitle}" FontWeight="SemiBold" FontSize="13.5" TextTrimming="CharacterEllipsis"/>
                                                     <TextBlock Text="{Binding StatusText}" Foreground="{Binding StatusBrush}" FontSize="11.5" Margin="0,2,0,0"
                                                                TextTrimming="CharacterEllipsis"/>
                                                 </StackPanel>
