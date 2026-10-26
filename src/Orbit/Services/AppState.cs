@@ -15,6 +15,14 @@ public static class AppState
     public static string? Load()
     {
         Settings = SettingsStore.Load();
+
+        // Discord Rich Presence is on by default now – switch it on once for people who had the old default (off).
+        if (!Settings.DiscordDefaultApplied)
+        {
+            Settings.DiscordRichPresence = true;
+            Settings.DiscordDefaultApplied = true;
+            SaveSettings();
+        }
         var list = AccountStore.Load(out var error);
         Accounts.Clear();
         foreach (var account in list) Accounts.Add(account);

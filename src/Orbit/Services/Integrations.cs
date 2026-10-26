@@ -77,6 +77,55 @@ public static class Integrations
         }
 
         if (_watcher?.Current is { } current) _ = UpdateDiscordAsync(current);
+        else ShowLauncherStatus();
+    }
+
+    // ---------------- Discord status while only Orbit is open ----------------
+
+    private const string LogoUrl = "https://raw.githubusercontent.com/ph1l59/Orbit/main/docs/logo.png";
+    private static bool _launcherOpen;
+    private static DateTime _launcherSince = DateTime.UtcNow;
+    private static DispatcherTimer? _launcherTimer;
+
+    /// <summary>The Orbit window was shown (true) or hidden to the tray (false).</summary>
+    public static void SetLauncherOpen(bool open)
+    {
+        if (open == _launcherOpen) return;
+        _launcherOpen = open;
+        if (open) _launcherSince = DateTime.UtcNow;
+
+        // Discord may start after Orbit – keep offering the status every few seconds while the window is open.
+        if (_launcherTimer == null && _ui != null)
+            _launcherTimer = new DispatcherTimer(TimeSpan.FromSeconds(15), DispatcherPriority.Background, (_, _) => ShowLauncherStatus(), _ui);
+        if (open) _launcherTimer?.Start();
+        else _launcherTimer?.Stop();
+
+        ShowLauncherStatus();
+    }
+
+    /// <summary>"In the launcher" with the Orbit logo while the window is open and no game is running; otherwise nothing.</summary>
+    private static void ShowLauncherStatus()
+    {
+        var discord = _discord;
+        if (discord == null || _watcher?.Current != null) return;
+
+        object? activity = null;
+        if (_launcherOpen)
+        {
+            activity = new Dictionary<string, object?>
+            {
+                ["type"] = 0,
+                ["details"] = "In the launcher",
+                ["timestamps"] = new { start = new DateTimeOffset(_launcherSince).ToUnixTimeSeconds() },
+                ["assets"] = new Dictionary<string, string>
+                {
+                    ["large_image"] = LogoUrl,
+                    ["large_text"] = "Orbit Launcher",
+                },
+                ["buttons"] = new[] { new { label = "Get Orbit Launcher", url = "https://github.com/ph1l59/Orbit" } },
+            };
+        }
+        Task.Run(() => discord.SetActivity(activity));
     }
 
     /// <summary>Orbit's own Discord app ("Roblox - Orbit Launcher"), used unless the user entered their own.</summary>
@@ -89,6 +138,7 @@ public static class Integrations
     {
         _robloxTimer?.Stop();
         _presenceTimer?.Stop();
+        _launcherTimer?.Stop();
         _watcher?.Dispose();
         _discord?.Dispose();
         _watcher = null;
@@ -112,11 +162,7 @@ public static class Integrations
         }
     }
 
-    private static void OnLeft()
-    {
-        var discord = _discord;
-        if (discord != null) Task.Run(() => discord.SetActivity(null));
-    }
+    private static void OnLeft() => ShowLauncherStatus(); // back to "In the launcher" (or nothing)
 
     private static async Task UpdateDiscordAsync(GameSession session)
     {

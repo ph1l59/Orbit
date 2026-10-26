@@ -65,6 +65,8 @@ public partial class MainWindow : Window
         };
 
         StateChanged += (_, _) => UpdateMaximizedState();
+        // Discord shows "In the launcher" only while the window is open (not while Orbit sits in the tray).
+        IsVisibleChanged += (_, _) => Integrations.SetLauncherOpen(IsVisible);
         AppState.MultiInstanceChanged += UpdateMultiStatus;
         UpdateMultiStatus();
 
@@ -74,6 +76,7 @@ public partial class MainWindow : Window
         {
             ClickerHotkey.Start();
             Integrations.Start(Dispatcher);
+            Integrations.SetLauncherOpen(IsVisible);
             WindowTitles.Start();
             await AppState.RefreshAvatarsAsync();
             await CheckForUpdateAsync();

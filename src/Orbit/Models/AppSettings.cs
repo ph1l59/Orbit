@@ -82,7 +82,9 @@ public sealed class AppSettings
     // ===== Integrations =====
     public bool ActivityTracking { get; set; } = true;
     public bool ShowServerLocation { get; set; }
-    public bool DiscordRichPresence { get; set; }
+    public bool DiscordRichPresence { get; set; } = true;
+    /// <summary>Set once Discord Rich Presence was switched on by default (so it's done only once, not after the user turned it off).</summary>
+    public bool DiscordDefaultApplied { get; set; }
     public string DiscordAppId { get; set; } = "";
     /// <summary>name | state | details</summary>
     public string DiscordStatusDisplay { get; set; } = "name";
