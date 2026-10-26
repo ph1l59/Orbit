@@ -75,8 +75,6 @@ public partial class IntegrationsView : UserControl, IPage
         AppState.SaveSettings();
         Integrations.Refresh();
 
-        if (s.DiscordRichPresence && string.IsNullOrWhiteSpace(s.DiscordAppId) && sender == DiscordToggle)
-            AppIdBox.Focus();
     }
 
     private void AppId_LostFocus(object sender, EventArgs e)

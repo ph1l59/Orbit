@@ -56,13 +56,13 @@
                 <Border Style="{StaticResource Row}" Tag="Discord application ID|discord app id client id">
                     <DockPanel>
                         <TextBox x:Name="AppIdBox" DockPanel.Dock="Right" Width="220" FontFamily="{StaticResource MonoFont}"
-                                 Tag="Application ID" LostKeyboardFocus="AppId_LostFocus"/>
+                                 Tag="Orbit's own (default)" LostKeyboardFocus="AppId_LostFocus"/>
                         <StackPanel Style="{StaticResource RowText}">
-                            <TextBlock Style="{StaticResource RowTitle}" Text="Discord application ID"/>
+                            <TextBlock Style="{StaticResource RowTitle}" Text="Discord application ID (optional)"/>
                             <TextBlock Style="{StaticResource RowDesc}">
-                                <Run Text="The name Discord shows (“Playing …”) comes from a Discord app. Create one for free in the"/>
+                                <Run Text="Leave empty to show “Playing Roblox - Orbit Launcher”. For a different name, create your own app in the"/>
                                 <Hyperlink Click="DevPortal_Click" Foreground="{StaticResource SignalLightBrush}">Developer Portal</Hyperlink>
-                                <Run Text=", name it e.g. “Roblox” and paste its Application ID here."/>
+                                <Run Text=" and paste its Application ID here."/>
                             </TextBlock>
                         </StackPanel>
                     </DockPanel>

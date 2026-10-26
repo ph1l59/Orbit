@@ -61,8 +61,9 @@ public static class Integrations
             _watcher = null;
         }
 
-        var wantDiscord = s.ActivityTracking && s.DiscordRichPresence && !string.IsNullOrWhiteSpace(s.DiscordAppId);
-        if (!wantDiscord || _discordAppId != s.DiscordAppId.Trim())
+        var appId = DiscordAppId(s);
+        var wantDiscord = s.ActivityTracking && s.DiscordRichPresence;
+        if (!wantDiscord || _discordAppId != appId)
         {
             var old = _discord;
             _discord = null;
@@ -71,12 +72,18 @@ public static class Integrations
         }
         if (wantDiscord && _discord == null)
         {
-            _discordAppId = s.DiscordAppId.Trim();
+            _discordAppId = appId;
             _discord = new DiscordRpc(_discordAppId);
         }
 
         if (_watcher?.Current is { } current) _ = UpdateDiscordAsync(current);
     }
+
+    /// <summary>Orbit's own Discord app ("Roblox - Orbit Launcher"), used unless the user entered their own.</summary>
+    public const string DefaultDiscordAppId = "1564248525800214629";
+
+    public static string DiscordAppId(Models.AppSettings s) =>
+        string.IsNullOrWhiteSpace(s.DiscordAppId) ? DefaultDiscordAppId : s.DiscordAppId.Trim();
 
     public static void Stop()
     {

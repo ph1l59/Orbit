@@ -47,7 +47,7 @@ Windows might show a SmartScreen warning the first time, because the app isn't c
 
 **Multi-Roblox and auto clicker:** Use at your own risk. Roblox doesn't officially support multiple clients and some games don't allow alts or macros.
 
-**Discord:** Rich Presence needs a free Discord application. Paste its ID under Integrations.
+**Discord:** Turn on "Show game activity" under Integrations and your Discord friends see which game you're playing. The Discord desktop app has to be running.
 
 **Stay safe:** Never share your `accounts.dat`, your `.ROBLOSECURITY` cookie or `rbx-player` links with anyone.
 
