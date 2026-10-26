@@ -247,7 +247,7 @@ public partial class PlayView : UserControl, IPage
     }
 
     /// <summary>Start view: turned a little to the side, so the avatar looks three-dimensional right away.</summary>
-    private const double DefaultYaw = -20;
+    private const double DefaultYaw = 10;
 
     // ---------- Idle animation: pop in, breathe, sway, float ----------
 
@@ -300,7 +300,7 @@ public partial class PlayView : UserControl, IPage
         var touching = _dragLast != null || _spinning || (DateTime.UtcNow - _lastTouch).TotalSeconds < 1.5;
         var wanted = touching ? 0 : 1;
         _swayWeight += (wanted - _swayWeight) * Math.Min(1, 0.04);
-        _idleYaw.Angle = _swayWeight * 7 * Math.Sin(t * 2 * Math.PI / 7);
+        _idleYaw.Angle = _swayWeight * 5 * Math.Sin(t * 2 * Math.PI / 7);
     }
 
     private void ResetRotation()
