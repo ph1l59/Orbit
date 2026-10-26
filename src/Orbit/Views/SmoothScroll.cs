@@ -13,7 +13,7 @@ namespace Orbit.Views;
 public static class SmoothScroll
 {
     private const double Step = 110;      // pixels per wheel notch
-    private const double Speed = 14;      // higher = settles faster
+    private const double Speed = 11;      // higher = settles faster
 
     private sealed class State
     {
@@ -55,6 +55,12 @@ public static class SmoothScroll
 
         state.Running = true;
         state.LastFrame = TimeSpan.Zero;
+
+        // While gliding, draw the content from a cached picture: moving a picture is cheap,
+        // redrawing every avatar and shadow 60 times a second is not.
+        var content = viewer.Content as UIElement ?? FindPresenterChild(viewer);
+        if (content != null)
+            content.CacheMode = new BitmapCache(VisualTreeHelper.GetDpi(viewer).DpiScaleX) { SnapsToDevicePixels = true };
         EventHandler? tick = null;
         tick = (_, args) =>
         {
@@ -70,11 +76,21 @@ public static class SmoothScroll
                 viewer.ScrollToVerticalOffset(state.Target);
                 state.Running = false;
                 CompositionTarget.Rendering -= tick;
+                if (content != null) content.CacheMode = null; // back to sharp, live drawing
                 return;
             }
             viewer.ScrollToVerticalOffset(next);
         };
         CompositionTarget.Rendering += tick;
+    }
+
+    /// <summary>For lists the scroll content is the items presenter inside the template.</summary>
+    private static UIElement? FindPresenterChild(ScrollViewer viewer)
+    {
+        if (viewer.Template?.FindName("PART_ScrollContentPresenter", viewer) is ScrollContentPresenter presenter &&
+            VisualTreeHelper.GetChildrenCount(presenter) > 0)
+            return VisualTreeHelper.GetChild(presenter, 0) as UIElement;
+        return null;
     }
 
     private static ScrollViewer? Innermost(DependencyObject? source)

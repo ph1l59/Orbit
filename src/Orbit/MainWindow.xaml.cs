@@ -115,62 +115,25 @@ public partial class MainWindow : Window
 
     // ---------------- Page entrance ----------------
 
-    /// <summary>The page glides up a little and fades in; its settings rows follow one after another.</summary>
+    /// <summary>
+    /// The page glides up from 30 px below and fades in (300 ms, slowing down towards the end).
+    /// While it moves it's drawn from a cached picture, so the shadows don't have to be redrawn every frame.
+    /// </summary>
     private void AnimateIn(FrameworkElement page)
     {
-        var ease = new System.Windows.Media.Animation.CubicEase { EasingMode = System.Windows.Media.Animation.EasingMode.EaseOut };
+        var duration = TimeSpan.FromMilliseconds(300);
+        var dpi = VisualTreeHelper.GetDpi(ContentHost).DpiScaleX;
+        ContentHost.CacheMode = new BitmapCache(dpi) { SnapsToDevicePixels = true };
 
-        var pageShift = new TranslateTransform(0, 14);
-        ContentHost.RenderTransform = pageShift;
-        pageShift.BeginAnimation(TranslateTransform.YProperty,
-            new System.Windows.Media.Animation.DoubleAnimation(14, 0, TimeSpan.FromMilliseconds(320)) { EasingFunction = ease });
-        ContentHost.BeginAnimation(OpacityProperty,
-            new System.Windows.Media.Animation.DoubleAnimation(0, 1, TimeSpan.FromMilliseconds(240)));
+        var shift = new TranslateTransform(0, 30);
+        ContentHost.RenderTransform = shift;
 
-        // The settings list: the stack panel inside the page's scroll area.
-        var rows = FindRows(page);
-        if (rows == null) return;
-        var index = 0;
-        foreach (UIElement row in rows.Children)
-        {
-            if (row.Visibility != Visibility.Visible) continue;
-            var delay = TimeSpan.FromMilliseconds(Math.Min(index, 14) * 28);
-            index++;
+        var slide = new System.Windows.Media.Animation.DoubleAnimation(30, 0, duration) { DecelerationRatio = 0.7 };
+        slide.Completed += (_, _) => ContentHost.CacheMode = null; // back to sharp, live drawing
+        var fade = new System.Windows.Media.Animation.DoubleAnimation(0, 1, duration) { DecelerationRatio = 0.7 };
 
-            row.BeginAnimation(OpacityProperty, Delayed(0, 1, delay, TimeSpan.FromMilliseconds(260), null));
-            if (row.RenderTransform is not TranslateTransform shift)
-            {
-                if (row.RenderTransform != null && row.RenderTransform != Transform.Identity) continue; // has its own transform
-                shift = new TranslateTransform();
-                row.RenderTransform = shift;
-            }
-            shift.BeginAnimation(TranslateTransform.YProperty, Delayed(22, 0, delay, TimeSpan.FromMilliseconds(380), ease));
-        }
-    }
-
-    /// <summary>Holds <paramref name="from"/> during the delay (so nothing flashes), then animates to <paramref name="to"/>.</summary>
-    private static System.Windows.Media.Animation.DoubleAnimationUsingKeyFrames Delayed(
-        double from, double to, TimeSpan delay, TimeSpan duration, System.Windows.Media.Animation.IEasingFunction? ease)
-    {
-        var a = new System.Windows.Media.Animation.DoubleAnimationUsingKeyFrames();
-        a.KeyFrames.Add(new System.Windows.Media.Animation.DiscreteDoubleKeyFrame(from, System.Windows.Media.Animation.KeyTime.FromTimeSpan(TimeSpan.Zero)));
-        a.KeyFrames.Add(new System.Windows.Media.Animation.DiscreteDoubleKeyFrame(from, System.Windows.Media.Animation.KeyTime.FromTimeSpan(delay)));
-        a.KeyFrames.Add(new System.Windows.Media.Animation.EasingDoubleKeyFrame(to, System.Windows.Media.Animation.KeyTime.FromTimeSpan(delay + duration), ease));
-        return a;
-    }
-
-    private static StackPanel? FindRows(DependencyObject root)
-    {
-        var queue = new Queue<DependencyObject>();
-        queue.Enqueue(root);
-        while (queue.Count > 0)
-        {
-            var node = queue.Dequeue();
-            if (node is ScrollViewer { Content: StackPanel panel } && panel.Children.Count >= 3) return panel;
-            for (var i = 0; i < VisualTreeHelper.GetChildrenCount(node); i++)
-                queue.Enqueue(VisualTreeHelper.GetChild(node, i));
-        }
-        return null;
+        shift.BeginAnimation(TranslateTransform.YProperty, slide);
+        ContentHost.BeginAnimation(OpacityProperty, fade);
     }
 
     private void Nav_SelectionChanged(object sender, SelectionChangedEventArgs e)
