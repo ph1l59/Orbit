@@ -60,9 +60,6 @@
                 <Setter.Value>
                     <ControlTemplate TargetType="Button">
                         <Grid x:Name="root" RenderTransformOrigin="0.5,0.5">
-                            <Grid.RenderTransform>
-                                <ScaleTransform x:Name="press" ScaleX="1" ScaleY="1"/>
-                            </Grid.RenderTransform>
 
                             <!-- glow -->
                             <Border x:Name="glow" CornerRadius="18" Background="#A855F7" Opacity="0.35" Margin="10,14,10,0">
@@ -152,8 +149,11 @@
                                 </Trigger.ExitActions>
                             </Trigger>
                             <Trigger Property="IsPressed" Value="True">
-                                <Setter TargetName="press" Property="ScaleX" Value="0.97"/>
-                                <Setter TargetName="press" Property="ScaleY" Value="0.97"/>
+                                <Setter TargetName="root" Property="RenderTransform">
+                                    <Setter.Value>
+                                        <ScaleTransform ScaleX="0.97" ScaleY="0.97"/>
+                                    </Setter.Value>
+                                </Setter>
                             </Trigger>
                             <Trigger Property="IsEnabled" Value="False">
                                 <Setter TargetName="root" Property="Opacity" Value="0.5"/>
