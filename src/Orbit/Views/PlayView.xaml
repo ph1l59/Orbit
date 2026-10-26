@@ -1,0 +1,124 @@
+<UserControl x:Class="Orbit.Views.PlayView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <!-- Header: title left, account picker right -->
+        <DockPanel>
+            <Grid DockPanel.Dock="Right" VerticalAlignment="Top">
+                <Button x:Name="PickerButton" Click="Picker_Click" Padding="6,5,12,5" MinWidth="220"
+                        Tag="Choose account|play account picker switch">
+                    <DockPanel>
+                        <TextBlock DockPanel.Dock="Right" Text="&#xE70D;" Style="{StaticResource Icon}" FontSize="10"
+                                   VerticalAlignment="Center" Margin="12,0,0,0" Foreground="{StaticResource DimBrush}"/>
+                        <Border Width="30" Height="30" CornerRadius="15" Background="{StaticResource Raised2Brush}" ClipToBounds="True">
+                            <Image x:Name="PickerAvatar" Stretch="UniformToFill"/>
+                        </Border>
+                        <StackPanel Margin="10,0,0,0" VerticalAlignment="Center">
+                            <TextBlock x:Name="PickerName" Text="No account" FontWeight="SemiBold" FontSize="13"/>
+                            <TextBlock x:Name="PickerUser" Text="Add one under Accounts" Style="{StaticResource Crumb}"/>
+                        </StackPanel>
+                    </DockPanel>
+                </Button>
+
+                <Popup x:Name="PickerPopup" PlacementTarget="{Binding ElementName=PickerButton}" Placement="Bottom"
+                       StaysOpen="False" AllowsTransparency="True" PopupAnimation="Fade">
+                    <Border Margin="0,6,0,0" Padding="4" Background="{StaticResource RaisedBrush}" BorderBrush="{StaticResource LineStrongBrush}"
+                            BorderThickness="1" CornerRadius="10" MinWidth="{Binding ActualWidth, ElementName=PickerButton}" MaxHeight="420">
+                        <ScrollViewer VerticalScrollBarVisibility="Auto">
+                            <ItemsControl x:Name="PickerList">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <Button Click="PickAccount_Click" Tag="{Binding}" HorizontalContentAlignment="Stretch"
+                                                Padding="6" Margin="0,1" BorderThickness="0" Background="Transparent">
+                                            <DockPanel>
+                                                <Border Width="30" Height="30" CornerRadius="15" Background="{StaticResource Raised2Brush}" ClipToBounds="True">
+                                                    <Image Source="{Binding AvatarUrl, TargetNullValue={x:Null}}" Stretch="UniformToFill"/>
+                                                </Border>
+                                                <StackPanel Margin="10,0,0,0" VerticalAlignment="Center">
+                                                    <TextBlock Text="{Binding Title}" FontWeight="SemiBold" FontSize="13"/>
+                                                    <TextBlock Text="{Binding Subtitle}" Style="{StaticResource Crumb}"/>
+                                                </StackPanel>
+                                            </DockPanel>
+                                        </Button>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </ScrollViewer>
+                    </Border>
+                </Popup>
+            </Grid>
+
+            <StackPanel>
+                <TextBlock Text="ORBIT / PLAY" Style="{StaticResource Crumb}"/>
+                <TextBlock Style="{StaticResource PageTitle}">
+                    <Run Text="Ready to"/> <Run Text="play" Foreground="{StaticResource AccentTextBrush}"/>
+                </TextBlock>
+                <TextBlock Text="Pick an account and launch Roblox." Style="{StaticResource PageDesc}"/>
+            </StackPanel>
+        </DockPanel>
+
+        <!-- Stage: name tag, avatar, launch button -->
+        <Grid Grid.Row="1" Margin="0,10,0,0">
+            <Ellipse Width="440" Height="440" IsHitTestVisible="False" Opacity="0.55">
+                <Ellipse.Fill>
+                    <RadialGradientBrush>
+                        <GradientStop Color="#5B21B6" Offset="0"/>
+                        <GradientStop Color="#2A1B47" Offset="0.45"/>
+                        <GradientStop Color="#00000000" Offset="1"/>
+                    </RadialGradientBrush>
+                </Ellipse.Fill>
+            </Ellipse>
+
+            <Grid x:Name="Stage" HorizontalAlignment="Center" VerticalAlignment="Center">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+
+                <Border HorizontalAlignment="Center" Background="#CC0A090D" BorderBrush="{StaticResource LineStrongBrush}" BorderThickness="1"
+                        CornerRadius="8" Padding="14,7">
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Text="&#xE945;" Style="{StaticResource Icon}" FontSize="14" Foreground="{StaticResource SignalLightBrush}" VerticalAlignment="Center"/>
+                        <TextBlock x:Name="NameTag" Text="—" FontFamily="{StaticResource DisplayFont}" FontSize="20" FontWeight="Bold" Margin="8,0,0,0"/>
+                    </StackPanel>
+                </Border>
+
+                <Grid Grid.Row="1" Width="340" Height="340" Margin="0,6,0,0">
+                    <Image x:Name="AvatarImage" Stretch="Uniform" RenderOptions.BitmapScalingMode="HighQuality"/>
+                    <TextBlock x:Name="AvatarHint" Text="Loading avatar…" Style="{StaticResource RowDesc}"
+                               HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                </Grid>
+
+                <StackPanel Grid.Row="2" HorizontalAlignment="Center" Margin="0,8,0,0">
+                    <Button x:Name="LaunchButton" Style="{StaticResource SolidButton}" Width="300" Height="64" Click="Launch_Click"
+                            Tag="Launch Roblox|play start app">
+                        <StackPanel HorizontalAlignment="Center">
+                            <TextBlock Text="LAUNCH" FontFamily="{StaticResource DisplayFont}" FontSize="20" FontWeight="Bold"
+                                       HorizontalAlignment="Center"/>
+                            <TextBlock Text="Roblox app" FontSize="11.5" Opacity="0.8" HorizontalAlignment="Center"/>
+                        </StackPanel>
+                    </Button>
+                    <TextBlock x:Name="StatusText" Style="{StaticResource RowDesc}" HorizontalAlignment="Center" Margin="0,10,0,0"/>
+                </StackPanel>
+            </Grid>
+
+            <!-- No accounts yet -->
+            <Border x:Name="EmptyState" Style="{StaticResource Panel}" VerticalAlignment="Center" HorizontalAlignment="Center"
+                    Padding="32" Visibility="Collapsed">
+                <StackPanel HorizontalAlignment="Center">
+                    <TextBlock Text="No accounts yet" FontSize="17" FontWeight="SemiBold" HorizontalAlignment="Center" Margin="0,0,0,6"/>
+                    <TextBlock Text="Add a Roblox account first, then you can launch it from here."
+                               Style="{StaticResource PageDesc}" TextAlignment="Center" MaxWidth="360"/>
+                    <Button Style="{StaticResource SolidButton}" Content="Go to Accounts" HorizontalAlignment="Center"
+                            Margin="0,16,0,0" Click="GoToAccounts_Click"/>
+                </StackPanel>
+            </Border>
+        </Grid>
+    </Grid>
+</UserControl>

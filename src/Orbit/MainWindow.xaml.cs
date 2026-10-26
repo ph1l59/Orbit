@@ -23,6 +23,7 @@ public partial class MainWindow : Window
 
     private static readonly PageInfo[] PageList =
     {
+        new("play", "Play", "\uE768", true, () => new PlayView()),
         new("accounts", "Accounts", "", true, () => new AccountsView()),
         new("global", "Global Settings", "", true, () => new GlobalSettingsView()),
         new("fastflags", "FastFlags", "", true, () => new FastFlagsView()),

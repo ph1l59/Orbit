@@ -193,6 +193,27 @@ public static class RobloxLauncher
         Integrations.LastLaunchedAccount = account;
     }
 
+    /// <summary>
+    /// Opens the Roblox app on its home page, logged in as this account (like "Launch Roblox" in Fishstrap).
+    /// </summary>
+    public static async Task LaunchAppAsync(Account account, string exe)
+    {
+        var ticket = await RobloxApi.GetAuthTicketAsync(account.Cookie);
+
+        if (account.BrowserTrackerId == 0)
+            account.BrowserTrackerId = Random.Shared.NextInt64(100_000_000_000, 999_999_999_999);
+
+        var uri = "roblox-player:1+launchmode:app" +
+                  $"+gameinfo:{ticket}" +
+                  $"+launchtime:{DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()}" +
+                  $"+browsertrackerid:{account.BrowserTrackerId}" +
+                  "+robloxLocale:en_us+gameLocale:en_us+channel:+LaunchExp:InApp";
+
+        var pid = Start(exe, uri);
+        WindowTitles.Track(account.UserId, pid);
+        Integrations.LastLaunchedAccount = account;
+    }
+
     /// <summary>Starts the client with a roblox-player:/roblox: link (also used for links from the website).</summary>
     /// <returns>The id of the started Roblox process (null if Windows didn't report one).</returns>
     public static int? Start(string exe, string uri)

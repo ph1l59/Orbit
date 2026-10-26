@@ -149,6 +149,26 @@ public static class RobloxApi
         return result;
     }
 
+    /// <summary>Full-body avatar picture of one user (null if Roblox has none ready).</summary>
+    public static async Task<string?> GetFullBodyAvatarAsync(long userId)
+    {
+        var url = $"https://thumbnails.roblox.com/v1/users/avatar?userIds={userId}&size=720x720&format=Png&isCircular=false";
+        for (var attempt = 0; attempt < 4; attempt++)
+        {
+            using var doc = await GetJsonAsync(url).ConfigureAwait(false);
+            var item = doc?.RootElement.GetProperty("data").EnumerateArray().FirstOrDefault();
+            if (item is { ValueKind: JsonValueKind.Object } it)
+            {
+                var state = it.TryGetProperty("state", out var st) ? st.GetString() : null;
+                if (state == "Completed" && it.TryGetProperty("imageUrl", out var img) && img.ValueKind == JsonValueKind.String)
+                    return img.GetString();
+                if (state is "Blocked" or "Error") return null;
+            }
+            await Task.Delay(1200).ConfigureAwait(false); // Roblox is still rendering it
+        }
+        return null;
+    }
+
     /// <summary>Online status for the given users (needs any logged-in cookie).</summary>
     public static async Task<List<UserPresence>> GetPresenceAsync(string cookie, IEnumerable<long> userIds)
     {

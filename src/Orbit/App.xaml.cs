@@ -45,10 +45,34 @@ public partial class App : Application
         }
 
         Updater.CleanupLeftovers();
+        _ = StartSafelyAsync();
+    }
 
+    private async Task StartSafelyAsync()
+    {
+        try
+        {
+            await StartAsync();
+        }
+        catch (Exception ex)
+        {
+            Dialog.Info(null, "Orbit couldn't start", ex.Message);
+            Shutdown();
+        }
+    }
+
+    /// <summary>Normal start: loading window with the real startup steps, then the main window.</summary>
+    private async Task StartAsync()
+    {
+        var splash = new SplashWindow();
+        splash.Show();
+        await splash.StepAsync("Starting…", 5);
+
+        await splash.StepAsync("Loading settings and accounts…", 12);
         var loadError = AppState.Load();
         var s = AppState.Settings;
 
+        await splash.StepAsync("Preparing Multi-Roblox…", 35);
         string? multiError = null;
         if (s.MultiRoblox && !MultiInstance.TryEnable(out multiError))
         {
@@ -56,12 +80,24 @@ public partial class App : Application
             AppState.SaveSettings();
         }
 
+        await splash.StepAsync("Checking Roblox setup…", 50);
         ProtocolHandler.RefreshIfRegistered(s);
         Cleaner.RunIfDue(s);
 
+        await splash.StepAsync("Building the interface…", 65);
         var window = new MainWindow();
         MainWindow = window;
+
+        await splash.StepAsync("Loading avatars…", 85);
+        try { await AppState.RefreshAvatarsAsync().WaitAsync(TimeSpan.FromSeconds(3)); }
+        catch { /* slow connection: avatars appear a bit later */ }
+
+        await splash.StepAsync("Ready", 100);
+        await Task.Delay(150);
+
         window.Show();
+        window.Activate();
+        splash.CloseSoftly();
 
         if (loadError != null) Dialog.Info(window, "Accounts", loadError);
         if (multiError != null) Dialog.Info(window, "Multi-Roblox was turned off", multiError);
@@ -90,18 +126,26 @@ public partial class App : Application
             }
         }
 
-        var (window, bar, text) = BuildStartWindow();
+        var window = new LaunchWindow(null, null);
         window.Show();
 
         try
         {
             var progress = new Progress<BootstrapProgress>(p =>
             {
-                bar.Value = p.Percent;
-                text.Text = p.Message;
+                window.SetStatus(p.Message);
+                window.SetProgress(p.Percent);
             });
             var exe = await RobloxLauncher.PrepareAsync(s, progress);
-            text.Text = "Starting Roblox…";
+            if (window.CancelRequested)
+            {
+                window.Close();
+                Shutdown();
+                return;
+            }
+            window.SetProgress(null);
+            window.SetStatus("Starting Roblox…");
+            window.HideCancel();
             RobloxLauncher.Start(exe, link);
             Integrations.StartCustomIntegrations();
             await Task.Delay(1200);
@@ -136,42 +180,6 @@ public partial class App : Application
         {
             Shutdown();
         }
-    }
-
-    private static (Window, ProgressBar, TextBlock) BuildStartWindow()
-    {
-        T R<T>(string key) => (T)Current.FindResource(key);
-
-        var text = new TextBlock { Text = "Checking for Roblox updates…", Style = R<Style>("RowDesc"), Margin = new Thickness(0, 4, 0, 12) };
-        var bar = new ProgressBar { Maximum = 100 };
-
-        var info = new StackPanel { VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(16, 0, 0, 0) };
-        info.Children.Add(new TextBlock { Text = "ORBIT // LAUNCHER", Style = R<Style>("Crumb"), Foreground = R<Brush>("SignalLightBrush") });
-        info.Children.Add(new TextBlock { Text = "Starting Roblox", FontFamily = R<FontFamily>("DisplayFont"), FontSize = 19, FontWeight = FontWeights.Bold, Foreground = R<Brush>("TextBrush"), Margin = new Thickness(0, 4, 0, 0) });
-        info.Children.Add(text);
-        info.Children.Add(bar);
-
-        var row = new DockPanel { Margin = new Thickness(22) };
-        var logo = new Image { Source = new BitmapImage(new Uri("pack://application:,,,/Assets/logo.png")), Width = 64, Height = 64 };
-        DockPanel.SetDock(logo, Dock.Left);
-        row.Children.Add(logo);
-        row.Children.Add(info);
-
-        var window = new Window
-        {
-            Title = "Orbit",
-            Width = 440,
-            SizeToContent = SizeToContent.Height,
-            WindowStyle = WindowStyle.None,
-            ResizeMode = ResizeMode.NoResize,
-            WindowStartupLocation = WindowStartupLocation.CenterScreen,
-            Topmost = true,
-            Background = R<Brush>("PanelBrush"),
-            FontFamily = R<FontFamily>("UiFont"),
-            Content = new Border { BorderBrush = R<Brush>("LineStrongBrush"), BorderThickness = new Thickness(1), Child = row },
-        };
-        window.MouseLeftButtonDown += (_, _) => { try { window.DragMove(); } catch { /* ignore */ } };
-        return (window, bar, text);
     }
 
     protected override void OnExit(ExitEventArgs e)
