@@ -488,7 +488,8 @@ public partial class FriendsDrawer : UserControl
         try
         {
             var settings = await RobloxApi.GetPrivacySettingsAsync(account.Cookie);
-            foreach (var setting in settings.OrderBy(x => SettingOrder(x.Key)).ThenBy(x => x.Key))
+            // Settings this account can't change (Roblox offers no choices) are left out.
+            foreach (var setting in settings.Where(x => x.Editable).OrderBy(x => SettingOrder(x.Key)).ThenBy(x => x.Key))
             {
                 PrivacyList.Children.Add(new TextBlock
                 {
@@ -508,7 +509,7 @@ public partial class FriendsDrawer : UserControl
                 box.SelectionChanged += Privacy_Changed;
                 PrivacyList.Children.Add(box);
             }
-            PrivacyStatus.Text = settings.Count == 0 ? "Roblox didn't send any privacy settings." : "";
+            PrivacyStatus.Text = settings.Any(x => x.Editable) ? "" : "Roblox doesn't let this account change any privacy settings here.";
         }
         catch (Exception ex)
         {
