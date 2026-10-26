@@ -21,7 +21,8 @@ public sealed record ProfileInfo(long Id, string Name, string DisplayName, strin
 public enum FriendRequestResult { Sent, AlreadyFriends, NeedsCheck, Failed }
 
 /// <summary>One privacy setting of the account, e.g. who can see that I'm online.</summary>
-public sealed record PrivacySetting(string Key, string Current, IReadOnlyList<string> Options);
+/// <param name="Editable">False when Roblox offers no choices for this account (e.g. set by parental controls).</param>
+public sealed record PrivacySetting(string Key, string Current, IReadOnlyList<string> Options, bool Editable);
 
 public sealed record GameInfo(long UniverseId, string Name, string Creator, string? IconUrl, long Playing);
 
@@ -48,7 +49,8 @@ public static class RobloxApi
     }
 
     /// <summary>Sends a request with the account cookie and handles Roblox's X-CSRF-TOKEN handshake.</summary>
-    private static async Task<HttpResponseMessage> SendAsync(Func<HttpRequestMessage> makeRequest, string? cookie)
+    /// <param name="extraCookies">More cookies after the login, e.g. Roblox's browser tracker ("name=value; name2=value2").</param>
+    private static async Task<HttpResponseMessage> SendAsync(Func<HttpRequestMessage> makeRequest, string? cookie, string? extraCookies = null)
     {
         var key = cookie ?? "";
         HttpResponseMessage? response = null;
@@ -58,7 +60,8 @@ public static class RobloxApi
             response?.Dispose();
             var request = makeRequest();
             if (!string.IsNullOrEmpty(cookie))
-                request.Headers.TryAddWithoutValidation("Cookie", ".ROBLOSECURITY=" + cookie);
+                request.Headers.TryAddWithoutValidation("Cookie",
+                    ".ROBLOSECURITY=" + cookie + (string.IsNullOrEmpty(extraCookies) ? "" : "; " + extraCookies));
             if (CsrfTokens.TryGetValue(key, out var token))
                 request.Headers.TryAddWithoutValidation("X-CSRF-TOKEN", token);
 
@@ -370,15 +373,17 @@ public static class RobloxApi
                 using var doc = JsonDocument.Parse(text);
                 foreach (var setting in doc.RootElement.EnumerateObject())
                 {
-                    if (!setting.Name.StartsWith("whoCan", StringComparison.OrdinalIgnoreCase) || setting.Value.ValueKind != JsonValueKind.Object)
-                        continue;
+                    if (!IsPrivacyKey(setting.Name) || setting.Value.ValueKind != JsonValueKind.Object) continue;
                     var current = setting.Value.TryGetProperty("currentValue", out var cv) && cv.ValueKind == JsonValueKind.String ? cv.GetString() : null;
                     var options = new List<string>();
                     if (setting.Value.TryGetProperty("options", out var opts) && opts.ValueKind == JsonValueKind.Array)
                         foreach (var o in opts.EnumerateArray())
                             if (FindValue(o) is { } v) options.Add(v);
-                    if (current != null)
-                        result.Add(new PrivacySetting(setting.Name, current, options.Count > 0 ? options : DefaultPrivacyOptions));
+                    if (current == null) continue;
+                    // No options = this account can't change it (Roblox decides, e.g. through parental controls).
+                    result.Add(options.Count > 0
+                        ? new PrivacySetting(setting.Name, current, options, true)
+                        : new PrivacySetting(setting.Name, current, new[] { current }, false));
                 }
             }
         }
@@ -393,10 +398,14 @@ public static class RobloxApi
                 throw new RobloxApiException($"HTTP {(int)response.StatusCode} – {ErrorMessage(text) ?? "settings unavailable"}.");
             using var doc = JsonDocument.Parse(text);
             foreach (var setting in doc.RootElement.EnumerateObject())
-                if (setting.Name.StartsWith("whoCan", StringComparison.OrdinalIgnoreCase) && setting.Value.ValueKind == JsonValueKind.String)
-                    result.Add(new PrivacySetting(setting.Name, setting.Value.GetString()!, DefaultPrivacyOptions));
+                if (IsPrivacyKey(setting.Name) && setting.Value.ValueKind == JsonValueKind.String)
+                    result.Add(new PrivacySetting(setting.Name, setting.Value.GetString()!, DefaultPrivacyOptions, true));
         }
         return result;
+
+        static bool IsPrivacyKey(string key) =>
+            key.StartsWith("whoCan", StringComparison.OrdinalIgnoreCase) ||
+            key.Equals("updateFriendsAboutMyActivity", StringComparison.OrdinalIgnoreCase);
 
         // An option may be a plain string or an object such as { "option": { "optionValue": "Friends" } }.
         static string? FindValue(JsonElement e)
@@ -442,10 +451,17 @@ public static class RobloxApi
     }
 
     /// <summary>Changes one privacy setting, e.g. ("whoCanSeeMyOnlineStatus", "NoOne").</summary>
-    public static async Task SetPrivacySettingAsync(string cookie, string key, string value)
+    /// <remarks>Roblox wants the browser tracker id (normally a browser cookie) with this request.</remarks>
+    public static async Task SetPrivacySettingAsync(string cookie, long userId, long browserTrackerId, string key, string value)
     {
         var body = JsonSerializer.Serialize(new Dictionary<string, string> { [key] = value });
-        using var response = await SendAsync(() => Request(HttpMethod.Post, UserSettingsApi, body), cookie).ConfigureAwait(false);
+        var tracker = $"RBXEventTrackerV2=CreateDate={DateTime.UtcNow:M/d/yyyy h:mm:ss tt}&rbxid={userId}&browserid={browserTrackerId}";
+        using var response = await SendAsync(() =>
+        {
+            var request = Request(HttpMethod.Post, UserSettingsApi, body);
+            request.Headers.TryAddWithoutValidation("Roblox-Browser-Tracker-Id", browserTrackerId.ToString());
+            return request;
+        }, cookie, tracker).ConfigureAwait(false);
         if (!response.IsSuccessStatusCode)
         {
             var text = await response.Content.ReadAsStringAsync().ConfigureAwait(false);

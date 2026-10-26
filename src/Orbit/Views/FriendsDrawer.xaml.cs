@@ -447,6 +447,9 @@ public partial class FriendsDrawer : UserControl
         ["whoCanChatWithMeInExperiences"] = "Who can chat with me in experiences",
         ["whoCanOneOnOnePartyWithMe"] = "Who can party with me (1 on 1)",
         ["whoCanGroupPartyWithMe"] = "Who can invite me to group parties",
+        ["whoCanWhisperChatWithMeInExperiences"] = "Who can whisper to me in experiences",
+        ["whoCanGroupChatWithMeInApp"] = "Who can add me to group chats",
+        ["updateFriendsAboutMyActivity"] = "Tell friends what I'm playing",
     };
 
     private static readonly Dictionary<string, string> ValueNames = new(StringComparer.OrdinalIgnoreCase)
@@ -455,6 +458,7 @@ public partial class FriendsDrawer : UserControl
         ["AllAuthenticatedUsers"] = "Everyone on Roblox", ["NoOne"] = "No one",
         ["FriendsFollowingAndFollowers"] = "Friends, following and followers",
         ["FriendsAndFollowing"] = "Friends and following", ["TopFriends"] = "Top friends",
+        ["TrustedFriends"] = "Trusted friends", ["Yes"] = "Yes", ["No"] = "No",
     };
 
     /// <summary>"whoCanSeeMyThing" → "Who can see my thing"</summary>
@@ -469,6 +473,7 @@ public partial class FriendsDrawer : UserControl
     private static int SettingOrder(string key) => key switch
     {
         "whoCanSeeMyOnlineStatus" => 0,
+        "updateFriendsAboutMyActivity" => 1,
         "whoCanJoinMeInExperiences" => 1,
         "whoCanSeeMyInventory" => 2,
         "whoCanTradeWithMe" => 3,
@@ -491,7 +496,11 @@ public partial class FriendsDrawer : UserControl
                     FontSize = 13.5,
                     Margin = new Thickness(0, PrivacyList.Children.Count == 0 ? 0 : 16, 0, 0),
                 });
-                var box = new ComboBox { MinWidth = 0, Margin = new Thickness(0, 8, 0, 0), Tag = setting.Key };
+                var box = new ComboBox
+                {
+                    MinWidth = 0, Margin = new Thickness(0, 8, 0, 0), Tag = setting.Key, IsEnabled = setting.Editable,
+                    ToolTip = setting.Editable ? null : "Roblox doesn't let this account change this setting.",
+                };
                 var options = setting.Options.Contains(setting.Current) ? setting.Options : setting.Options.Append(setting.Current);
                 foreach (var option in options)
                     box.Items.Add(new ComboBoxItem { Content = Humanize(option, ValueNames), Tag = option });
@@ -519,7 +528,12 @@ public partial class FriendsDrawer : UserControl
         box.IsEnabled = false;
         try
         {
-            await RobloxApi.SetPrivacySettingAsync(account.Cookie, key, value);
+            if (account.BrowserTrackerId == 0)
+            {
+                account.BrowserTrackerId = Random.Shared.NextInt64(100_000_000_000, 999_999_999_999);
+                AppState.SaveAccounts();
+            }
+            await RobloxApi.SetPrivacySettingAsync(account.Cookie, account.UserId, account.BrowserTrackerId, key, value);
             PrivacyStatus.Text = "Saved ✓";
         }
         catch (Exception ex)
