@@ -100,7 +100,7 @@ public partial class FriendsDrawer : UserControl
     /// <summary>Shows the friends of this account (loads in the background, also while the drawer is closed).</summary>
     public void SetAccount(Account? account)
     {
-        if (account?.UserId == _account?.UserId && _friends.Count > 0) return;
+        if (account?.UserId == _account?.UserId && (_friends.Count > 0 || _loading)) return;
         _account = account;
         AccountLine.Text = account == null ? "" : $"AS {account.Title.ToUpperInvariant()} · @{account.Username.ToUpperInvariant()}";
         ShowView("list");
