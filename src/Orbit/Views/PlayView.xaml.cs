@@ -103,7 +103,6 @@ public partial class PlayView : UserControl, IPage
         AvatarImage.Source = null;
         AvatarImage.Visibility = Visibility.Collapsed;
         AvatarHint.Visibility = Visibility.Collapsed;
-        ShowPlaceholder(true);
 
         // The flat picture is only a fallback if the 3D model can't be loaded.
         var pictureTask = FullBodyCache.TryGetValue(account.UserId, out var cachedUrl)
@@ -114,7 +113,6 @@ public partial class PlayView : UserControl, IPage
 
         if (model != null)
         {
-            ShowPlaceholder(false);
             ShowModel(model);
             return;
         }
@@ -122,7 +120,6 @@ public partial class PlayView : UserControl, IPage
         var url = await pictureTask ?? "";
         if (url.Length > 0) FullBodyCache[account.UserId] = url;
         if (version != _avatarVersion) return;
-        ShowPlaceholder(false);
         AvatarImage.Source = Load(url);
         if (AvatarImage.Source != null)
         {
@@ -133,49 +130,6 @@ public partial class PlayView : UserControl, IPage
         {
             AvatarHint.Text = "Avatar couldn't be loaded";
             AvatarHint.Visibility = Visibility.Visible;
-        }
-    }
-
-    // ---------- Loading placeholder ----------
-
-    private void ShowPlaceholder(bool show)
-    {
-        if (show)
-        {
-            Placeholder.BeginAnimation(OpacityProperty, null);
-            Placeholder.Opacity = 1;
-            Placeholder.Visibility = Visibility.Visible;
-            Dispatcher.InvokeAsync(() =>
-            {
-                // The light only shows inside the avatar shape.
-                PlaceholderShine.Clip = PlaceholderShape.RenderedGeometry.Clone();
-                var sweep = new System.Windows.Media.Animation.DoubleAnimationUsingKeyFrames { RepeatBehavior = System.Windows.Media.Animation.RepeatBehavior.Forever };
-                sweep.KeyFrames.Add(new System.Windows.Media.Animation.DiscreteDoubleKeyFrame(-120, System.Windows.Media.Animation.KeyTime.FromTimeSpan(TimeSpan.Zero)));
-                sweep.KeyFrames.Add(new System.Windows.Media.Animation.EasingDoubleKeyFrame(200, System.Windows.Media.Animation.KeyTime.FromTimeSpan(TimeSpan.FromMilliseconds(1100)),
-                    new System.Windows.Media.Animation.SineEase { EasingMode = System.Windows.Media.Animation.EasingMode.EaseInOut }));
-                sweep.KeyFrames.Add(new System.Windows.Media.Animation.DiscreteDoubleKeyFrame(200, System.Windows.Media.Animation.KeyTime.FromTimeSpan(TimeSpan.FromMilliseconds(1500))));
-                ShineMove.BeginAnimation(TranslateTransform.XProperty, sweep);
-
-                // and the shape breathes softly
-                var pulse = new System.Windows.Media.Animation.DoubleAnimation(0.65, 1, TimeSpan.FromMilliseconds(900))
-                {
-                    AutoReverse = true, RepeatBehavior = System.Windows.Media.Animation.RepeatBehavior.Forever,
-                    EasingFunction = new System.Windows.Media.Animation.SineEase(),
-                };
-                PlaceholderShape.BeginAnimation(OpacityProperty, pulse);
-            }, System.Windows.Threading.DispatcherPriority.Loaded);
-        }
-        else if (Placeholder.Visibility == Visibility.Visible)
-        {
-            var fade = new System.Windows.Media.Animation.DoubleAnimation(1, 0, TimeSpan.FromMilliseconds(350));
-            fade.Completed += (_, _) =>
-            {
-                if (Placeholder.Opacity > 0.01) return; // shown again meanwhile
-                Placeholder.Visibility = Visibility.Collapsed;
-                ShineMove.BeginAnimation(TranslateTransform.XProperty, null);
-                PlaceholderShape.BeginAnimation(OpacityProperty, null);
-            };
-            Placeholder.BeginAnimation(OpacityProperty, fade);
         }
     }
 
