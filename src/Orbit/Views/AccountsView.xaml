@@ -162,6 +162,7 @@
                 <ListBox x:Name="AccountList" Background="Transparent" BorderThickness="0" SelectionMode="Multiple"
                          ItemContainerStyle="{StaticResource AccountItem}" ItemTemplate="{StaticResource AccountTemplate}"
                          ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                         ScrollViewer.CanContentScroll="False"
                          VirtualizingPanel.IsVirtualizing="False">
                     <ListBox.Template>
                         <ControlTemplate TargetType="ListBox">

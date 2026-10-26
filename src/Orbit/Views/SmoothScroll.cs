@@ -39,7 +39,13 @@ public static class SmoothScroll
 
         // Lists that scroll item by item (virtualizing) keep their normal behaviour.
         if (viewer.CanContentScroll && IsVirtualizing(viewer)) return;
-        viewer.CanContentScroll = false; // scroll by pixels, not by whole items
+        if (viewer.CanContentScroll)
+        {
+            // Switch to scrolling by pixels instead of whole items – and let the sizes update
+            // before calculating where to go, otherwise the first scroll only moves a few pixels.
+            viewer.CanContentScroll = false;
+            viewer.UpdateLayout();
+        }
 
         var state = States.GetOrCreateValue(viewer);
         if (!state.Running) state.Target = viewer.VerticalOffset;
