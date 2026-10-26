@@ -2,7 +2,7 @@
   <img src="docs/logo.png" width="110" alt="Orbit">
 </p>
 
-<h1 align="center">Orbit</h1>
+<h1 align="center">Roblox - Orbit Launcher</h1>
 
 <p align="center">
   A Roblox launcher for Windows that handles your accounts, runs several clients at once and lets you tune the game.
