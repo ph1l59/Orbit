@@ -166,7 +166,9 @@ public partial class PlayView : UserControl, IPage
         // Camera in front of the avatar, far enough away to fit it (plus some room for turning).
         var size = Math.Max(b.SizeY, Math.Max(b.SizeX, b.SizeZ) * 1.15);
         var distance = size / 2 / Math.Tan(AvatarCamera.FieldOfView / 2 * Math.PI / 180) * 1.12;
-        AvatarCamera.Position = center + front * distance + new Vector3D(0, b.SizeY * 0.04, 0);
+        // Slightly from above, like the avatar editor.
+        const double elevation = 16 * Math.PI / 180;
+        AvatarCamera.Position = center + front * (distance * Math.Cos(elevation)) + up * (distance * Math.Sin(elevation));
         AvatarCamera.LookDirection = center - AvatarCamera.Position;
         AvatarCamera.NearPlaneDistance = 0.1;
         AvatarCamera.FarPlaneDistance = distance * 10;
@@ -180,10 +182,14 @@ public partial class PlayView : UserControl, IPage
         DragSurface.Visibility = Visibility.Visible;
     }
 
+    /// <summary>Start view: turned a little to the side, so the avatar looks three-dimensional right away.</summary>
+    private const double DefaultYaw = -20;
+
     private void ResetRotation()
     {
-        _yawAngle = _pitchAngle = _velocity = 0;
-        _yaw.Angle = 0;
+        _yawAngle = DefaultYaw;
+        _pitchAngle = _velocity = 0;
+        _yaw.Angle = DefaultYaw;
         _pitch.Angle = 0;
     }
 
