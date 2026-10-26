@@ -13,14 +13,17 @@ namespace Orbit.Views;
 public sealed class BrowserWindow : Window
 {
     private readonly Account _account;
+    private readonly string _startUrl;
     private readonly WebView2 _web = new();
     private readonly TextBlock _address;
 
     private static T R<T>(string key) => (T)Application.Current.FindResource(key);
 
-    public BrowserWindow(Account account)
+    /// <param name="startUrl">Page to open first (default: roblox.com home).</param>
+    public BrowserWindow(Account account, string? startUrl = null)
     {
         _account = account;
+        _startUrl = startUrl ?? "https://www.roblox.com/home";
         Title = $"Orbit – {account.Title} (@{account.Username})";
         Width = 1180;
         Height = 800;
@@ -103,7 +106,7 @@ public sealed class BrowserWindow : Window
             };
             core.SourceChanged += (_, _) => _address.Text = core.Source;
 
-            core.Navigate("https://www.roblox.com/home");
+            core.Navigate(_startUrl);
         }
         catch (WebView2RuntimeNotFoundException)
         {

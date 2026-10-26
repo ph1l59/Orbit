@@ -12,6 +12,9 @@ public sealed record PrivateServerInvite(long PlaceId, string LinkCode);
 
 public sealed record UserPresence(long UserId, int Type, string Location);
 
+/// <summary>A friend (or someone who sent a friend request).</summary>
+public sealed record FriendInfo(long Id, string Name, string DisplayName);
+
 public sealed record GameInfo(long UniverseId, string Name, string Creator, string? IconUrl, long Playing);
 
 public sealed class RobloxApiException(string message) : Exception(message);
@@ -191,6 +194,96 @@ public static class RobloxApi
             await Task.Delay(1500).ConfigureAwait(false); // still rendering
         }
         return (null, "avatar-3d still pending");
+    }
+
+    // ---------------- Friends ----------------
+
+    /// <summary>Ids of all friends of a user (seen through that account's login).</summary>
+    public static async Task<List<long>> GetFriendIdsAsync(long userId, string cookie)
+    {
+        var ids = new List<long>();
+
+        // Newer paged endpoint first ...
+        string? cursor = null;
+        for (var page = 0; page < 20; page++)
+        {
+            var url = $"https://friends.roblox.com/v1/users/{userId}/friends/find?limit=50" +
+                      (cursor != null ? "&cursor=" + Uri.EscapeDataString(cursor) : "");
+            using var response = await SendAsync(() => Request(HttpMethod.Get, url), cookie).ConfigureAwait(false);
+            if (!response.IsSuccessStatusCode) break;
+            using var doc = JsonDocument.Parse(await response.Content.ReadAsStringAsync().ConfigureAwait(false));
+            if (!doc.RootElement.TryGetProperty("PageItems", out var items)) break;
+            foreach (var item in items.EnumerateArray())
+                if (item.TryGetProperty("id", out var id)) ids.Add(id.GetInt64());
+            cursor = doc.RootElement.TryGetProperty("NextCursor", out var next) && next.ValueKind == JsonValueKind.String
+                ? next.GetString() : null;
+            if (string.IsNullOrEmpty(cursor)) return ids.Distinct().ToList();
+        }
+        if (ids.Count > 0) return ids.Distinct().ToList();
+
+        // ... and the classic one as a fallback.
+        using (var response = await SendAsync(
+                   () => Request(HttpMethod.Get, $"https://friends.roblox.com/v1/users/{userId}/friends"), cookie).ConfigureAwait(false))
+        {
+            if (!response.IsSuccessStatusCode)
+                throw new RobloxApiException($"Roblox answered with HTTP {(int)response.StatusCode}.");
+            using var doc = JsonDocument.Parse(await response.Content.ReadAsStringAsync().ConfigureAwait(false));
+            foreach (var item in doc.RootElement.GetProperty("data").EnumerateArray())
+                ids.Add(item.GetProperty("id").GetInt64());
+        }
+        return ids.Distinct().ToList();
+    }
+
+    /// <summary>Names and display names for user ids.</summary>
+    public static async Task<Dictionary<long, FriendInfo>> GetUsersAsync(IEnumerable<long> userIds)
+    {
+        var result = new Dictionary<long, FriendInfo>();
+        foreach (var chunk in userIds.Distinct().Chunk(100))
+        {
+            var body = JsonSerializer.Serialize(new { userIds = chunk, excludeBannedUsers = false });
+            using var response = await SendAsync(
+                () => Request(HttpMethod.Post, "https://users.roblox.com/v1/users", body), null).ConfigureAwait(false);
+            if (!response.IsSuccessStatusCode) continue;
+            using var doc = JsonDocument.Parse(await response.Content.ReadAsStringAsync().ConfigureAwait(false));
+            foreach (var u in doc.RootElement.GetProperty("data").EnumerateArray())
+            {
+                var id = u.GetProperty("id").GetInt64();
+                result[id] = new FriendInfo(id, u.GetProperty("name").GetString() ?? "", u.GetProperty("displayName").GetString() ?? "");
+            }
+        }
+        return result;
+    }
+
+    /// <summary>People who sent this account a friend request.</summary>
+    public static async Task<List<long>> GetFriendRequestIdsAsync(string cookie)
+    {
+        var ids = new List<long>();
+        string? cursor = null;
+        for (var page = 0; page < 10; page++)
+        {
+            var url = "https://friends.roblox.com/v1/my/friends/requests?limit=100" +
+                      (cursor != null ? "&cursor=" + Uri.EscapeDataString(cursor) : "");
+            using var response = await SendAsync(() => Request(HttpMethod.Get, url), cookie).ConfigureAwait(false);
+            if (!response.IsSuccessStatusCode)
+                throw new RobloxApiException($"Roblox answered with HTTP {(int)response.StatusCode}.");
+            using var doc = JsonDocument.Parse(await response.Content.ReadAsStringAsync().ConfigureAwait(false));
+            foreach (var item in doc.RootElement.GetProperty("data").EnumerateArray())
+                ids.Add(item.GetProperty("id").GetInt64());
+            cursor = doc.RootElement.TryGetProperty("nextPageCursor", out var next) && next.ValueKind == JsonValueKind.String
+                ? next.GetString() : null;
+            if (string.IsNullOrEmpty(cursor)) break;
+        }
+        return ids;
+    }
+
+    /// <summary>Accepts or declines a friend request.</summary>
+    public static async Task AnswerFriendRequestAsync(string cookie, long requesterId, bool accept)
+    {
+        var action = accept ? "accept-friend-request" : "decline-friend-request";
+        using var response = await SendAsync(
+            () => Request(HttpMethod.Post, $"https://friends.roblox.com/v1/users/{requesterId}/{action}", "{}"), cookie).ConfigureAwait(false);
+        if (!response.IsSuccessStatusCode)
+            throw new RobloxApiException($"Roblox answered with HTTP {(int)response.StatusCode}.");
     }
 
     /// <summary>Online status for the given users (needs any logged-in cookie).</summary>

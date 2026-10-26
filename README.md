@@ -20,6 +20,7 @@
 
 | | |
 |---|---|
+| **Play** | Start page: pick an account, turn its 3D avatar with the mouse and launch the Roblox app with one click. Friends panel with online status, search, Join, and friend requests. |
 | **Accounts** | Log in on the real roblox.com page. Orbit only keeps the login cookie, encrypted with Windows DPAPI. Every account shows its avatar and whether it's online. |
 | **Create accounts** | Set birthday and gender once, paste a list of `Username:Password`, and Orbit fills out the sign up page for each one. You click Sign Up yourself. |
 | **Joining** | Place ID, game link, private server link, share link, share code or Job ID. Orbit figures it out. |
