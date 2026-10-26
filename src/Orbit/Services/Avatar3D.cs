@@ -78,11 +78,19 @@ public static class Avatar3D
         var objText = await DownloadStringAsync(root.GetProperty("obj").GetString()!);
         var mtlText = await DownloadStringAsync(root.GetProperty("mtl").GetString()!);
 
+        // Roblox's own camera stands in front of the avatar, so "front" is the way from the model's middle to the camera.
         var front = new Vector3D(0, 0, -1);
-        if (root.TryGetProperty("camera", out var cam) && cam.TryGetProperty("direction", out var dir))
+        if (root.TryGetProperty("camera", out var cam) && cam.TryGetProperty("position", out var pos) &&
+            root.TryGetProperty("aabb", out var box) && box.TryGetProperty("min", out var min) && box.TryGetProperty("max", out var max))
         {
-            // The camera looks *at* the avatar, so the avatar's front is the opposite way.
-            var d = new Vector3D(-dir.GetProperty("x").GetDouble(), 0, -dir.GetProperty("z").GetDouble());
+            double X(JsonElement e) => e.GetProperty("x").GetDouble();
+            double Z(JsonElement e) => e.GetProperty("z").GetDouble();
+            var d = new Vector3D(X(pos) - (X(min) + X(max)) / 2, 0, Z(pos) - (Z(min) + Z(max)) / 2);
+            if (d.Length > 0.01) { d.Normalize(); front = d; }
+        }
+        else if (root.TryGetProperty("camera", out var cam2) && cam2.TryGetProperty("direction", out var dir))
+        {
+            var d = new Vector3D(dir.GetProperty("x").GetDouble(), 0, dir.GetProperty("z").GetDouble());
             if (d.Length > 0.01) { d.Normalize(); front = d; }
         }
 

@@ -257,10 +257,11 @@
                 </Grid.RowDefinitions>
 
                 <Border HorizontalAlignment="Center" Background="#CC0A090D" BorderBrush="{StaticResource LineStrongBrush}" BorderThickness="1"
-                        CornerRadius="8" Padding="14,7">
+                        CornerRadius="8" Padding="14,5,14,7">
                     <StackPanel Orientation="Horizontal">
                         <TextBlock Text="&#xE945;" Style="{StaticResource Icon}" FontSize="14" Foreground="{StaticResource SignalLightBrush}" VerticalAlignment="Center"/>
-                        <TextBlock x:Name="NameTag" Text="—" FontFamily="{StaticResource DisplayFont}" FontSize="20" FontWeight="Bold" Margin="8,0,0,0"/>
+                        <TextBlock x:Name="NameTag" Text="—" FontFamily="{StaticResource DisplayFont}" FontSize="20" FontWeight="Bold" Margin="8,0,0,0"
+                                   VerticalAlignment="Center" LineStackingStrategy="BlockLineHeight" LineHeight="22"/>
                     </StackPanel>
                 </Border>
 
@@ -285,7 +286,7 @@
                         <ModelVisual3D x:Name="AvatarVisual"/>
                     </Viewport3D>
 
-                    <Border x:Name="DragSurface" Background="Transparent" Visibility="Collapsed" Cursor="SizeWE"
+                    <Border x:Name="DragSurface" Background="Transparent" Visibility="Collapsed" Cursor="Hand"
                             ToolTip="Drag to turn · double-click to reset"
                             MouseLeftButtonDown="Avatar_MouseDown" MouseMove="Avatar_MouseMove" MouseLeftButtonUp="Avatar_MouseUp"
                             LostMouseCapture="Avatar_LostCapture"/>
