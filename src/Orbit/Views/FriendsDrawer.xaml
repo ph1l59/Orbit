@@ -262,7 +262,20 @@
                     <!-- ===================== Your profile + privacy ===================== -->
                     <ScrollViewer x:Name="ProfilePage" Visibility="Collapsed" VerticalScrollBarVisibility="Auto" Padding="0,0,4,0">
                         <StackPanel>
-                            <TextBlock Text="// YOUR PROFILE" Style="{StaticResource Section}" Margin="2,0,0,10"/>
+                            <TextBlock Text="// NOTIFICATIONS" Style="{StaticResource Section}" Margin="2,0,0,10"/>
+                            <Border Background="{StaticResource RaisedBrush}" BorderBrush="{StaticResource LineStrongBrush}" BorderThickness="1"
+                                    CornerRadius="12" Padding="16,14">
+                                <DockPanel>
+                                    <CheckBox x:Name="NotifyToggle" DockPanel.Dock="Right" Style="{StaticResource Toggle}" VerticalAlignment="Center"
+                                              Click="NotifyToggle_Click"/>
+                                    <StackPanel Margin="0,0,12,0">
+                                        <TextBlock Text="Friend notifications" FontSize="13.5"/>
+                                        <TextBlock Style="{StaticResource RowDesc}" Text="A popup when a friend comes online or starts playing, with a Join button."/>
+                                    </StackPanel>
+                                </DockPanel>
+                            </Border>
+
+                            <TextBlock Text="// YOUR PROFILE" Style="{StaticResource Section}"/>
                             <Border Background="{StaticResource RaisedBrush}" BorderBrush="{StaticResource LineStrongBrush}" BorderThickness="1"
                                     CornerRadius="12" Padding="16">
                                 <StackPanel>

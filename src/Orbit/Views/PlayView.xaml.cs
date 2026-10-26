@@ -290,6 +290,9 @@ public partial class PlayView : UserControl, IPage
 
     // ---------- Launch ----------
 
+    /// <summary>"Launch Roblox" from the tray menu.</summary>
+    public void LaunchFromOutside() => Launch_Click(this, new RoutedEventArgs());
+
     private void Launch_Click(object sender, RoutedEventArgs e) =>
         _ = RunLaunchAsync((account, exe) => RobloxLauncher.LaunchAppAsync(account, exe), "Starting Roblox…");
 

@@ -58,6 +58,7 @@ public partial class MainWindow : Window
 
         BuildSearchIndex();
         WireFriends();
+        CreateTray();
         PreviewKeyDown += (_, e) =>
         {
             if (e.Key == Key.Escape && DrawerLayer.Visibility == Visibility.Visible) { CloseDrawer(); e.Handled = true; }
@@ -243,8 +244,95 @@ public partial class MainWindow : Window
 
     private void Close_Click(object sender, RoutedEventArgs e) => Close();
 
+    // ---------------- Tray ----------------
+
+    private System.Windows.Forms.NotifyIcon? _tray;
+    private bool _exitRequested;
+    private bool _trayHintShown;
+
+    private void CreateTray()
+    {
+        if (_tray != null) return;
+        var menu = new System.Windows.Forms.ContextMenuStrip();
+        menu.Items.Add("Open Orbit", null, (_, _) => Dispatcher.InvokeAsync(ShowFromTray));
+        menu.Items.Add("Launch Roblox", null, (_, _) => Dispatcher.InvokeAsync(() =>
+        {
+            ShowFromTray();
+            Navigate("play");
+            _play?.LaunchFromOutside();
+        }));
+        menu.Items.Add(new System.Windows.Forms.ToolStripSeparator());
+        menu.Items.Add("Exit", null, (_, _) => Dispatcher.InvokeAsync(ExitApp));
+
+        System.Drawing.Icon icon;
+        try
+        {
+            using var stream = Application.GetResourceStream(new Uri("pack://application:,,,/Assets/orbit.ico"))!.Stream;
+            icon = new System.Drawing.Icon(stream);
+        }
+        catch
+        {
+            icon = System.Drawing.SystemIcons.Application;
+        }
+
+        _tray = new System.Windows.Forms.NotifyIcon
+        {
+            Icon = icon,
+            Text = "Orbit",
+            ContextMenuStrip = menu,
+            Visible = true,
+        };
+        _tray.MouseClick += (_, e) =>
+        {
+            if (e.Button == System.Windows.Forms.MouseButtons.Left) Dispatcher.InvokeAsync(ShowFromTray);
+        };
+    }
+
+    /// <summary>Brings the window back from the tray (or to the front).</summary>
+    public void ShowFromTray()
+    {
+        Show();
+        if (WindowState == WindowState.Minimized) WindowState = WindowState.Normal;
+        Activate();
+        Topmost = true;  // make sure it really comes to the front
+        Topmost = false;
+        Focus();
+    }
+
+    /// <summary>Really quits Orbit (tray menu "Exit").</summary>
+    private void ExitApp()
+    {
+        _exitRequested = true;
+        Application.Current.Shutdown();
+    }
+
+    protected override void OnClosing(System.ComponentModel.CancelEventArgs e)
+    {
+        if (!_exitRequested && !Dispatcher.HasShutdownStarted && AppState.Settings.CloseToTray)
+        {
+            // Keep running in the tray (friend notifications, updates, …).
+            e.Cancel = true;
+            CloseDrawer();
+            Hide();
+            CreateTray();
+            if (!_trayHintShown)
+            {
+                _trayHintShown = true;
+                Toast.Show("Orbit", "Orbit keeps running in the tray. Right-click the icon to quit.");
+            }
+            return;
+        }
+        base.OnClosing(e);
+    }
+
     protected override void OnClosed(EventArgs e)
     {
+        if (_tray != null)
+        {
+            _tray.Visible = false;
+            _tray.Dispose();
+            _tray = null;
+        }
         AppState.MultiInstanceChanged -= UpdateMultiStatus;
         ClickerHotkey.Stop();
         AutoClicker.Instance.Stop();
@@ -357,6 +445,17 @@ public partial class MainWindow : Window
         Friends.RequestCountChanged += count => _play.SetRequestCount(count);
         Friends.JoinRequested += friend => { CloseDrawer(); _play.Join(friend); };
         Friends.CloseRequested += CloseDrawer;
+        Friends.FriendActivity += (friend, playing) =>
+        {
+            var text = playing
+                ? (string.IsNullOrWhiteSpace(friend.Location) ? $"{friend.Title} started playing" : $"{friend.Title} is playing {friend.Location}")
+                : $"{friend.Title} is online";
+            Toast.Show("Friends", text, friend.AvatarUrl, playing ? "Join" : null, playing ? () =>
+            {
+                ShowFromTray();
+                _play.Join(friend);
+            } : null);
+        };
         Friends.SetAccount(_play.CurrentAccount);
     }
 

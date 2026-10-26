@@ -15,6 +15,13 @@ public partial class AboutView : UserControl
         InitializeComponent();
         VersionText.Text = "VERSION " + Updater.DisplayVersion.ToUpperInvariant();
         UpdatesToggle.IsChecked = AppState.Settings.CheckForUpdates;
+        TrayToggle.IsChecked = AppState.Settings.CloseToTray;
+    }
+
+    private void Tray_Click(object sender, RoutedEventArgs e)
+    {
+        AppState.Settings.CloseToTray = TrayToggle.IsChecked == true;
+        AppState.SaveSettings();
     }
 
     private void Updates_Click(object sender, RoutedEventArgs e)

@@ -58,6 +58,8 @@ public partial class FriendsDrawer : UserControl
 {
     public event Action? CloseRequested;
     public event Action<PersonItem>? JoinRequested;
+    /// <summary>A friend came online (false) or started playing (true).</summary>
+    public event Action<PersonItem, bool>? FriendActivity;
     /// <summary>Number of open friend requests (for the badge on the Play page).</summary>
     public event Action<int>? RequestCountChanged;
 
@@ -75,7 +77,11 @@ public partial class FriendsDrawer : UserControl
     public FriendsDrawer()
     {
         InitializeComponent();
-        _presenceTimer.Tick += async (_, _) => { if (IsOpen) await RefreshPresenceAsync(); };
+        // Keeps running while the drawer is closed, so friend notifications work too.
+        _presenceTimer.Tick += async (_, _) =>
+        {
+            if (IsOpen || AppState.Settings.NotifyFriendsOnline) await RefreshPresenceAsync();
+        };
         _presenceTimer.Start();
         _searchDelay.Tick += async (_, _) => { _searchDelay.Stop(); await SearchUsersAsync(); };
     }
@@ -120,11 +126,18 @@ public partial class FriendsDrawer : UserControl
     private void Gear_Click(object sender, RoutedEventArgs e)
     {
         if (_account == null) return;
+        NotifyToggle.IsChecked = AppState.Settings.NotifyFriendsOnline;
         ShowView("profile");
         _ = LoadProfileAsync(_account);
     }
 
     private void Back_Click(object sender, RoutedEventArgs e) => ShowView("list");
+
+    private void NotifyToggle_Click(object sender, RoutedEventArgs e)
+    {
+        AppState.Settings.NotifyFriendsOnline = NotifyToggle.IsChecked == true;
+        AppState.SaveSettings();
+    }
 
     private void ShowView(string view)
     {
@@ -199,13 +212,24 @@ public partial class FriendsDrawer : UserControl
         {
             var presence = await RobloxApi.GetPresenceAsync(account.Cookie, _friends.Select(f => f.Id));
             var byId = presence.ToDictionary(p => p.UserId);
+            var news = new List<(PersonItem Friend, bool Playing)>();
             foreach (var f in _friends)
             {
                 if (!byId.TryGetValue(f.Id, out var p)) continue;
+                var before = f.Presence;
                 f.Presence = p.Type == 4 ? 0 : p.Type; // 4 = invisible, shown as offline
                 f.Location = p.Location;
+
+                // Only real changes after the first check (before == -1 means "not known yet").
+                if (before < 0) continue;
+                if (f.Presence == 2 && before != 2) news.Add((f, true));
+                else if (f.Presence == 1 && before == 0) news.Add((f, false));
             }
             if (!force) Fill(null);
+
+            if (AppState.Settings.NotifyFriendsOnline)
+                foreach (var (friend, playing) in news.Take(3)) // never a flood of popups
+                    FriendActivity?.Invoke(friend, playing);
         }
         catch { /* keep the last known status */ }
     }

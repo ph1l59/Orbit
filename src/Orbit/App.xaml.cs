@@ -11,6 +11,24 @@ namespace Orbit;
 public partial class App : Application
 {
     private const string SingleInstanceName = "Orbit_by_Floshiii_SingleInstance";
+    private const string ShowSignalName = "Orbit_by_Floshiii_Show";
+    private static EventWaitHandle? _showSignal;
+
+    /// <summary>A second Orbit start sets this signal; the running Orbit then shows its window.</summary>
+    private void ListenForShowSignal()
+    {
+        try
+        {
+            _showSignal = new EventWaitHandle(false, EventResetMode.AutoReset, ShowSignalName);
+            var thread = new Thread(() =>
+            {
+                while (_showSignal.WaitOne())
+                    Dispatcher.InvokeAsync(() => (MainWindow as MainWindow)?.ShowFromTray());
+            }) { IsBackground = true, Name = "Orbit show signal" };
+            thread.Start();
+        }
+        catch { /* not essential */ }
+    }
     private static Mutex? _singleInstance;
 
     protected override void OnStartup(StartupEventArgs e)
@@ -39,10 +57,21 @@ public partial class App : Application
         }
         if (!isFirst)
         {
-            Dialog.Info(null, "Already running", "Orbit is already open – look for it in the taskbar.");
+            // Orbit is already running (maybe hidden in the tray): bring that window to the front instead.
+            try
+            {
+                using var show = EventWaitHandle.OpenExisting(ShowSignalName);
+                show.Set();
+            }
+            catch
+            {
+                Dialog.Info(null, "Already running", "Orbit is already open – look for it in the taskbar or the tray.");
+            }
             Shutdown();
             return;
         }
+
+        ListenForShowSignal();
 
         Updater.CleanupLeftovers();
         _ = StartSafelyAsync();

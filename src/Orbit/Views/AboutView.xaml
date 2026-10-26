@@ -45,6 +45,17 @@
                 </DockPanel>
             </Border>
 
+            <TextBlock Text="// BACKGROUND" Style="{StaticResource Section}"/>
+            <Border Style="{StaticResource Row}" Tag="Keep Orbit in the tray when closed|tray minimize background close">
+                <DockPanel>
+                    <CheckBox x:Name="TrayToggle" DockPanel.Dock="Right" Style="{StaticResource Toggle}" Click="Tray_Click"/>
+                    <StackPanel Style="{StaticResource RowText}">
+                        <TextBlock Style="{StaticResource RowTitle}" Text="Keep Orbit in the tray when closed"/>
+                        <TextBlock Style="{StaticResource RowDesc}" Text="Closing the window hides Orbit next to the clock, so friend notifications and updates keep working. Right-click the tray icon to quit."/>
+                    </StackPanel>
+                </DockPanel>
+            </Border>
+
             <TextBlock Text="// DATA" Style="{StaticResource Section}"/>
             <Button Style="{StaticResource LinkRow}" Click="Data_Click" Tag="Orbit data folder|settings accounts file">
                 <DockPanel>
