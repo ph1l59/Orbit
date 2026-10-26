@@ -418,7 +418,7 @@ public partial class MainWindow : Window
             UpdateText.Text = "Restarting Orbit…";
             await Task.Delay(400);
             Updater.Restart();
-            Application.Current.Shutdown();
+            ExitApp(); // really quit, don't go to the tray
         }
         catch (Exception ex)
         {
