@@ -54,7 +54,7 @@
             <Setter Property="Foreground" Value="White"/>
             <Setter Property="Cursor" Value="Hand"/>
             <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
-            <Setter Property="Width" Value="290"/>
+            <Setter Property="Width" Value="260"/>
             <Setter Property="Height" Value="78"/>
             <Setter Property="Template">
                 <Setter.Value>
@@ -78,9 +78,9 @@
                                 </Border.BorderBrush>
                                 <Border.Background>
                                     <LinearGradientBrush x:Name="fill" StartPoint="0,0" EndPoint="1,1">
-                                        <GradientStop Color="#E05B21B6" Offset="0"/>
-                                        <GradientStop Color="#E09333EA" Offset="0.55"/>
-                                        <GradientStop Color="#E0D946EF" Offset="1"/>
+                                        <GradientStop Color="#995B21B6" Offset="0"/>
+                                        <GradientStop Color="#999333EA" Offset="0.55"/>
+                                        <GradientStop Color="#99D946EF" Offset="1"/>
                                     </LinearGradientBrush>
                                 </Border.Background>
                             </Border>
