@@ -139,7 +139,7 @@ public sealed class SplashWindow : Window
             _percent.Text = $"{Math.Round(from + (_shown - from) * i / 6):0}%";
             await Task.Delay(16);
         }
-        await Dispatcher.Yield(System.Windows.Threading.DispatcherPriority.Background);
+        await System.Windows.Threading.Dispatcher.Yield(System.Windows.Threading.DispatcherPriority.Background);
     }
 
     public void CloseSoftly()
