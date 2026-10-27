@@ -20,7 +20,7 @@ public sealed class Starfield : FrameworkElement
     private static readonly double[] RingSpeeds = { 0.55, 0.38, 0.26, 0.17 }; // radians per second
     private static readonly int[] MoonsPerRing = { 2, 3, 2, 3 };
     private const double TrailSpan = 0.9;                         // radians of trail behind each moon
-    private const int TrailSteps = 26;
+    private const int TrailSteps = 20;
 
     private static readonly Color[] RingColors =
     {
@@ -244,7 +244,7 @@ public sealed class Starfield : FrameworkElement
             var color = RingColors[r];
             var light = Lighten(color, 0.35);
 
-            const int segments = 72;
+            const int segments = 56;
             var prev = At(rx, 0, out var prevFront);
             for (var k = 1; k <= segments; k++)
             {
