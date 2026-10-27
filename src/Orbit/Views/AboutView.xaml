@@ -22,12 +22,13 @@
                     <TextBlock Style="{StaticResource PageDesc}" MaxWidth="560" HorizontalAlignment="Left" Margin="0,14,0,0"
                                Text="Your Roblox launcher: manage accounts, run several clients at once, tune performance, add mods and an auto clicker – all in one app."/>
                     <StackPanel Orientation="Horizontal" Margin="0,20,0,0">
-                        <Button Style="{StaticResource SolidButton}" Click="GitHub_Click" Tag="GitHub|source code repository">
+                        <Button Style="{StaticResource SolidButton}" Click="Website_Click" Tag="Website|orbitlauncher.net homepage">
                             <StackPanel Orientation="Horizontal">
-                                <TextBlock Text="GitHub"/>
+                                <TextBlock Text="Website"/>
                                 <TextBlock Text="  →"/>
                             </StackPanel>
                         </Button>
+                        <Button Content="GitHub" Margin="8,0,0,0" Click="GitHub_Click" Tag="GitHub|source code repository"/>
                         <Button Content="What's new" Margin="8,0,0,0" Click="WhatsNew_Click" Tag="What's new|changelog changes new features version"/>
                         <Button Content="Releases" Margin="8,0,0,0" Click="Releases_Click"/>
                         <Button Content="Report a bug" Margin="8,0,0,0" Click="Issues_Click" Tag="Report a bug|issue feedback"/>

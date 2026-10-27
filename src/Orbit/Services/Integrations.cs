@@ -123,7 +123,7 @@ public static class Integrations
                     ["large_image"] = LogoUrl,
                     ["large_text"] = "Orbit Launcher",
                 },
-                ["buttons"] = new[] { new { label = "Get Orbit Launcher", url = "https://github.com/ph1l59/Orbit" } },
+                ["buttons"] = new[] { new { label = "Get Orbit Launcher", url = "https://orbitlauncher.net" } },
             };
         }
         Task.Run(() => discord.SetActivity(activity));

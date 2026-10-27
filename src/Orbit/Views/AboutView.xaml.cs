@@ -9,6 +9,7 @@ namespace Orbit.Views;
 public partial class AboutView : UserControl
 {
     private const string RepoUrl = "https://github.com/ph1l59/Orbit";
+    private const string WebsiteUrl = "https://orbitlauncher.net";
 
     public AboutView()
     {
@@ -53,6 +54,7 @@ public partial class AboutView : UserControl
 
     private static void Open(string url) => Process.Start(new ProcessStartInfo(url) { UseShellExecute = true });
 
+    private void Website_Click(object sender, RoutedEventArgs e) => Open(WebsiteUrl);
     private void GitHub_Click(object sender, RoutedEventArgs e) => Open(RepoUrl);
     private void Releases_Click(object sender, RoutedEventArgs e) => Open(RepoUrl + "/releases");
     private void Issues_Click(object sender, RoutedEventArgs e) => Open(RepoUrl + "/issues");
