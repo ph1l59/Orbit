@@ -1,0 +1,31 @@
+name: Release notes
+
+# Copies docs/releases/<tag>.md into the description of the matching GitHub release.
+on:
+  push:
+    branches: [ main ]
+    paths: [ 'docs/releases/**' ]
+  release:
+    types: [ published ]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  notes:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Write the notes into the releases
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          for file in docs/releases/*.md; do
+            tag=$(basename "$file" .md)
+            if gh release view "$tag" --repo "$GITHUB_REPOSITORY" > /dev/null 2>&1; then
+              gh release edit "$tag" --repo "$GITHUB_REPOSITORY" --notes-file "$file"
+              echo "updated $tag"
+            fi
+          done
