@@ -153,8 +153,18 @@
                         <TextBlock Text="&#xE72B;" Style="{StaticResource Icon}" FontSize="14"/>
                     </Button>
 
-                    <TextBlock x:Name="HeaderTitle" Text="FRIENDS" FontFamily="{StaticResource DisplayFont}" FontSize="19" FontWeight="Bold"
-                               VerticalAlignment="Center" Margin="12,0,0,0"/>
+                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="12,0,0,0">
+                        <TextBlock x:Name="HeaderTitle" Text="FRIENDS" FontFamily="{StaticResource DisplayFont}" FontSize="19" FontWeight="Bold"
+                                   VerticalAlignment="Center"/>
+                        <Border x:Name="LivePill" Margin="10,1,0,0" Padding="7,2,8,2" CornerRadius="8" VerticalAlignment="Center"
+                                Background="#1A4ADE80" BorderBrush="#554ADE80" BorderThickness="1" Visibility="Collapsed"
+                                ToolTip="Live connection to Roblox: friends going online and new requests show up right away">
+                            <StackPanel Orientation="Horizontal">
+                                <Ellipse Width="6" Height="6" Fill="{StaticResource OkBrush}" VerticalAlignment="Center"/>
+                                <TextBlock Text="LIVE" Style="{StaticResource Crumb}" FontSize="9.5" Foreground="{StaticResource OkBrush}" Margin="5,0,0,0"/>
+                            </StackPanel>
+                        </Border>
+                    </StackPanel>
                 </DockPanel>
 
                 <TextBlock x:Name="AccountLine" DockPanel.Dock="Top" Style="{StaticResource Crumb}" Margin="2,10,0,0"/>

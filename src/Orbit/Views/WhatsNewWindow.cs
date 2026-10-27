@@ -16,20 +16,12 @@ public sealed class WhatsNewWindow : Window
     /// <summary>The changes of this version. Edit this list for every release.</summary>
     private static readonly Change[] Changes =
     {
-        new("", "Disconnect notification",
-            "When a Roblox window loses its game (disconnected, kicked, server closed), Orbit tells you which account it was and why."),
-        new("\uECA5", "Arrange windows",
-            "One click makes all open Roblox windows as small as possible and stacks them in the middle of the screen – another click puts them back. Accounts page → Roblox windows."),
-        new("", "Resource saver",
-            "Roblox windows in the background get less CPU, the one you're playing in stays fast. Orbit checks with Windows that it really worked and shows it. Accounts page → Roblox windows."),
-        new("", "Launch presets",
-            "Save your selected accounts and game as a preset with a name, and start everything again with one click."),
-        new("", "Robux in the account picker",
-            "The account picker on the Play page shows the Robux balance of every account, with the Robux symbol."),
-        new("", "Login check",
-            "At start Orbit checks every saved login and tells you which accounts need to log in again."),
-        new("", "Playtime",
-            "The Play page shows how long you played Roblox today, this week and in total."),
+        new("\uE716", "Live friend notifications",
+            "Orbit now has a live connection to Roblox, like the website. When a friend comes online or starts playing, you get told right away instead of up to 30 seconds later. A green LIVE badge in the friends panel shows that it's connected."),
+        new("\uE8FA", "Friend request notifications",
+            "New friend requests show up as a notification immediately – one click opens the friends panel to accept them."),
+        new("\uE72E", "Always up to date",
+            "If the live connection ever drops, Orbit reconnects by itself and keeps checking every 30 seconds in the meantime, so nothing gets lost."),
     };
 
     private static T R<T>(string key) => (T)Application.Current.FindResource(key);

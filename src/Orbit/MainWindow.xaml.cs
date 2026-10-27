@@ -526,6 +526,16 @@ public partial class MainWindow : Window
                 _play.Join(friend);
             } : null);
         };
+        Friends.FriendRequestReceived += person =>
+        {
+            if (!AppState.Settings.NotifyFriendsOnline) return;
+            Toast.Show("Friend request", $"{(person.HasName ? person.Title : "Someone")} sent you a friend request.", person.AvatarUrl, "Open", () =>
+            {
+                ShowFromTray();
+                Navigate("play");
+                OpenDrawer();
+            });
+        };
         Friends.SetAccount(_play.CurrentAccount);
     }
 

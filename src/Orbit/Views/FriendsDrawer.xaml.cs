@@ -65,6 +65,8 @@ public partial class FriendsDrawer : UserControl
     public event Action<PersonItem, bool>? FriendActivity;
     /// <summary>Number of open friend requests (for the badge on the Play page).</summary>
     public event Action<int>? RequestCountChanged;
+    /// <summary>Someone sent a new friend request (seen over the live connection).</summary>
+    public event Action<PersonItem>? FriendRequestReceived;
 
     private Account? _account;
     private List<PersonItem> _friends = new();
@@ -87,6 +89,104 @@ public partial class FriendsDrawer : UserControl
         };
         _presenceTimer.Start();
         _searchDelay.Tick += async (_, _) => { _searchDelay.Stop(); await SearchUsersAsync(); };
+        _liveDelay.Tick += async (_, _) => await LiveRefreshAsync();
+    }
+
+    // ---------- Live connection (friends online / requests right away; the 30 s check stays as a safety net) ----------
+
+    private RobloxRealtime? _live;
+    private readonly DispatcherTimer _liveDelay = new() { Interval = TimeSpan.FromSeconds(1.2) };
+    private bool _friendshipChanged;
+    private DateTime _lastLiveRefresh = DateTime.MinValue;
+
+    private void ConnectLive(Account? account)
+    {
+        var old = _live;
+        _live = null;
+        if (old != null) Task.Run(old.Dispose);
+        LivePill.Visibility = Visibility.Collapsed;
+        if (account == null || string.IsNullOrEmpty(account.Cookie)) return;
+
+        var live = new RobloxRealtime(account.Cookie);
+        live.StateChanged += connected => Dispatcher.InvokeAsync(() =>
+        {
+            if (_live == live) LivePill.Visibility = connected ? Visibility.Visible : Visibility.Collapsed;
+        });
+        live.Notification += (ns, _) => Dispatcher.InvokeAsync(() =>
+        {
+            if (_live != live) return;
+            if (ns == "FriendshipNotifications") _friendshipChanged = true;
+            else if (ns != "PresenceBulkNotifications") return;
+            // Several changes often come at once: wait a moment and check once.
+            _liveDelay.Stop();
+            _liveDelay.Start();
+        });
+        _live = live;
+    }
+
+    private async Task LiveRefreshAsync()
+    {
+        _liveDelay.Stop();
+        // Not more often than every 3 seconds (Roblox limits how often Orbit may ask).
+        var since = DateTime.UtcNow - _lastLiveRefresh;
+        if (since < TimeSpan.FromSeconds(3))
+        {
+            _liveDelay.Interval = TimeSpan.FromSeconds(3) - since + TimeSpan.FromMilliseconds(100);
+            _liveDelay.Start();
+            return;
+        }
+        _liveDelay.Interval = TimeSpan.FromSeconds(1.2);
+        _lastLiveRefresh = DateTime.UtcNow;
+
+        if (_friendshipChanged)
+        {
+            _friendshipChanged = false;
+            await ReloadQuietlyAsync();
+        }
+        else if (IsOpen || AppState.Settings.NotifyFriendsOnline)
+        {
+            await RefreshPresenceAsync();
+        }
+    }
+
+    /// <summary>Friends or requests changed: update the lists without the "Loading…" screen.</summary>
+    private async Task ReloadQuietlyAsync()
+    {
+        if (_account is not { } account || _loading) return;
+        var version = _version;
+        try
+        {
+            var friendIds = await RobloxApi.GetFriendIdsAsync(account.UserId, account.Cookie);
+            List<long> requestIds;
+            try { requestIds = await RobloxApi.GetFriendRequestIdsAsync(account.Cookie); }
+            catch { requestIds = _requests.Select(r => r.Id).ToList(); }
+            if (version != _version) return;
+
+            var oldFriends = _friends.ToDictionary(f => f.Id);
+            var oldRequests = _requests.Select(r => r.Id).ToHashSet();
+            var newIds = friendIds.Concat(requestIds).Where(id => !oldFriends.ContainsKey(id) && !oldRequests.Contains(id)).Distinct().ToList();
+            if (newIds.Count > 0)
+            {
+                try
+                {
+                    var users = await RobloxApi.GetUsersAsync(newIds, account.Cookie);
+                    var pictures = await RobloxApi.GetHeadshotsAsync(newIds);
+                    PeopleCache.Update(users, pictures);
+                }
+                catch { /* names are filled in later */ }
+                if (version != _version) return;
+            }
+
+            _friends = friendIds.Select(id => oldFriends.TryGetValue(id, out var f) ? Refreshed(f) : Make(id, false)).ToList();
+            _requests = requestIds.Select(id => Make(id, true)).ToList();
+            RequestCountChanged?.Invoke(_requests.Count);
+            await RefreshPresenceAsync(force: true);
+            Fill(null);
+
+            foreach (var request in _requests.Where(r => !oldRequests.Contains(r.Id)).Take(3))
+                FriendRequestReceived?.Invoke(request);
+        }
+        catch { /* the 30 s check catches up */ }
     }
 
     // ---------- Account ----------
@@ -95,6 +195,7 @@ public partial class FriendsDrawer : UserControl
     public void SetAccount(Account? account)
     {
         if (account?.UserId == _account?.UserId && (_friends.Count > 0 || _loading)) return;
+        if (account?.UserId != _account?.UserId) ConnectLive(account);
         _account = account;
         AccountLine.Text = account == null ? "" : $"AS {account.Title.ToUpperInvariant()} · @{account.Username.ToUpperInvariant()}";
         ShowView("list");
