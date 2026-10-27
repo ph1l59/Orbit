@@ -100,7 +100,10 @@ public partial class AccountsView : UserControl
 
     private void SelectAll_Click(object sender, RoutedEventArgs e)
     {
-        foreach (var a in _view.Cast<Account>()) a.IsSelected = true;
+        // Everything already selected: the button deselects all instead.
+        var visible = _view.Cast<Account>().ToList();
+        var select = visible.Any(a => !a.IsSelected);
+        foreach (var a in visible) a.IsSelected = select;
     }
 
     private void SelectNone_Click(object sender, RoutedEventArgs e)
