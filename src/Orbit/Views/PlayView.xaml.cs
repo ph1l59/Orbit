@@ -26,6 +26,14 @@ public partial class PlayView : UserControl, IPage
         InitializeComponent();
         PickerList.ItemsSource = AppState.Accounts;
         AboutView.StarsChanged += RefreshBackground;
+
+        // The orbits circle around the avatar's feet.
+        Stars.CenterProvider = () =>
+        {
+            if (AvatarImage.Parent is not FrameworkElement avatarArea || !avatarArea.IsVisible || avatarArea.ActualHeight <= 0) return null;
+            try { return avatarArea.TranslatePoint(new Point(avatarArea.ActualWidth / 2, avatarArea.ActualHeight * 0.9), Stars); }
+            catch { return null; }
+        };
         AppState.Accounts.CollectionChanged += (_, _) => Dispatcher.InvokeAsync(Refresh);
         Refresh();
     }

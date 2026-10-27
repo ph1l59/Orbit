@@ -61,7 +61,7 @@
                     <CheckBox x:Name="StarsToggle" DockPanel.Dock="Right" Style="{StaticResource Toggle}" Click="Stars_Click"/>
                     <StackPanel Style="{StaticResource RowText}">
                         <TextBlock Style="{StaticResource RowTitle}" Text="Animated background"/>
-                        <TextBlock Style="{StaticResource RowDesc}" Text="Twinkling stars on the Play page that connect around your mouse, and a shooting star when you launch."/>
+                        <TextBlock Style="{StaticResource RowDesc}" Text="An animated orbit around your avatar on the Play page, with stars and nebula that react to your mouse."/>
                     </StackPanel>
                 </DockPanel>
             </Border>
