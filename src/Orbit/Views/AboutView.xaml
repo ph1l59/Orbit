@@ -28,6 +28,7 @@
                                 <TextBlock Text="  →"/>
                             </StackPanel>
                         </Button>
+                        <Button Content="What's new" Margin="8,0,0,0" Click="WhatsNew_Click" Tag="What's new|changelog changes new features version"/>
                         <Button Content="Releases" Margin="8,0,0,0" Click="Releases_Click"/>
                         <Button Content="Report a bug" Margin="8,0,0,0" Click="Issues_Click" Tag="Report a bug|issue feedback"/>
                     </StackPanel>
@@ -41,6 +42,17 @@
                     <StackPanel Style="{StaticResource RowText}">
                         <TextBlock Style="{StaticResource RowTitle}" Text="Check for updates"/>
                         <TextBlock Style="{StaticResource RowDesc}" Text="When a new version of Orbit is out, a notice pops up in the bottom left. One click updates and restarts Orbit."/>
+                    </StackPanel>
+                </DockPanel>
+            </Border>
+
+            <TextBlock Text="// NOTIFICATIONS" Style="{StaticResource Section}"/>
+            <Border Style="{StaticResource Row}" Tag="Disconnect notification|disconnected kicked lost connection error 277 alert">
+                <DockPanel>
+                    <CheckBox x:Name="DisconnectToggle" DockPanel.Dock="Right" Style="{StaticResource Toggle}" Click="Disconnect_Click"/>
+                    <StackPanel Style="{StaticResource RowText}">
+                        <TextBlock Style="{StaticResource RowTitle}" Text="Tell me when a Roblox window disconnects"/>
+                        <TextBlock Style="{StaticResource RowDesc}" Text="A notification with the account and the reason (e.g. error 277, kicked, server closed) when a window loses its game. Leaving or teleporting yourself doesn't count."/>
                     </StackPanel>
                 </DockPanel>
             </Border>

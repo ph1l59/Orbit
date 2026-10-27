@@ -12,7 +12,7 @@ public sealed class Account : INotifyPropertyChanged
     public string Username
     {
         get => _username;
-        set { _username = value; OnChanged(); OnChanged(nameof(Subtitle)); }
+        set { _username = value; OnChanged(); OnChanged(nameof(Subtitle)); OnChanged(nameof(PickerSubtitle)); }
     }
 
     private string _displayName = "";
@@ -83,6 +83,30 @@ public sealed class Account : INotifyPropertyChanged
         get => _presenceLocation;
         set { _presenceLocation = value ?? ""; OnChanged(); OnChanged(nameof(PresenceText)); }
     }
+
+    private long? _robux;
+    /// <summary>Robux balance (null = not loaded yet).</summary>
+    [JsonIgnore]
+    public long? Robux
+    {
+        get => _robux;
+        set { _robux = value; OnChanged(); OnChanged(nameof(PickerSubtitle)); }
+    }
+
+    private bool _loginExpired;
+    /// <summary>Roblox no longer accepts the saved login (found by the check at start).</summary>
+    [JsonIgnore]
+    public bool LoginExpired
+    {
+        get => _loginExpired;
+        set { _loginExpired = value; OnChanged(); OnChanged(nameof(PickerSubtitle)); }
+    }
+
+    /// <summary>Second line in the Play page's account picker: @name · R$ balance.</summary>
+    [JsonIgnore]
+    public string PickerSubtitle => LoginExpired
+        ? "Login expired – log in again"
+        : Robux is { } r ? $"@{Username}  ·  R$ {r.ToString("N0", System.Globalization.CultureInfo.InvariantCulture)}" : Subtitle;
 
     [JsonIgnore]
     public bool IsOnline => Presence > 0;

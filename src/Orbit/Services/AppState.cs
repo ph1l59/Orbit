@@ -42,6 +42,56 @@ public static class AppState
 
     public static void NotifyMultiInstanceChanged() => MultiInstanceChanged?.Invoke();
 
+    private static DateTime _lastRobux = DateTime.MinValue;
+
+    /// <summary>
+    /// Checks every saved login (at start) and loads the Robux balances.
+    /// Returns the accounts whose login Roblox doesn't accept anymore.
+    /// </summary>
+    public static async Task<List<Account>> CheckLoginsAsync()
+    {
+        var expired = new List<Account>();
+        using var gate = new SemaphoreSlim(4);
+        var tasks = Accounts.ToList().Select(async account =>
+        {
+            await gate.WaitAsync();
+            try
+            {
+                var user = await RobloxApi.GetAuthenticatedUserAsync(account.Cookie);
+                if (user == null)
+                {
+                    account.LoginExpired = true;
+                    account.Status = "Login expired – click Add account and log in again.";
+                    lock (expired) expired.Add(account);
+                    return;
+                }
+                account.LoginExpired = false;
+                if (account.Status.StartsWith("Login expired")) account.Status = "";
+                if (!string.IsNullOrEmpty(user.Name)) account.Username = user.Name;
+                if (!string.IsNullOrEmpty(user.DisplayName)) account.DisplayName = user.DisplayName;
+                account.Robux = await RobloxApi.GetRobuxAsync(account.UserId, account.Cookie);
+            }
+            catch { /* offline or rate limited: try again next start */ }
+            finally { gate.Release(); }
+        });
+        await Task.WhenAll(tasks);
+        _lastRobux = DateTime.UtcNow;
+        if (Accounts.Count > 0) SaveAccounts(); // names may have changed
+        return expired;
+    }
+
+    /// <summary>Reloads the Robux balances (at most once a minute).</summary>
+    public static async Task RefreshRobuxAsync()
+    {
+        if (DateTime.UtcNow - _lastRobux < TimeSpan.FromMinutes(1)) return;
+        _lastRobux = DateTime.UtcNow;
+        foreach (var account in Accounts.Where(a => !a.LoginExpired).ToList())
+        {
+            try { account.Robux = await RobloxApi.GetRobuxAsync(account.UserId, account.Cookie) ?? account.Robux; }
+            catch { /* keep the old number */ }
+        }
+    }
+
     public static async Task RefreshAvatarsAsync()
     {
         try

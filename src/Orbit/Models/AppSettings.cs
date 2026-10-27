@@ -8,6 +8,20 @@ public sealed class CustomIntegration
     public bool CloseWithRoblox { get; set; } = true;
 }
 
+/// <summary>A saved launch: which accounts and where to (Accounts page).</summary>
+public sealed class LaunchPreset
+{
+    public string Name { get; set; } = "";
+    public List<long> AccountIds { get; set; } = new();
+    /// <summary>True = follow a user, false = join a game.</summary>
+    public bool Follow { get; set; }
+    public string Place { get; set; } = "";
+    public string Server { get; set; } = "";
+    public string FollowUser { get; set; } = "";
+    /// <summary>Game name shown on the preset (filled in when it was saved).</summary>
+    public string GameName { get; set; } = "";
+}
+
 public sealed class AppSettings
 {
     // ===== Launching =====
@@ -28,8 +42,15 @@ public sealed class AppSettings
     public bool ShowAccountNameOnWindows { get; set; } = true;
     /// <summary>Give Roblox windows Orbit launched the icon from Assets\roblox-window.ico.</summary>
     public bool UseOrbitIconOnWindows { get; set; } = true;
+    /// <summary>Show a notification when a Roblox window loses the connection to its game.</summary>
+    public bool NotifyDisconnect { get; set; } = true;
+    /// <summary>Roblox windows in the background get less CPU time than the one you're playing in.</summary>
+    public bool ResourceSaver { get; set; }
+    public List<LaunchPreset> Presets { get; set; } = new();
 
     // ===== Updates =====
+    /// <summary>Version whose "What's new" window was already shown.</summary>
+    public string LastSeenVersion { get; set; } = "";
     /// <summary>Look for a new Orbit release on GitHub at start (and every few hours).</summary>
     public bool CheckForUpdates { get; set; } = true;
 

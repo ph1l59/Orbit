@@ -71,6 +71,7 @@ public partial class MainWindow : Window
         UpdateMultiStatus();
 
         Integrations.Notify = (title, message) => Dispatcher.InvokeAsync(() => Toast.Show(title, message));
+        Integrations.NotifyWithImage = (title, message, image) => Dispatcher.InvokeAsync(() => Toast.Show(title, message, image, null, null));
 
         Loaded += async (_, _) =>
         {
@@ -78,7 +79,15 @@ public partial class MainWindow : Window
             Integrations.Start(Dispatcher);
             Integrations.SetLauncherOpen(IsVisible);
             WindowTitles.Start();
+            Playtime.Start(Dispatcher);
+            RobloxWindows.RefreshSaver(Dispatcher);
+
+            // "What's new" once after an update – a moment after the window is up.
+            await Task.Delay(700);
+            WhatsNewWindow.ShowIfUpdated(this, App.StartedAfterUpdate);
+
             await AppState.RefreshAvatarsAsync();
+            await CheckLoginsAsync();
             await CheckForUpdateAsync();
         };
 
@@ -372,7 +381,32 @@ public partial class MainWindow : Window
         ClickerHotkey.Stop();
         AutoClicker.Instance.Stop();
         Integrations.Stop();
+        Playtime.Stop();
+        RobloxWindows.StopSaver();
         base.OnClosed(e);
+    }
+
+    // ---------------- Login check ----------------
+
+    /// <summary>Checks all saved logins once at start and says which accounts have to log in again.</summary>
+    private async Task CheckLoginsAsync()
+    {
+        if (AppState.Accounts.Count == 0) return;
+        List<Models.Account> expired;
+        try { expired = await AppState.CheckLoginsAsync(); }
+        catch { return; }
+        if (expired.Count == 0) return;
+
+        var names = string.Join(", ", expired.Take(3).Select(a => string.IsNullOrWhiteSpace(a.Title) ? a.Username : a.Title));
+        if (expired.Count > 3) names += $" and {expired.Count - 3} more";
+        var text = expired.Count == 1
+            ? $"{names} has to log in again. Click Add account and log in with it."
+            : $"{expired.Count} accounts have to log in again: {names}.";
+        Toast.Show("Login expired", text, expired.Count == 1 ? expired[0].AvatarUrl : null, "Accounts", () =>
+        {
+            ShowFromTray();
+            Navigate("accounts");
+        });
     }
 
     // ---------------- Updates ----------------

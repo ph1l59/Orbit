@@ -51,6 +51,9 @@ public static class WindowTitles
             Pending.Add((userId, DateTime.UtcNow));
     }
 
+    /// <summary>Account a Roblox process was launched for (0 if Orbit didn't launch it).</summary>
+    public static long UserIdOf(int pid) => Windows.FirstOrDefault(t => t.Pid == pid)?.UserId ?? 0;
+
     /// <summary>The setting was switched off: put "Roblox" back on every window Orbit renamed.</summary>
     public static void RestoreAll()
     {

@@ -35,10 +35,23 @@ public partial class PlayView : UserControl, IPage
             catch { return null; }
         };
         AppState.Accounts.CollectionChanged += (_, _) => Dispatcher.InvokeAsync(Refresh);
+        Playtime.Changed += UpdatePlaytime;
         Refresh();
+        UpdatePlaytime();
     }
 
-    public void OnShown() => Refresh();
+    public void OnShown()
+    {
+        Refresh();
+        UpdatePlaytime();
+    }
+
+    private void UpdatePlaytime()
+    {
+        PlayToday.Text = Playtime.Format(Playtime.Today);
+        PlayWeek.Text = Playtime.Format(Playtime.ThisWeek);
+        PlayTotal.Text = Playtime.Format(Playtime.Total);
+    }
 
     private Window Owner => Window.GetWindow(this)!;
 
@@ -69,6 +82,7 @@ public partial class PlayView : UserControl, IPage
         {
             PickerName.Text = "No account";
             PickerUser.Text = "Add one under Accounts";
+            PickerUser.Foreground = (Brush)FindResource("FaintBrush");
             PickerAvatar.ImageSource = null;
             NameTag.Text = "—";
             AvatarImage.Source = null;
@@ -76,7 +90,8 @@ public partial class PlayView : UserControl, IPage
         }
 
         PickerName.Text = account.Title;
-        PickerUser.Text = account.Subtitle;
+        PickerUser.Text = account.PickerSubtitle;
+        PickerUser.Foreground = (Brush)FindResource(account.LoginExpired ? "WarnBrush" : "FaintBrush");
         PickerAvatar.ImageSource = Load(account.AvatarUrl);
         NameTag.Text = account.Title;
 
@@ -101,6 +116,11 @@ public partial class PlayView : UserControl, IPage
             {
                 PickerName.Text = account.Title;
                 NameTag.Text = account.Title;
+            }
+            if (e.PropertyName == nameof(Account.PickerSubtitle))
+            {
+                PickerUser.Text = account.PickerSubtitle;
+                PickerUser.Foreground = (Brush)FindResource(account.LoginExpired ? "WarnBrush" : "FaintBrush");
             }
         });
     }
@@ -357,7 +377,11 @@ public partial class PlayView : UserControl, IPage
         }
     }
 
-    private void Picker_Click(object sender, RoutedEventArgs e) => PickerPopup.IsOpen = !PickerPopup.IsOpen;
+    private void Picker_Click(object sender, RoutedEventArgs e)
+    {
+        PickerPopup.IsOpen = !PickerPopup.IsOpen;
+        if (PickerPopup.IsOpen) _ = AppState.RefreshRobuxAsync(); // balances update while the list is open
+    }
 
     private void PickAccount_Click(object sender, RoutedEventArgs e)
     {

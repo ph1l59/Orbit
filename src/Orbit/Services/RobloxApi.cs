@@ -143,6 +143,15 @@ public static class RobloxApi
         throw new RobloxApiException($"Roblox did not return a login ticket (HTTP {(int)response.StatusCode}).");
     }
 
+    /// <summary>Robux balance of the logged-in account (null if Roblox didn't say).</summary>
+    public static async Task<long?> GetRobuxAsync(long userId, string cookie)
+    {
+        using var doc = await GetJsonAsync($"https://economy.roblox.com/v1/users/{userId}/currency", cookie).ConfigureAwait(false);
+        if (doc != null && doc.RootElement.TryGetProperty("robux", out var robux) && robux.TryGetInt64(out var value))
+            return value;
+        return null;
+    }
+
     /// <summary>Avatar headshot URLs for the given user ids.</summary>
     public static async Task<Dictionary<long, string>> GetHeadshotsAsync(IEnumerable<long> userIds)
     {

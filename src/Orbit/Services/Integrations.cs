@@ -38,7 +38,8 @@ public static class Integrations
         if (!full) return;
 
         Refresh();
-        _presenceTimer = new DispatcherTimer(TimeSpan.FromSeconds(30), DispatcherPriority.Background, async (_, _) => await RefreshPresenceAsync(), ui);
+        RefreshDisconnectWatcher();
+        _presenceTimer =new DispatcherTimer(TimeSpan.FromSeconds(30), DispatcherPriority.Background, async (_, _) => await RefreshPresenceAsync(), ui);
         _presenceTimer.Start();
         _ = RefreshPresenceAsync();
     }
@@ -134,8 +135,50 @@ public static class Integrations
     public static string DiscordAppId(Models.AppSettings s) =>
         string.IsNullOrWhiteSpace(s.DiscordAppId) ? DefaultDiscordAppId : s.DiscordAppId.Trim();
 
+    // ---------------- Disconnect notification ----------------
+
+    private static DisconnectWatcher? _disconnects;
+
+    /// <summary>Shows a notification (title, text, picture) – set by the UI.</summary>
+    public static Action<string, string, string?>? NotifyWithImage { get; set; }
+
+    /// <summary>Starts or stops watching for lost connections according to the setting.</summary>
+    public static void RefreshDisconnectWatcher()
+    {
+        if (AppState.Settings.NotifyDisconnect && _disconnects == null && _ui != null)
+        {
+            _disconnects = new DisconnectWatcher();
+            _disconnects.Disconnected += info => _ui?.InvokeAsync(() => OnDisconnected(info));
+        }
+        else if (!AppState.Settings.NotifyDisconnect && _disconnects != null)
+        {
+            _disconnects.Dispose();
+            _disconnects = null;
+        }
+    }
+
+    private static async void OnDisconnected(DisconnectInfo info)
+    {
+        if (!AppState.Settings.NotifyDisconnect) return;
+        var account = AppState.Accounts.FirstOrDefault(a => a.UserId == info.UserId);
+        var who = account == null ? "A Roblox window" : string.IsNullOrWhiteSpace(account.Title) ? account.Username : account.Title;
+
+        string? game = null;
+        if (info.PlaceId > 0)
+        {
+            try { game = (await RobloxApi.GetGameInfoAsync(info.PlaceId))?.Name; }
+            catch { /* name is optional */ }
+        }
+
+        var text = game == null ? $"{who} was disconnected." : $"{who} was disconnected from {game}.";
+        if (info.Reason != null) text += "\n" + info.Reason;
+        NotifyWithImage?.Invoke("Disconnected", text, account?.AvatarUrl);
+    }
+
     public static void Stop()
     {
+        _disconnects?.Dispose();
+        _disconnects = null;
         _robloxTimer?.Stop();
         _presenceTimer?.Stop();
         _launcherTimer?.Stop();

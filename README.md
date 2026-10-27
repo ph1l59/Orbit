@@ -21,11 +21,13 @@
 
 | | |
 |---|---|
-| **Play** | Start page: pick an account, turn its 3D avatar with the mouse and launch the Roblox app with one click. Friends panel with online status, search, Join, and friend requests. |
+| **Play** | Start page: pick an account (with its Robux balance), turn its 3D avatar with the mouse and launch the Roblox app with one click. Shows your playtime today, this week and in total. Friends panel with online status, search, Join, and friend requests. |
 | **Accounts** | Log in on the real roblox.com page. Orbit only keeps the login cookie, encrypted with Windows DPAPI. Every account shows its avatar and whether it's online. |
 | **Create accounts** | Set birthday and gender once, paste a list of `Username:Password`, and Orbit fills out the sign up page for each one. You click Sign Up yourself. |
 | **Joining** | Place ID, game link, private server link, share link, share code or Job ID. Orbit figures it out. |
 | **Multi-Roblox** | Launch several accounts in a row and keep them all open. Each window shows the account name and the Orbit icon in the taskbar, and one button closes them all. |
+| **Presets & windows** | Save accounts and a game as a named preset and launch it with one click. Arrange all Roblox windows side by side, and let the resource saver give background windows less CPU. |
+| **Notifications** | Get told when a Roblox window disconnects (with the reason), when a friend comes online and when a saved login has expired. |
 | **Game settings** | Graphics quality, FPS limit, transparency, font size, mouse sensitivity and more. Can be locked so Roblox doesn't reset them. |
 | **FastFlags** | Presets for mesh detail, MSAA, textures, rendering mode and more, plus a full editor with JSON import and export. |
 | **Mods** | Custom cursor, custom font and a mods folder that mirrors Roblox's files. Originals get backed up. |

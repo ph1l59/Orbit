@@ -31,9 +31,13 @@ public partial class App : Application
     }
     private static Mutex? _singleInstance;
 
+    /// <summary>Orbit was just restarted by its updater (shows "What's new").</summary>
+    public static bool StartedAfterUpdate { get; private set; }
+
     protected override void OnStartup(StartupEventArgs e)
     {
         base.OnStartup(e);
+        StartedAfterUpdate = e.Args.Contains(Updater.UpdatedFlag);
         DispatcherUnhandledException += OnUnhandledException;
         SmoothScroll.Enable();
 

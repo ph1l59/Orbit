@@ -17,7 +17,17 @@ public partial class AboutView : UserControl
         UpdatesToggle.IsChecked = AppState.Settings.CheckForUpdates;
         TrayToggle.IsChecked = AppState.Settings.CloseToTray;
         StarsToggle.IsChecked = AppState.Settings.AnimatedBackground;
+        DisconnectToggle.IsChecked = AppState.Settings.NotifyDisconnect;
     }
+
+    private void Disconnect_Click(object sender, RoutedEventArgs e)
+    {
+        AppState.Settings.NotifyDisconnect = DisconnectToggle.IsChecked == true;
+        AppState.SaveSettings();
+        Integrations.RefreshDisconnectWatcher();
+    }
+
+    private void WhatsNew_Click(object sender, RoutedEventArgs e) => new WhatsNewWindow(Window.GetWindow(this)).ShowDialog();
 
     private void Stars_Click(object sender, RoutedEventArgs e)
     {

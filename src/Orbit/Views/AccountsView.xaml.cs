@@ -22,6 +22,8 @@ public partial class AccountsView : UserControl
     private readonly DispatcherTimer _followTimer = new() { Interval = TimeSpan.FromMilliseconds(450) };
     private RobloxUser? _followUser;
     private int _previewVersion;
+    /// <summary>Name of the game in the preview card ("" if none).</summary>
+    private string _previewGameName = "";
 
     public AccountsView()
     {
@@ -42,6 +44,7 @@ public partial class AccountsView : UserControl
         _followTimer.Tick += async (_, _) => { _followTimer.Stop(); await UpdateFollowPreviewAsync(); };
         ShowNoGame();
         Join_TextChanged(this, null!);
+        InitTools();
     }
 
     private Window Owner => Window.GetWindow(this)!;
@@ -181,6 +184,7 @@ public partial class AccountsView : UserControl
             existing.Cookie = user.Cookie;
             existing.Username = user.Username;
             existing.DisplayName = user.DisplayName;
+            existing.LoginExpired = false;
             existing.Status = "Login updated ✓";
         }
         else
@@ -404,11 +408,13 @@ public partial class AccountsView : UserControl
             var user = await RobloxApi.GetAuthenticatedUserAsync(account.Cookie);
             if (user == null)
             {
-                account.Status = "Login expired – remove the account and add it again.";
+                account.LoginExpired = true;
+                account.Status = "Login expired – click Add account and log in again.";
                 return;
             }
             account.Username = user.Name;
             account.DisplayName = user.DisplayName;
+            account.LoginExpired = false;
             account.Status = "Login is valid ✓";
             AppState.SaveAccounts();
         }
@@ -692,6 +698,7 @@ public partial class AccountsView : UserControl
 
     private void ShowNoGame(string title = "No game selected", string detail = "PASTE A PLACE ID OR GAME LINK")
     {
+        _previewGameName = "";
         GameName.Text = title;
         GameName.Foreground = (Brush)FindResource("DimBrush");
         GameCreator.Text = "";
@@ -732,6 +739,7 @@ public partial class AccountsView : UserControl
             return;
         }
 
+        _previewGameName = game.Name;
         GameName.Text = game.Name;
         GameName.Foreground = (Brush)FindResource("TextBrush");
         GameCreator.Text = string.IsNullOrEmpty(game.Creator) ? "" : "by " + game.Creator;

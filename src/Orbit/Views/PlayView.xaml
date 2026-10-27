@@ -317,10 +317,15 @@
                                                 </Grid>
                                                 <StackPanel Margin="11,0,0,0" VerticalAlignment="Center">
                                                     <TextBlock Text="{Binding Title}" FontWeight="SemiBold" FontSize="13.5" TextTrimming="CharacterEllipsis"/>
-                                                    <TextBlock Text="{Binding Subtitle}" Style="{StaticResource Crumb}" Margin="0,2,0,0" TextTrimming="CharacterEllipsis"/>
+                                                    <TextBlock x:Name="sub" Text="{Binding PickerSubtitle}" Style="{StaticResource Crumb}" Margin="0,2,0,0" TextTrimming="CharacterEllipsis"/>
                                                 </StackPanel>
                                             </DockPanel>
                                         </Button>
+                                        <DataTemplate.Triggers>
+                                            <DataTrigger Binding="{Binding LoginExpired}" Value="True">
+                                                <Setter TargetName="sub" Property="Foreground" Value="{StaticResource WarnBrush}"/>
+                                            </DataTrigger>
+                                        </DataTemplate.Triggers>
                                     </DataTemplate>
                                 </ItemsControl.ItemTemplate>
                             </ItemsControl>
@@ -348,6 +353,31 @@
                     <Run Text="Ready to"/> <Run Text="play" Foreground="{StaticResource AccentTextBrush}"/>
                 </TextBlock>
                 <TextBlock Text="Pick an account and launch Roblox." Style="{StaticResource PageDesc}"/>
+
+                <!-- Playtime: today · this week · total -->
+                <Border x:Name="PlaytimePanel" HorizontalAlignment="Left" Margin="0,14,0,0" Padding="12,7,14,7" CornerRadius="10"
+                        Background="#B3131119" BorderBrush="{StaticResource LineStrongBrush}" BorderThickness="1"
+                        Tag="Playtime|play time hours statistics today week total"
+                        ToolTip="Time with Roblox open (several windows at once count once)">
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Text="&#xE916;" Style="{StaticResource Icon}" FontSize="14" Foreground="{StaticResource SignalLightBrush}"
+                                   VerticalAlignment="Center" Margin="0,0,10,0"/>
+                        <StackPanel VerticalAlignment="Center">
+                            <TextBlock Text="TODAY" Style="{StaticResource Crumb}" FontSize="9.5"/>
+                            <TextBlock x:Name="PlayToday" Text="0m" FontWeight="SemiBold" FontSize="13.5"/>
+                        </StackPanel>
+                        <Rectangle Width="1" Fill="{StaticResource LineStrongBrush}" Margin="14,2"/>
+                        <StackPanel VerticalAlignment="Center">
+                            <TextBlock Text="THIS WEEK" Style="{StaticResource Crumb}" FontSize="9.5"/>
+                            <TextBlock x:Name="PlayWeek" Text="0m" FontWeight="SemiBold" FontSize="13.5"/>
+                        </StackPanel>
+                        <Rectangle Width="1" Fill="{StaticResource LineStrongBrush}" Margin="14,2"/>
+                        <StackPanel VerticalAlignment="Center">
+                            <TextBlock Text="TOTAL" Style="{StaticResource Crumb}" FontSize="9.5"/>
+                            <TextBlock x:Name="PlayTotal" Text="0m" FontWeight="SemiBold" FontSize="13.5" Foreground="{StaticResource AccentTextBrush}"/>
+                        </StackPanel>
+                    </StackPanel>
+                </Border>
             </StackPanel>
         </DockPanel>
 

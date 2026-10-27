@@ -286,6 +286,100 @@
                 </StackPanel>
             </Border>
 
+            <!-- ================= Presets ================= -->
+            <Border Style="{StaticResource Panel}" Margin="0,12,0,0" Padding="20"
+                    Tag="Launch presets|preset save favourite accounts game quick launch">
+                <StackPanel>
+                    <TextBlock Text="PRESETS" Style="{StaticResource Crumb}" Foreground="{StaticResource SignalLightBrush}"/>
+                    <TextBlock Text="Saved launches" FontFamily="{StaticResource DisplayFont}" FontSize="17" FontWeight="Bold" Margin="0,4,0,0"/>
+
+                    <TextBlock x:Name="NoPresets" Style="{StaticResource RowDesc}" Margin="0,8,0,0"
+                               Text="Select accounts, enter a game, then save it here – next time one click starts everything."/>
+
+                    <ItemsControl x:Name="PresetList" Margin="0,12,0,0">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Border x:Name="row" Background="{StaticResource RaisedBrush}" BorderBrush="{StaticResource LineBrush}" BorderThickness="1"
+                                        CornerRadius="10" Padding="12,9,8,9" Margin="0,0,0,8" Cursor="Hand"
+                                        MouseLeftButtonUp="Preset_Click" ToolTip="Click to load these accounts and the game">
+                                    <DockPanel>
+                                        <Button DockPanel.Dock="Right" Style="{StaticResource GhostButton}" Width="30" Height="30" Padding="0" Margin="2,0,0,0"
+                                                Click="PresetDelete_Click" ToolTip="Delete preset">
+                                            <TextBlock Text="&#xE74D;" Style="{StaticResource Icon}" FontSize="12"/>
+                                        </Button>
+                                        <Button DockPanel.Dock="Right" Style="{StaticResource GhostButton}" Width="30" Height="30" Padding="0" Margin="2,0,0,0"
+                                                Click="PresetRename_Click" ToolTip="Rename">
+                                            <TextBlock Text="&#xE70F;" Style="{StaticResource Icon}" FontSize="12"/>
+                                        </Button>
+                                        <Button DockPanel.Dock="Right" Style="{StaticResource SolidButton}" Width="34" Height="30" Padding="0" Margin="6,0,0,0"
+                                                Click="PresetLaunch_Click" ToolTip="Launch this preset">
+                                            <TextBlock Text="&#xE768;" Style="{StaticResource Icon}" FontSize="11"/>
+                                        </Button>
+                                        <StackPanel VerticalAlignment="Center">
+                                            <TextBlock Text="{Binding Name}" FontSize="13.5" FontWeight="SemiBold" TextTrimming="CharacterEllipsis"/>
+                                            <TextBlock Text="{Binding Detail}" Style="{StaticResource Crumb}" Margin="0,3,0,0" TextTrimming="CharacterEllipsis"/>
+                                        </StackPanel>
+                                    </DockPanel>
+                                </Border>
+                                <DataTemplate.Triggers>
+                                    <Trigger SourceName="row" Property="IsMouseOver" Value="True">
+                                        <Setter TargetName="row" Property="BorderBrush" Value="{StaticResource SignalBorderBrush}"/>
+                                    </Trigger>
+                                </DataTemplate.Triggers>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+
+                    <Button Margin="0,4,0,0" HorizontalAlignment="Stretch" Height="38" Click="PresetSave_Click"
+                            Tag="Save preset|save current selection as preset">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="&#xE74E;" Style="{StaticResource Icon}" FontSize="12"/>
+                            <TextBlock Text="Save current selection as preset" Margin="8,0,0,0"/>
+                        </StackPanel>
+                    </Button>
+                </StackPanel>
+            </Border>
+
+            <!-- ================= Roblox windows ================= -->
+            <Border Style="{StaticResource Panel}" Margin="0,12,0,0" Padding="20"
+                    Tag="Roblox windows|arrange tile grid windows side by side resource saver cpu priority performance">
+                <StackPanel>
+                    <TextBlock Text="ROBLOX WINDOWS" Style="{StaticResource Crumb}" Foreground="{StaticResource SignalLightBrush}"/>
+                    <TextBlock x:Name="WindowCountText" Text="No Roblox window open" FontFamily="{StaticResource DisplayFont}" FontSize="17" FontWeight="Bold" Margin="0,4,0,0"/>
+
+                    <ComboBox x:Name="ScreenBox" Margin="0,12,0,0" Visibility="Collapsed" ToolTip="Screen to arrange the windows on"/>
+
+                    <UniformGrid Columns="2" Margin="0,12,0,0">
+                        <Button x:Name="ArrangeButton" Margin="0,0,4,0" Height="38" Click="Arrange_Click"
+                                ToolTip="Puts all open Roblox windows side by side on the screen">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="&#xECA5;" Style="{StaticResource Icon}" FontSize="12"/>
+                                <TextBlock Text="Arrange" Margin="8,0,0,0"/>
+                            </StackPanel>
+                        </Button>
+                        <Button x:Name="RestoreButton" Margin="4,0,0,0" Height="38" Click="RestoreWindows_Click" IsEnabled="False"
+                                ToolTip="Puts the windows back where they were">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="&#xE7A7;" Style="{StaticResource Icon}" FontSize="12"/>
+                                <TextBlock Text="Put back" Margin="8,0,0,0"/>
+                            </StackPanel>
+                        </Button>
+                    </UniformGrid>
+                    <TextBlock x:Name="WindowsStatus" Style="{StaticResource RowDesc}" Margin="0,10,0,0" Visibility="Collapsed"/>
+
+                    <Rectangle Height="1" Fill="{StaticResource LineBrush}" Margin="0,16,0,14"/>
+
+                    <DockPanel>
+                        <CheckBox x:Name="SaverToggle" DockPanel.Dock="Right" Style="{StaticResource Toggle}" VerticalAlignment="Top" Click="Saver_Click"/>
+                        <StackPanel Margin="0,0,12,0">
+                            <TextBlock Text="Resource saver" FontSize="13.5" FontWeight="SemiBold"/>
+                            <TextBlock x:Name="SaverText" Style="{StaticResource RowDesc}"
+                                       Text="Roblox windows in the background get less CPU. The one you're playing in stays fast."/>
+                        </StackPanel>
+                    </DockPanel>
+                </StackPanel>
+            </Border>
+
             <Border Style="{StaticResource Panel}" Margin="0,12,0,0" Padding="20">
                 <StackPanel>
                     <TextBlock Text="HOW IT WORKS" Style="{StaticResource Crumb}"/>
