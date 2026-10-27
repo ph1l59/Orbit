@@ -19,13 +19,13 @@ public sealed class WhatsNewWindow : Window
         new("", "Disconnect notification",
             "When a Roblox window loses its game (disconnected, kicked, server closed), Orbit tells you which account it was and why."),
         new("\uECA5", "Arrange windows",
-            "One click puts all open Roblox windows side by side on your screen – and another click puts them back. Accounts page → Roblox windows."),
+            "One click makes all open Roblox windows as small as possible and puts them together in the middle of the screen – another click puts them back. Accounts page → Roblox windows."),
         new("", "Resource saver",
-            "Roblox windows in the background get less CPU, the one you're playing in stays fast. Turn it on under Accounts → Roblox windows."),
+            "Roblox windows in the background get less CPU, the one you're playing in stays fast. Orbit checks with Windows that it really worked and shows it. Accounts page → Roblox windows."),
         new("", "Launch presets",
             "Save your selected accounts and game as a preset with a name, and start everything again with one click."),
         new("", "Robux in the account picker",
-            "The account picker on the Play page shows the Robux balance of every account."),
+            "The account picker on the Play page shows the Robux balance of every account, with the Robux symbol."),
         new("", "Login check",
             "At start Orbit checks every saved login and tells you which accounts need to log in again."),
         new("", "Playtime",
@@ -44,12 +44,30 @@ public sealed class WhatsNewWindow : Window
         var current = Updater.DisplayVersion;
         if (s.LastSeenVersion == current) return false;
 
-        var updated = startedAfterUpdate || s.LastSeenVersion.Length > 0;
+        // Updated = started by the updater, or an older version was used before (settings/accounts exist).
+        var updated = startedAfterUpdate || s.LastSeenVersion.Length > 0 || AppState.Accounts.Count > 0;
+        if (!updated)
+        {
+            // Fresh install: nothing "new" yet.
+            s.LastSeenVersion = current;
+            AppState.SaveSettings();
+            return false;
+        }
+
+        try
+        {
+            new WhatsNewWindow(owner).ShowDialog();
+        }
+        catch (Exception ex)
+        {
+            try { System.IO.File.AppendAllText(System.IO.Path.Combine(AppPaths.DataDir, "whatsnew.log"), $"{DateTime.Now:u} {ex}\n"); }
+            catch { /* ignore */ }
+            return false; // try again next start
+        }
+
+        // Only remembered once it was really shown.
         s.LastSeenVersion = current;
         AppState.SaveSettings();
-        if (!updated) return false; // fresh install: nothing "new" yet
-
-        new WhatsNewWindow(owner).ShowDialog();
         return true;
     }
 
@@ -148,15 +166,16 @@ public sealed class WhatsNewWindow : Window
 
         MouseLeftButtonDown += (_, _) => { try { DragMove(); } catch { /* ignore */ } };
 
-        // Pop in: grow slightly and fade in.
-        Opacity = 0;
-        Loaded += (_, _) =>
+        // Pop in: grow slightly and fade in (only the card – the window itself always stays visible).
+        card.Opacity = 0;
+        ContentRendered += (_, _) =>
         {
             var ease = new BackEase { EasingMode = EasingMode.EaseOut, Amplitude = 0.3 };
             var duration = TimeSpan.FromMilliseconds(380);
             scale.BeginAnimation(ScaleTransform.ScaleXProperty, new DoubleAnimation(0.94, 1, duration) { EasingFunction = ease });
             scale.BeginAnimation(ScaleTransform.ScaleYProperty, new DoubleAnimation(0.94, 1, duration) { EasingFunction = ease });
-            BeginAnimation(OpacityProperty, new DoubleAnimation(0, 1, TimeSpan.FromMilliseconds(260)));
+            card.BeginAnimation(OpacityProperty, new DoubleAnimation(0, 1, TimeSpan.FromMilliseconds(260)));
+            Activate();
         };
     }
 

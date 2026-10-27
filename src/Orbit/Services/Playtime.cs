@@ -19,6 +19,7 @@ public static class Playtime
 
     private static Data _data = new();
     private static DispatcherTimer? _timer;
+    private static bool _loaded;
     private static DateTime _lastTick;
     private static bool _wasRunning;
 
@@ -30,11 +31,12 @@ public static class Playtime
     public static void Start(Dispatcher ui)
     {
         if (_timer != null) return;
-        Load();
+        EnsureLoaded();
         _lastTick = DateTime.UtcNow;
         _wasRunning = RobloxPaths.IsRobloxRunning();
         _timer = new DispatcherTimer(TimeSpan.FromSeconds(20), DispatcherPriority.Background, (_, _) => Tick(), ui);
         _timer.Start();
+        Changed?.Invoke();
     }
 
     public static void Stop()
@@ -62,7 +64,13 @@ public static class Playtime
         _wasRunning = running;
     }
 
-    public static TimeSpan Today => TimeSpan.FromSeconds(_data.Days.GetValueOrDefault(DateTime.Now.ToString("yyyy-MM-dd")));
+    public static TimeSpan Today => Get(DateTime.Now.Date);
+
+    private static TimeSpan Get(DateTime day)
+    {
+        EnsureLoaded();
+        return TimeSpan.FromSeconds(_data.Days.GetValueOrDefault(day.ToString("yyyy-MM-dd")));
+    }
 
     /// <summary>Since Monday.</summary>
     public static TimeSpan ThisWeek
@@ -71,14 +79,21 @@ public static class Playtime
         {
             var today = DateTime.Now.Date;
             var monday = today.AddDays(-(((int)today.DayOfWeek + 6) % 7));
-            double sum = 0;
+            var sum = TimeSpan.Zero;
             for (var d = monday; d <= today; d = d.AddDays(1))
-                sum += _data.Days.GetValueOrDefault(d.ToString("yyyy-MM-dd"));
-            return TimeSpan.FromSeconds(sum);
+                sum += Get(d);
+            return sum;
         }
     }
 
-    public static TimeSpan Total => TimeSpan.FromSeconds(_data.TotalSeconds);
+    public static TimeSpan Total
+    {
+        get
+        {
+            EnsureLoaded();
+            return TimeSpan.FromSeconds(_data.TotalSeconds);
+        }
+    }
 
     /// <summary>"2h 05m", "14m", "0m"</summary>
     public static string Format(TimeSpan t)
@@ -87,8 +102,10 @@ public static class Playtime
         return hours > 0 ? $"{hours}h {t.Minutes:00}m" : $"{t.Minutes}m";
     }
 
-    private static void Load()
+    private static void EnsureLoaded()
     {
+        if (_loaded) return;
+        _loaded = true;
         try
         {
             if (File.Exists(FilePath))

@@ -14,9 +14,6 @@ public sealed record RobloxWindow(IntPtr Handle, int Pid, long UserId);
 /// </summary>
 public static class RobloxWindows
 {
-    /// <summary>Roblox doesn't get much smaller than this (it refuses smaller sizes itself).</summary>
-    private const int MinWidth = 400, MinHeight = 300;
-
     // ---------------- Finding the windows ----------------
 
     public static List<RobloxWindow> All()
@@ -51,9 +48,9 @@ public static class RobloxWindows
     public static bool CanRestore => Original.Keys.Any(IsWindow);
 
     /// <summary>
-    /// Puts every Roblox window into a grid on the given screen (index into Screen.AllScreens).
-    /// If they don't all fit at Roblox's smallest size, they overlap a little like cards,
-    /// so every title bar stays visible. Returns the number of windows arranged.
+    /// Makes every Roblox window as small as Roblox allows and puts them close together as a block
+    /// in the middle of the given screen (index into Screen.AllScreens). If they don't all fit,
+    /// they overlap a little like cards, so every title bar stays visible. Returns the number arranged.
     /// </summary>
     public static int Arrange(int screenIndex)
     {
@@ -64,31 +61,45 @@ public static class RobloxWindows
         var screen = screenIndex >= 0 && screenIndex < screens.Length ? screens[screenIndex] : System.Windows.Forms.Screen.PrimaryScreen!;
         var area = screen.WorkingArea;
 
-        var n = windows.Count;
-        var (cols, rows) = BestGrid(n, area.Width, area.Height);
-        var cellW = area.Width / cols;
-        var cellH = area.Height / rows;
-        var w = Math.Max(cellW, MinWidth);
-        var h = Math.Max(cellH, MinHeight);
+        // 1. Shrink every window. Roblox has its own smallest size and keeps the window at least that big,
+        //    so ask for a tiny size and measure what we really got.
+        int w = SmallestWidth, h = SmallestHeight;
+        foreach (var win in windows)
+        {
+            var hwnd = win.Handle;
+            if (!Original.ContainsKey(hwnd) && GetWindowRect(hwnd, out var rect))
+                Original[hwnd] = (rect, IsZoomed(hwnd));
+            if (IsIconic(hwnd) || IsZoomed(hwnd)) ShowWindow(hwnd, SW_RESTORE);
+            MoveVisible(hwnd, area.Left, area.Top, SmallestWidth, SmallestHeight);
+            var size = VisibleSize(hwnd);
+            w = Math.Max(w, size.Width);
+            h = Math.Max(h, size.Height);
+        }
         w = Math.Min(w, area.Width);
         h = Math.Min(h, area.Height);
-        // Spread over the whole area; with enough room the steps equal the cell size (no overlap).
-        var stepX = cols > 1 ? (area.Width - w) / (double)(cols - 1) : 0;
-        var stepY = rows > 1 ? (area.Height - h) / (double)(rows - 1) : 0;
+
+        // 2. Grid: as few empty spots as possible, block about as wide as the screen's shape.
+        var n = windows.Count;
+        var (cols, rows) = CompactGrid(n, w, h, area.Width, area.Height);
+
+        // 3. If the block is bigger than the screen, the windows overlap (steps smaller than the window).
+        var stepX = cols > 1 ? Math.Min(w, (area.Width - w) / (double)(cols - 1)) : 0;
+        var stepY = rows > 1 ? Math.Min(h, (area.Height - h) / (double)(rows - 1)) : 0;
+        var blockH = h + (rows - 1) * stepY;
+        var top = area.Top + (area.Height - blockH) / 2;
 
         for (var i = 0; i < n; i++)
         {
-            var hwnd = windows[i].Handle;
-            if (!Original.ContainsKey(hwnd) && GetWindowRect(hwnd, out var rect))
-                Original[hwnd] = (rect, IsZoomed(hwnd));
-
-            var col = i % cols;
             var row = i / cols;
-            var x = area.Left + (int)Math.Round(col * stepX);
-            var y = area.Top + (int)Math.Round(row * stepY);
+            var col = i % cols;
+            // The last row may be shorter – center it too.
+            var inRow = row == rows - 1 ? n - row * cols : cols;
+            var rowW = w + (inRow - 1) * stepX;
+            var left = area.Left + (area.Width - rowW) / 2;
 
-            if (IsIconic(hwnd) || IsZoomed(hwnd)) ShowWindow(hwnd, SW_RESTORE);
-            MoveVisible(hwnd, x, y, w, h);
+            var x = (int)Math.Round(left + col * stepX);
+            var y = (int)Math.Round(top + row * stepY);
+            MoveVisible(windows[i].Handle, x, y, w, h);
         }
 
         // Bring them to the front in order, so later (lower) cards lie on top of earlier ones.
@@ -98,20 +109,31 @@ public static class RobloxWindows
         return n;
     }
 
-    /// <summary>Columns × rows that give each window the biggest 16:9 picture.</summary>
-    private static (int Cols, int Rows) BestGrid(int n, int width, int height)
+    /// <summary>Smallest size Orbit asks for (Roblox makes it bigger if it needs to).</summary>
+    private const int SmallestWidth = 320, SmallestHeight = 180;
+
+    /// <summary>Columns × rows for the block: fits on the screen if possible, few empty spots, balanced shape.</summary>
+    private static (int Cols, int Rows) CompactGrid(int n, int w, int h, int width, int height)
     {
-        var best = (Cols: 1, Rows: n);
-        double bestScore = -1;
+        var best = (Cols: n, Rows: 1);
+        var bestScore = double.MaxValue;
         for (var cols = 1; cols <= n; cols++)
         {
             var rows = (int)Math.Ceiling(n / (double)cols);
-            double cw = width / (double)cols, ch = height / (double)rows;
-            var picture = Math.Min(cw, ch * 16 / 9);            // width of a 16:9 picture that fits the cell
-            var score = picture * picture * 9 / 16 - (cols * rows - n) * 50; // a few empty cells are ok, but less is better
-            if (score > bestScore) { bestScore = score; best = (cols, rows); }
+            if ((cols - 1) * rows >= n) continue; // a whole empty column
+            // How much of the screen the block needs (over 1 = doesn't fit, windows overlap).
+            var fill = Math.Max(cols * w / (double)width, rows * h / (double)height);
+            var score = fill + (fill > 1 ? 10 : 0) + (cols * rows - n) * 0.02;
+            if (score < bestScore) { bestScore = score; best = (cols, rows); }
         }
         return best;
+    }
+
+    private static (int Width, int Height) VisibleSize(IntPtr hwnd)
+    {
+        if (DwmGetWindowAttribute(hwnd, DWMWA_EXTENDED_FRAME_BOUNDS, out var visible, Marshal.SizeOf<RECT>()) == 0)
+            return (visible.Right - visible.Left, visible.Bottom - visible.Top);
+        return GetWindowRect(hwnd, out var r) ? (r.Right - r.Left, r.Bottom - r.Top) : (SmallestWidth, SmallestHeight);
     }
 
     /// <summary>Moves a window so its visible part (without Windows' invisible resize border) lands exactly there.</summary>
@@ -151,8 +173,15 @@ public static class RobloxWindows
     private static readonly Dictionary<int, bool> Throttled = new();
     private static int _lastPlayed;
 
-    /// <summary>Number of windows that are slowed down right now.</summary>
+    /// <summary>Windows Windows didn't let Orbit change.</summary>
+    private static readonly HashSet<int> Failed = new();
+    private static DateTime _lastVerify;
+
+    /// <summary>Number of windows that are slowed down right now (checked: Windows reports "Below normal").</summary>
     public static int ThrottledCount => Throttled.Count(kv => kv.Value);
+
+    /// <summary>Number of windows whose priority couldn't be changed.</summary>
+    public static int FailedCount => Failed.Count;
 
     public static event Action? SaverChanged;
 
@@ -185,11 +214,22 @@ public static class RobloxWindows
             else if (!ids.Contains(_lastPlayed)) _lastPlayed = clients.Length == 1 ? clients[0].Id : 0;
 
             var changed = false;
+            // Every few seconds: check that the priority is really still set (Roblox could reset it).
+            var verify = DateTime.UtcNow - _lastVerify > TimeSpan.FromSeconds(5);
+            if (verify) _lastVerify = DateTime.UtcNow;
+
             foreach (var p in clients)
             {
                 var slow = clients.Length > 1 && p.Id != _lastPlayed;
-                if (Throttled.TryGetValue(p.Id, out var current) && current == slow) continue;
-                if (SetSlow(p, slow)) { Throttled[p.Id] = slow; changed = true; }
+                if (Throttled.TryGetValue(p.Id, out var current) && current == slow && !(verify && slow && !IsSlow(p))) continue;
+                var ok = SetSlow(p, slow);
+                if (ok)
+                {
+                    changed |= !Throttled.TryGetValue(p.Id, out var was) || was != slow;
+                    Throttled[p.Id] = slow;
+                    changed |= Failed.Remove(p.Id);
+                }
+                else { Throttled.Remove(p.Id); changed |= Failed.Add(p.Id); }
             }
 
             foreach (var gone in Throttled.Keys.Where(id => !ids.Contains(id)).ToList())
@@ -197,6 +237,7 @@ public static class RobloxWindows
                 Throttled.Remove(gone);
                 changed = true;
             }
+            changed |= Failed.RemoveWhere(id => !ids.Contains(id)) > 0;
             if (changed) SaverChanged?.Invoke();
         }
         finally
@@ -205,7 +246,16 @@ public static class RobloxWindows
         }
     }
 
-    /// <summary>Background window: lower priority and only some of the CPU cores. Otherwise normal.</summary>
+    private static bool IsSlow(Process p)
+    {
+        try { p.Refresh(); return p.PriorityClass == ProcessPriorityClass.BelowNormal; }
+        catch { return false; }
+    }
+
+    /// <summary>
+    /// Background window: lower priority and only some of the CPU cores. Otherwise normal.
+    /// Returns true only if Windows afterwards really reports the new priority.
+    /// </summary>
     private static bool SetSlow(Process p, bool slow)
     {
         try
@@ -220,7 +270,9 @@ public static class RobloxWindows
                 var upper = all & ~((1L << (cores - keep)) - 1);
                 p.ProcessorAffinity = (IntPtr)(slow ? upper : all);
             }
-            return true;
+            // Ask Windows again whether it really took the change.
+            p.Refresh();
+            return p.PriorityClass == (slow ? ProcessPriorityClass.BelowNormal : ProcessPriorityClass.Normal);
         }
         catch
         {
@@ -230,11 +282,12 @@ public static class RobloxWindows
 
     private static void RestoreAllPriorities()
     {
-        if (Throttled.Count == 0) return;
+        if (Throttled.Count == 0 && Failed.Count == 0) return;
         foreach (var p in RobloxPaths.RunningClients())
             using (p)
                 if (Throttled.ContainsKey(p.Id)) SetSlow(p, false);
         Throttled.Clear();
+        Failed.Clear();
         SaverChanged?.Invoke();
     }
 

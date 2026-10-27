@@ -83,6 +83,7 @@ public partial class PlayView : UserControl, IPage
             PickerName.Text = "No account";
             PickerUser.Text = "Add one under Accounts";
             PickerUser.Foreground = (Brush)FindResource("FaintBrush");
+            PickerRobux.Visibility = Visibility.Collapsed;
             PickerAvatar.ImageSource = null;
             NameTag.Text = "—";
             AvatarImage.Source = null;
@@ -90,8 +91,7 @@ public partial class PlayView : UserControl, IPage
         }
 
         PickerName.Text = account.Title;
-        PickerUser.Text = account.PickerSubtitle;
-        PickerUser.Foreground = (Brush)FindResource(account.LoginExpired ? "WarnBrush" : "FaintBrush");
+        UpdateSubtitle(account);
         PickerAvatar.ImageSource = Load(account.AvatarUrl);
         NameTag.Text = account.Title;
 
@@ -117,12 +117,18 @@ public partial class PlayView : UserControl, IPage
                 PickerName.Text = account.Title;
                 NameTag.Text = account.Title;
             }
-            if (e.PropertyName == nameof(Account.PickerSubtitle))
-            {
-                PickerUser.Text = account.PickerSubtitle;
-                PickerUser.Foreground = (Brush)FindResource(account.LoginExpired ? "WarnBrush" : "FaintBrush");
-            }
+            if (e.PropertyName is nameof(Account.PickerSubtitle) or nameof(Account.HasRobux) or nameof(Account.RobuxText))
+                UpdateSubtitle(account);
         });
+    }
+
+    /// <summary>"@name" (or "Login expired") and the Robux balance with the Robux symbol.</summary>
+    private void UpdateSubtitle(Account account)
+    {
+        PickerUser.Text = account.PickerSubtitle;
+        PickerUser.Foreground = (Brush)FindResource(account.LoginExpired ? "WarnBrush" : "FaintBrush");
+        PickerRobuxText.Text = account.RobuxText;
+        PickerRobux.Visibility = account.HasRobux ? Visibility.Visible : Visibility.Collapsed;
     }
 
     private async Task LoadFullBodyAsync(Account account)

@@ -197,9 +197,32 @@ public partial class AccountsView
         }
 
         var throttled = RobloxWindows.ThrottledCount;
-        SaverText.Text = AppState.Settings.ResourceSaver && throttled > 0
-            ? $"On · {throttled} window{(throttled == 1 ? "" : "s")} in the background get less CPU. The one you're playing in stays fast."
-            : "Roblox windows in the background get less CPU. The one you're playing in stays fast.";
+        var failed = RobloxWindows.FailedCount;
+        const string about = "Roblox windows in the background get less CPU. The one you're playing in stays fast.";
+        if (!AppState.Settings.ResourceSaver)
+        {
+            SaverText.Text = about;
+            SaverCheck.Visibility = Visibility.Collapsed;
+            return;
+        }
+
+        SaverCheck.Visibility = Visibility.Visible;
+        if (failed > 0)
+        {
+            SaverCheckDot.Fill = (System.Windows.Media.Brush)FindResource("WarnBrush");
+            SaverCheckText.Text = $"Windows didn't allow it for {failed} window{(failed == 1 ? "" : "s")}.";
+        }
+        else if (throttled > 0)
+        {
+            SaverCheckDot.Fill = (System.Windows.Media.Brush)FindResource("OkBrush");
+            SaverCheckText.Text = $"Working · {throttled} window{(throttled == 1 ? "" : "s")} on \"Below normal\" priority (checked with Windows)";
+        }
+        else
+        {
+            SaverCheckDot.Fill = (System.Windows.Media.Brush)FindResource("FaintBrush");
+            SaverCheckText.Text = count > 1 ? "Checking…" : "Waiting – needs at least 2 Roblox windows";
+        }
+        SaverText.Text = about;
     }
 
     private void Arrange_Click(object sender, RoutedEventArgs e)

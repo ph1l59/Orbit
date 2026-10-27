@@ -90,7 +90,7 @@ public sealed class Account : INotifyPropertyChanged
     public long? Robux
     {
         get => _robux;
-        set { _robux = value; OnChanged(); OnChanged(nameof(PickerSubtitle)); }
+        set { _robux = value; OnChanged(); OnChanged(nameof(RobuxText)); OnChanged(nameof(HasRobux)); }
     }
 
     private bool _loginExpired;
@@ -99,14 +99,19 @@ public sealed class Account : INotifyPropertyChanged
     public bool LoginExpired
     {
         get => _loginExpired;
-        set { _loginExpired = value; OnChanged(); OnChanged(nameof(PickerSubtitle)); }
+        set { _loginExpired = value; OnChanged(); OnChanged(nameof(PickerSubtitle)); OnChanged(nameof(HasRobux)); }
     }
 
     /// <summary>Second line in the Play page's account picker: @name · R$ balance.</summary>
     [JsonIgnore]
-    public string PickerSubtitle => LoginExpired
-        ? "Login expired – log in again"
-        : Robux is { } r ? $"@{Username}  ·  R$ {r.ToString("N0", System.Globalization.CultureInfo.InvariantCulture)}" : Subtitle;
+    public string PickerSubtitle => LoginExpired ? "Login expired – log in again" : Subtitle;
+
+    /// <summary>Robux balance as text, e.g. "1,234".</summary>
+    [JsonIgnore]
+    public string RobuxText => Robux?.ToString("N0", System.Globalization.CultureInfo.InvariantCulture) ?? "";
+
+    [JsonIgnore]
+    public bool HasRobux => Robux != null && !LoginExpired;
 
     [JsonIgnore]
     public bool IsOnline => Presence > 0;

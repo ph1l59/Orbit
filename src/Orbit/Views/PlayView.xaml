@@ -291,8 +291,14 @@
                         </Grid>
                         <StackPanel Margin="11,0,0,0" VerticalAlignment="Center">
                             <TextBlock x:Name="PickerName" Text="No account" FontWeight="SemiBold" FontSize="14" TextTrimming="CharacterEllipsis" MaxWidth="160"/>
-                            <TextBlock x:Name="PickerUser" Text="Add one under Accounts" Style="{StaticResource Crumb}" Margin="0,2,0,0"
-                                       TextTrimming="CharacterEllipsis" MaxWidth="160"/>
+                            <StackPanel Orientation="Horizontal" Margin="0,2,0,0">
+                                <TextBlock x:Name="PickerUser" Text="Add one under Accounts" Style="{StaticResource Crumb}"
+                                           TextTrimming="CharacterEllipsis" MaxWidth="120"/>
+                                <StackPanel x:Name="PickerRobux" Orientation="Horizontal" Margin="8,0,0,0" Visibility="Collapsed" ToolTip="Robux">
+                                    <Path Data="{StaticResource RobuxIcon}" Fill="{StaticResource TextBrush}" Width="10" Height="10" Stretch="Uniform" VerticalAlignment="Center"/>
+                                    <TextBlock x:Name="PickerRobuxText" Style="{StaticResource Crumb}" Foreground="{StaticResource TextBrush}" Margin="4,0,0,0" VerticalAlignment="Center"/>
+                                </StackPanel>
+                            </StackPanel>
                         </StackPanel>
                     </DockPanel>
                 </Button>
@@ -317,13 +323,22 @@
                                                 </Grid>
                                                 <StackPanel Margin="11,0,0,0" VerticalAlignment="Center">
                                                     <TextBlock Text="{Binding Title}" FontWeight="SemiBold" FontSize="13.5" TextTrimming="CharacterEllipsis"/>
-                                                    <TextBlock x:Name="sub" Text="{Binding PickerSubtitle}" Style="{StaticResource Crumb}" Margin="0,2,0,0" TextTrimming="CharacterEllipsis"/>
+                                                    <DockPanel Margin="0,2,0,0">
+                                                        <StackPanel x:Name="robux" DockPanel.Dock="Right" Orientation="Horizontal" Margin="8,0,0,0" Visibility="Collapsed">
+                                                            <Path Data="{StaticResource RobuxIcon}" Fill="{StaticResource TextBrush}" Width="10" Height="10" Stretch="Uniform" VerticalAlignment="Center"/>
+                                                            <TextBlock Text="{Binding RobuxText}" Style="{StaticResource Crumb}" Foreground="{StaticResource TextBrush}" Margin="4,0,0,0" VerticalAlignment="Center"/>
+                                                        </StackPanel>
+                                                        <TextBlock x:Name="sub" Text="{Binding PickerSubtitle}" Style="{StaticResource Crumb}" TextTrimming="CharacterEllipsis"/>
+                                                    </DockPanel>
                                                 </StackPanel>
                                             </DockPanel>
                                         </Button>
                                         <DataTemplate.Triggers>
                                             <DataTrigger Binding="{Binding LoginExpired}" Value="True">
                                                 <Setter TargetName="sub" Property="Foreground" Value="{StaticResource WarnBrush}"/>
+                                            </DataTrigger>
+                                            <DataTrigger Binding="{Binding HasRobux}" Value="True">
+                                                <Setter TargetName="robux" Property="Visibility" Value="Visible"/>
                                             </DataTrigger>
                                         </DataTemplate.Triggers>
                                     </DataTemplate>

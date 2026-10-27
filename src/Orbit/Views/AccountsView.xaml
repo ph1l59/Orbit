@@ -375,6 +375,14 @@
                             <TextBlock Text="Resource saver" FontSize="13.5" FontWeight="SemiBold"/>
                             <TextBlock x:Name="SaverText" Style="{StaticResource RowDesc}"
                                        Text="Roblox windows in the background get less CPU. The one you're playing in stays fast."/>
+                            <Border x:Name="SaverCheck" Margin="0,10,0,0" Padding="10,7" CornerRadius="8" Visibility="Collapsed"
+                                    Background="{StaticResource RaisedBrush}" BorderBrush="{StaticResource LineBrush}" BorderThickness="1"
+                                    ToolTip="To see it yourself: Task Manager → Details → RobloxPlayerBeta.exe → column &quot;Priority&quot; (or right-click → Set priority).">
+                                <DockPanel>
+                                    <Ellipse x:Name="SaverCheckDot" Width="8" Height="8" Fill="{StaticResource FaintBrush}" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                                    <TextBlock x:Name="SaverCheckText" FontSize="12" TextWrapping="Wrap" Foreground="{StaticResource TextBrush}"/>
+                                </DockPanel>
+                            </Border>
                         </StackPanel>
                     </DockPanel>
                 </StackPanel>

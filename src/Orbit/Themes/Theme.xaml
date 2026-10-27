@@ -36,6 +36,10 @@
     <SolidColorBrush x:Key="WarnSoftBrush" Color="#221A10"/>
     <SolidColorBrush x:Key="DangerBrush" Color="#FF4D4D"/>
 
+    <!-- Robux symbol: hexagon ring with a square in the middle -->
+    <PathGeometry x:Key="RobuxIcon" FillRule="EvenOdd"
+                  Figures="M5,0 L9.33,2.5 9.33,7.5 5,10 0.67,7.5 0.67,2.5 Z M5,1.45 L8.07,3.22 8.07,6.78 5,8.55 1.93,6.78 1.93,3.22 Z M3.75,3.75 L6.25,3.75 6.25,6.25 3.75,6.25 Z"/>
+
     <FontFamily x:Key="UiFont">Segoe UI Variable Text, Segoe UI</FontFamily>
     <FontFamily x:Key="DisplayFont">Segoe UI Variable Display, Segoe UI</FontFamily>
     <FontFamily x:Key="MonoFont">Cascadia Mono, Consolas</FontFamily>
