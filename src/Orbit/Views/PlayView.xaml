@@ -1,6 +1,7 @@
 <UserControl x:Class="Orbit.Views.PlayView"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:local="clr-namespace:Orbit.Views">
     <UserControl.Resources>
         <!-- Account picker (top right) -->
         <Style x:Key="PickerButton" TargetType="Button">
@@ -262,11 +263,14 @@
         </Style>
     </UserControl.Resources>
 
-    <Grid>
+    <Grid x:Name="PageRoot" MouseMove="Page_MouseMove" MouseLeave="Page_MouseLeave" Background="Transparent">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
+
+        <!-- Animated stars behind everything (fills the whole content area, past the page margins) -->
+        <local:Starfield x:Name="Stars" Grid.RowSpan="2" Margin="-40,-38,-40,-26"/>
 
         <!-- Header: title left, account picker right -->
         <DockPanel>

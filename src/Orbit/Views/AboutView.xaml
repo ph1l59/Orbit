@@ -56,6 +56,16 @@
                 </DockPanel>
             </Border>
 
+            <Border Style="{StaticResource Row}" Tag="Animated background|stars play page effects">
+                <DockPanel>
+                    <CheckBox x:Name="StarsToggle" DockPanel.Dock="Right" Style="{StaticResource Toggle}" Click="Stars_Click"/>
+                    <StackPanel Style="{StaticResource RowText}">
+                        <TextBlock Style="{StaticResource RowTitle}" Text="Animated background"/>
+                        <TextBlock Style="{StaticResource RowDesc}" Text="Twinkling stars on the Play page that connect around your mouse, and a shooting star when you launch."/>
+                    </StackPanel>
+                </DockPanel>
+            </Border>
+
             <TextBlock Text="// DATA" Style="{StaticResource Section}"/>
             <Button Style="{StaticResource LinkRow}" Click="Data_Click" Tag="Orbit data folder|settings accounts file">
                 <DockPanel>

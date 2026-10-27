@@ -25,6 +25,7 @@ public partial class PlayView : UserControl, IPage
     {
         InitializeComponent();
         PickerList.ItemsSource = AppState.Accounts;
+        AboutView.StarsChanged += RefreshBackground;
         AppState.Accounts.CollectionChanged += (_, _) => Dispatcher.InvokeAsync(Refresh);
         Refresh();
     }
@@ -363,8 +364,19 @@ public partial class PlayView : UserControl, IPage
     /// <summary>"Launch Roblox" from the tray menu.</summary>
     public void LaunchFromOutside() => Launch_Click(this, new RoutedEventArgs());
 
-    private void Launch_Click(object sender, RoutedEventArgs e) =>
+    private void Launch_Click(object sender, RoutedEventArgs e)
+    {
+        if (_account != null && !_launching) Stars.ShootingStar();
         _ = RunLaunchAsync((account, exe) => RobloxLauncher.LaunchAppAsync(account, exe), "Starting Roblox…");
+    }
+
+    // ---------- Star background ----------
+
+    private void Page_MouseMove(object sender, System.Windows.Input.MouseEventArgs e) => Stars.SetMouse(e.GetPosition(Stars));
+    private void Page_MouseLeave(object sender, System.Windows.Input.MouseEventArgs e) => Stars.SetMouse(null);
+
+    /// <summary>The setting changed (About page).</summary>
+    public void RefreshBackground() => Stars.UpdateRunning();
 
     /// <summary>Shared launch flow: update Roblox, then start it the given way, with the launch window on top.</summary>
     private async Task RunLaunchAsync(Func<Account, string, Task> start, string startingText)

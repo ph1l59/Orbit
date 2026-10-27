@@ -16,7 +16,18 @@ public partial class AboutView : UserControl
         VersionText.Text = "VERSION " + Updater.DisplayVersion.ToUpperInvariant();
         UpdatesToggle.IsChecked = AppState.Settings.CheckForUpdates;
         TrayToggle.IsChecked = AppState.Settings.CloseToTray;
+        StarsToggle.IsChecked = AppState.Settings.AnimatedBackground;
     }
+
+    private void Stars_Click(object sender, RoutedEventArgs e)
+    {
+        AppState.Settings.AnimatedBackground = StarsToggle.IsChecked == true;
+        AppState.SaveSettings();
+        StarsChanged?.Invoke();
+    }
+
+    /// <summary>The animated background was switched on/off.</summary>
+    public static event Action? StarsChanged;
 
     private void Tray_Click(object sender, RoutedEventArgs e)
     {

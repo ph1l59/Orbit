@@ -22,6 +22,8 @@ public sealed class AppSettings
     public bool NotifyFriendsOnline { get; set; } = true;
     /// <summary>Closing the window keeps Orbit running in the tray.</summary>
     public bool CloseToTray { get; set; } = true;
+    /// <summary>Animated stars behind the Play page.</summary>
+    public bool AnimatedBackground { get; set; } = true;
     /// <summary>Show the account's alias/display name instead of "Roblox" on windows Orbit launched.</summary>
     public bool ShowAccountNameOnWindows { get; set; } = true;
     /// <summary>Give Roblox windows Orbit launched the icon from Assets\roblox-window.ico.</summary>
