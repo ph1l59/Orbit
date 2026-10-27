@@ -379,8 +379,11 @@
                                     Background="{StaticResource RaisedBrush}" BorderBrush="{StaticResource LineBrush}" BorderThickness="1"
                                     ToolTip="To see it yourself: Task Manager → Details → RobloxPlayerBeta.exe → column &quot;Priority&quot; (or right-click → Set priority).">
                                 <DockPanel>
-                                    <Ellipse x:Name="SaverCheckDot" Width="8" Height="8" Fill="{StaticResource FaintBrush}" VerticalAlignment="Center" Margin="0,0,8,0"/>
-                                    <TextBlock x:Name="SaverCheckText" FontSize="12" TextWrapping="Wrap" Foreground="{StaticResource TextBrush}"/>
+                                    <Ellipse x:Name="SaverCheckDot" Width="8" Height="8" Fill="{StaticResource FaintBrush}" VerticalAlignment="Top" Margin="1,5,10,0"/>
+                                    <StackPanel>
+                                        <TextBlock x:Name="SaverCheckTitle" FontSize="12.5" FontWeight="SemiBold" Foreground="{StaticResource TextBrush}"/>
+                                        <TextBlock x:Name="SaverCheckText" FontSize="12" TextWrapping="Wrap" Margin="0,2,0,0" Foreground="{StaticResource DimBrush}"/>
+                                    </StackPanel>
                                 </DockPanel>
                             </Border>
                         </StackPanel>

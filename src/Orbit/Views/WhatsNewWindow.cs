@@ -19,7 +19,7 @@ public sealed class WhatsNewWindow : Window
         new("", "Disconnect notification",
             "When a Roblox window loses its game (disconnected, kicked, server closed), Orbit tells you which account it was and why."),
         new("\uECA5", "Arrange windows",
-            "One click makes all open Roblox windows as small as possible and puts them together in the middle of the screen – another click puts them back. Accounts page → Roblox windows."),
+            "One click makes all open Roblox windows as small as possible and stacks them in the middle of the screen – another click puts them back. Accounts page → Roblox windows."),
         new("", "Resource saver",
             "Roblox windows in the background get less CPU, the one you're playing in stays fast. Orbit checks with Windows that it really worked and shows it. Accounts page → Roblox windows."),
         new("", "Launch presets",

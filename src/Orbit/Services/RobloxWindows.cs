@@ -48,9 +48,8 @@ public static class RobloxWindows
     public static bool CanRestore => Original.Keys.Any(IsWindow);
 
     /// <summary>
-    /// Makes every Roblox window as small as Roblox allows and puts them close together as a block
-    /// in the middle of the given screen (index into Screen.AllScreens). If they don't all fit,
-    /// they overlap a little like cards, so every title bar stays visible. Returns the number arranged.
+    /// Makes every Roblox window as small as Roblox allows and stacks them exactly on top of each other
+    /// in the middle of the given screen (index into Screen.AllScreens). Returns the number arranged.
     /// </summary>
     public static int Arrange(int screenIndex)
     {
@@ -78,56 +77,21 @@ public static class RobloxWindows
         w = Math.Min(w, area.Width);
         h = Math.Min(h, area.Height);
 
-        // 2. Grid: as few empty spots as possible, block about as wide as the screen's shape.
-        var n = windows.Count;
-        var (cols, rows) = CompactGrid(n, w, h, area.Width, area.Height);
+        // 2. All exactly on top of each other in the middle of the screen.
+        var x = area.Left + (area.Width - w) / 2;
+        var y = area.Top + (area.Height - h) / 2;
+        foreach (var win in windows)
+            MoveVisible(win.Handle, x, y, w, h);
 
-        // 3. If the block is bigger than the screen, the windows overlap (steps smaller than the window).
-        var stepX = cols > 1 ? Math.Min(w, (area.Width - w) / (double)(cols - 1)) : 0;
-        var stepY = rows > 1 ? Math.Min(h, (area.Height - h) / (double)(rows - 1)) : 0;
-        var blockH = h + (rows - 1) * stepY;
-        var top = area.Top + (area.Height - blockH) / 2;
-
-        for (var i = 0; i < n; i++)
-        {
-            var row = i / cols;
-            var col = i % cols;
-            // The last row may be shorter – center it too.
-            var inRow = row == rows - 1 ? n - row * cols : cols;
-            var rowW = w + (inRow - 1) * stepX;
-            var left = area.Left + (area.Width - rowW) / 2;
-
-            var x = (int)Math.Round(left + col * stepX);
-            var y = (int)Math.Round(top + row * stepY);
-            MoveVisible(windows[i].Handle, x, y, w, h);
-        }
-
-        // Bring them to the front in order, so later (lower) cards lie on top of earlier ones.
+        // Bring them to the front in order.
         foreach (var win in windows)
             SetWindowPos(win.Handle, HWND_TOP, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE);
 
-        return n;
+        return windows.Count;
     }
 
     /// <summary>Smallest size Orbit asks for (Roblox makes it bigger if it needs to).</summary>
     private const int SmallestWidth = 320, SmallestHeight = 180;
-
-    /// <summary>Columns × rows for the block: fits on the screen if possible, few empty spots, balanced shape.</summary>
-    private static (int Cols, int Rows) CompactGrid(int n, int w, int h, int width, int height)
-    {
-        var best = (Cols: n, Rows: 1);
-        var bestScore = double.MaxValue;
-        for (var cols = 1; cols <= n; cols++)
-        {
-            var rows = (int)Math.Ceiling(n / (double)cols);
-            if ((cols - 1) * rows >= n) continue; // a whole empty column
-            // How much of the screen the block needs (over 1 = doesn't fit, windows overlap).
-            var fill = Math.Max(cols * w / (double)width, rows * h / (double)height);
-            var score = fill + (fill > 1 ? 10 : 0) + (cols * rows - n) * 0.02;
-            if (score < bestScore) { bestScore = score; best = (cols, rows); }
-        }
-        return best;
-    }
 
     private static (int Width, int Height) VisibleSize(IntPtr hwnd)
     {

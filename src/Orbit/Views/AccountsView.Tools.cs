@@ -210,17 +210,20 @@ public partial class AccountsView
         if (failed > 0)
         {
             SaverCheckDot.Fill = (System.Windows.Media.Brush)FindResource("WarnBrush");
+            SaverCheckTitle.Text = "Not working";
             SaverCheckText.Text = $"Windows didn't allow it for {failed} window{(failed == 1 ? "" : "s")}.";
         }
         else if (throttled > 0)
         {
             SaverCheckDot.Fill = (System.Windows.Media.Brush)FindResource("OkBrush");
-            SaverCheckText.Text = $"Working · {throttled} window{(throttled == 1 ? "" : "s")} on \"Below normal\" priority (checked with Windows)";
+            SaverCheckTitle.Text = "Working";
+            SaverCheckText.Text = $"{throttled} background window{(throttled == 1 ? "" : "s")} on \"Below normal\" priority";
         }
         else
         {
             SaverCheckDot.Fill = (System.Windows.Media.Brush)FindResource("FaintBrush");
-            SaverCheckText.Text = count > 1 ? "Checking…" : "Waiting – needs at least 2 Roblox windows";
+            SaverCheckTitle.Text = count > 1 ? "Checking…" : "Waiting";
+            SaverCheckText.Text = count > 1 ? "Setting the priority of the background windows" : "Needs at least 2 Roblox windows";
         }
         SaverText.Text = about;
     }
