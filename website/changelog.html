@@ -1,0 +1,162 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Changelog – Orbit</title>
+  <meta name="description" content="Every Orbit release: new features, changes and fixes.">
+  <meta name="theme-color" content="#0a090d">
+  <link rel="icon" href="assets/logo.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <symbol id="i-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></symbol>
+    <symbol id="i-download" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12M7 10l5 5 5-5M5 21h14"/></symbol>
+    <symbol id="i-users" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="4"/><path d="M2 21c0-4 3-6 7-6s7 2 7 6M16 4.2a4 4 0 0 1 0 7.6M22 21c0-3-1.6-5-4-5.6"/></symbol>
+    <symbol id="i-grid" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><rect x="3" y="3" width="8" height="8" rx="2"/><rect x="13" y="3" width="8" height="8" rx="2"/><rect x="3" y="13" width="8" height="8" rx="2"/><rect x="13" y="13" width="8" height="8" rx="2"/></symbol>
+    <symbol id="i-bolt" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M13 2 4 14h7l-1 8 9-12h-7z"/></symbol>
+    <symbol id="i-shield" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/><path d="M9 12l2 2 4-4"/></symbol>
+    <symbol id="i-lock" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></symbol>
+    <symbol id="i-bookmark" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M6 3h12v18l-6-4-6 4z"/></symbol>
+    <symbol id="i-cpu" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="6" y="6" width="12" height="12" rx="2"/><rect x="9.5" y="9.5" width="5" height="5" rx="1"/><path d="M9 2v4M15 2v4M9 18v4M15 18v4M2 9h4M2 15h4M18 9h4M18 15h4"/></symbol>
+    <symbol id="i-stack" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><rect x="8" y="8" width="13" height="10" rx="2"/><path d="M5 15H4a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1h11a1 1 0 0 1 1 1v1"/></symbol>
+    <symbol id="i-bell" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9a6 6 0 0 1 12 0c0 6 3 8 3 8H3s3-2 3-8M10 21a2 2 0 0 0 4 0"/></symbol>
+    <symbol id="i-alert" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 2 20h20zM12 10v4M12 17h.01"/></symbol>
+    <symbol id="i-play" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M7 4l13 8-13 8z"/></symbol>
+    <symbol id="i-chat" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M4 5h16v11H9l-5 4z"/><path d="M9 10h.01M12 10h.01M15 10h.01" stroke-linecap="round" stroke-width="2.4"/></symbol>
+    <symbol id="i-clock" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l3 2M10 2h4"/></symbol>
+    <symbol id="i-mouse" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="6" y="3" width="12" height="18" rx="6"/><path d="M12 7v4"/></symbol>
+    <symbol id="i-refresh" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 12a8 8 0 1 1-2.4-5.7M20 4v5h-5"/></symbol>
+    <symbol id="i-sliders" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 6h9M17 6h3M4 12h3M11 12h9M4 18h11M19 18h1"/><circle cx="15" cy="6" r="2"/><circle cx="9" cy="12" r="2"/><circle cx="17" cy="18" r="2"/></symbol>
+    <symbol id="i-brush" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M14 4l6 6-8 8H6v-6zM12 6l6 6M3 21l3-3"/></symbol>
+    <symbol id="i-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5 9-10"/></symbol>
+    <symbol id="i-plus" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></symbol>
+    <symbol id="i-down" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></symbol>
+    <symbol id="i-menu" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></symbol>
+    <symbol id="i-code" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 6l-6 6 6 6M16 6l6 6-6 6"/></symbol>
+    <symbol id="i-robux" viewBox="0 0 10 10"><path fill="currentColor" fill-rule="evenodd" d="M5,0 L9.33,2.5 9.33,7.5 5,10 0.67,7.5 0.67,2.5 Z M5,1.45 L8.07,3.22 8.07,6.78 5,8.55 1.93,6.78 1.93,3.22 Z M3.75,3.75 L6.25,3.75 6.25,6.25 3.75,6.25 Z"/></symbol>
+    <symbol id="i-avatar" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><rect x="8" y="2" width="8" height="7" rx="1.5"/><rect x="7" y="10" width="10" height="7" rx="1"/><path d="M9 17v5M15 17v5M7 11l-3 5M17 11l3 5"/></symbol>
+  </defs>
+</svg>
+
+<header class="nav">
+  <div class="nav-inner">
+    <a class="brand" href="index.html"><img src="assets/logo.png" alt="">Orbit <span class="ver" data-version>v3</span></a>
+    <nav class="nav-links">
+      <a href="index.html#features">Features</a>
+      <a href="index.html#faq">FAQ</a>
+      <a href="changelog.html">Changelog</a>
+      <a href="https://github.com/ph1l59/Orbit" target="_blank" rel="noopener">GitHub</a>
+    </nav>
+    <a class="btn btn-primary" href="https://github.com/ph1l59/Orbit/releases/latest/download/Orbit-Launcher.exe">
+      <svg><use href="#i-download"/></svg>Download
+    </a>
+    <button class="menu-toggle" aria-label="Menu"><svg><use href="#i-menu"/></svg></button>
+  </div>
+</header>
+
+<main>
+  <div class="wrap page-head">
+    <span class="pill reveal"><span class="dot"></span>Changelog</span>
+    <h1 class="reveal">What's new in <span class="accent">Orbit</span></h1>
+    <p class="reveal">New features, improvements and fixes – release by release.</p>
+  </div>
+  <div class="wrap timeline" id="timeline">
+    <div class="loading">Loading releases…</div>
+  </div>
+</main>
+
+<footer>
+  <div class="wrap">
+    <div class="foot-grid">
+      <div>
+        <a class="brand" href="index.html"><img src="assets/logo.png" alt="">Orbit</a>
+        <p>The free, open-source Roblox launcher for Windows.</p>
+      </div>
+      <div>
+        <h5>Product</h5>
+        <ul>
+          <li><a href="https://github.com/ph1l59/Orbit/releases/latest/download/Orbit-Launcher.exe">Download</a></li>
+          <li><a href="index.html#features">Features</a></li>
+          <li><a href="changelog.html">Changelog</a></li>
+          <li><a href="index.html#faq">FAQ</a></li>
+        </ul>
+      </div>
+      <div>
+        <h5>Community</h5>
+        <ul>
+          <li><a href="https://github.com/ph1l59/Orbit" target="_blank" rel="noopener">GitHub</a></li>
+          <li><a href="https://github.com/ph1l59/Orbit/issues" target="_blank" rel="noopener">Report a bug</a></li>
+          <li><span>Discord<span class="soon">SOON</span></span></li>
+        </ul>
+      </div>
+      <div>
+        <h5>Legal</h5>
+        <ul>
+          <li><a href="https://github.com/ph1l59/Orbit/blob/main/LICENSE" target="_blank" rel="noopener">License (GPL-3.0)</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="foot-bottom">
+      <span>© 2026 Orbit by ph1l59</span>
+      <span>Not affiliated with Roblox Corporation.</span>
+    </div>
+  </div>
+</footer>
+
+<script src="script.js"></script>
+<script>
+  // Renders the release notes from GitHub as a timeline.
+  (() => {
+    const box = document.getElementById("timeline");
+    const esc = s => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+    const inline = s => esc(s)
+      .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
+      .replace(/`([^`]+)`/g, "<code>$1</code>")
+      .replace(/(^|[^*])\*([^*]+)\*/g, "$1<em>$2</em>");
+
+    // Tiny Markdown: headings, bullet lists and paragraphs.
+    function markdown(text) {
+      let html = "", list = false;
+      for (const raw of text.replace(/\r/g, "").split("\n")) {
+        const line = raw.trim();
+        const bullet = line.match(/^[-*] (.*)$/);
+        if (bullet) { if (!list) { html += "<ul>"; list = true; } html += "<li>" + inline(bullet[1]) + "</li>"; continue; }
+        if (list) { html += "</ul>"; list = false; }
+        if (!line) continue;
+        const h = line.match(/^(#{1,4}) (.*)$/);
+        if (h) html += (h[1].length <= 2 ? "<h3>" : "<h4>") + inline(h[2]) + (h[1].length <= 2 ? "</h3>" : "</h4>");
+        else html += "<p>" + inline(line) + "</p>";
+      }
+      if (list) html += "</ul>";
+      return html;
+    }
+
+    const date = iso => new Date(iso).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+
+    window.addEventListener("orbit-releases", e => {
+      const releases = e.detail;
+      if (!releases) {
+        box.innerHTML = '<div class="loading">The releases couldn\'t be loaded right now. <a class="accent" href="https://github.com/ph1l59/Orbit/releases">See them on GitHub →</a></div>';
+        return;
+      }
+      box.innerHTML = releases.map((r, i) => `
+        <article class="release reveal visible">
+          <div class="date">${date(r.published_at || r.created_at)}</div>
+          <div class="rail"></div>
+          <div class="content">
+            <div class="mobile-date">${date(r.published_at || r.created_at)}</div>
+            <h2>${esc(r.tag_name)}${i === 0 ? '<span class="latest">LATEST</span>' : ""}</h2>
+            ${r.body && r.body.trim() ? markdown(r.body) : '<p class="empty">No notes for this release.</p>'}
+          </div>
+        </article>`).join("");
+    });
+  })();
+</script>
+</body>
+</html>
