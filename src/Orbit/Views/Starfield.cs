@@ -313,7 +313,7 @@ public sealed class Starfield : FrameworkElement
         if (_mouseStrength < 0.01) return;
         var light = new RadialGradientBrush(
             Color.FromArgb((byte)(48 * _mouseStrength), 0xC0, 0x84, 0xFC), Color.FromArgb(0, 0xA8, 0x55, 0xF7));
-        dc.DrawEllipse(light, null, _lastMouse, 110, 110);
+        dc.DrawEllipse(light, null, _lastMouse, 45, 45);
     }
 
     private void DrawShootingStar(DrawingContext dc)
