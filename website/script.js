@@ -16,6 +16,25 @@
     links.querySelectorAll("a").forEach(a => a.addEventListener("click", () => links.classList.remove("open")));
   }
 
+  // ---------- Clean addresses: links to sections scroll there without "#…" in the address bar ----------
+  const onHome = location.pathname === "/" || /\/index\.html$/.test(location.pathname);
+  const scrollToId = (id, smooth) => {
+    const target = id ? document.getElementById(id) : null;
+    window.scrollTo({ top: target ? target.getBoundingClientRect().top + window.scrollY - 90 : 0, behavior: smooth && !reduced ? "smooth" : "auto" });
+  };
+  document.querySelectorAll('a[href="/"], a[href^="/#"]').forEach(a => a.addEventListener("click", e => {
+    if (!onHome) return; // other page: go to the home page normally
+    e.preventDefault();
+    scrollToId(a.getAttribute("href").slice(2), true);
+    history.replaceState(null, "", "/");
+  }));
+  // Came from another page with /#faq: scroll there, then remove "#faq" and "index.html" from the address.
+  if (onHome && (location.hash || location.pathname !== "/")) {
+    const id = location.hash.slice(1);
+    history.replaceState(null, "", "/");
+    if (id) window.addEventListener("load", () => setTimeout(() => scrollToId(id, false), 50));
+  }
+
   // ---------- Fade sections in while scrolling ----------
   const io = new IntersectionObserver(entries => {
     for (const e of entries) if (e.isIntersecting) { e.target.classList.add("visible"); io.unobserve(e.target); }

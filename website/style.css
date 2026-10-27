@@ -316,7 +316,7 @@ section.block { padding: 120px 0 0; }
 }
 .cta-bg {
   position: absolute; inset: -20px; z-index: -1;
-  background: url("assets/play.webp") center 30% / cover no-repeat;
+  background: url("/assets/play.webp") center 30% / cover no-repeat;
   filter: blur(6px) saturate(1.2);
   opacity: .35;
 }
