@@ -27,9 +27,11 @@ public sealed class Starfield : FrameworkElement
         public double Start;
     }
 
-    private const int StarCount = 110;
-    private const double LinkRadius = 170;   // stars this close to the mouse join up
-    private const double LinkDistance = 95;  // ...with other stars at most this far away
+    private const int StarCount = 240;
+    private const double LinkRadius = 240;   // stars this close to the mouse join up
+    private const double LinkDistance = 125; // ...with other stars at most this far away
+    private const double PushRadius = 130;   // stars this close move aside a little
+    private const double MouseLinkRadius = 140; // stars this close get a line to the mouse itself
 
     private readonly List<Star> _stars = new();
     private readonly Random _random = new(7);
@@ -62,10 +64,10 @@ public sealed class Starfield : FrameworkElement
                 X = _random.NextDouble(),
                 Y = _random.NextDouble(),
                 Depth = depth,
-                Size = 0.6 + depth * 1.5 + (_random.NextDouble() < 0.06 ? 1.0 : 0),
+                Size = 0.8 + depth * 1.9 + (_random.NextDouble() < 0.09 ? 1.5 : 0),
                 Phase = _random.NextDouble() * Math.PI * 2,
                 Speed = 0.6 + _random.NextDouble() * 1.6,
-                Drift = (0.002 + _random.NextDouble() * 0.004) * depth * (_random.NextDouble() < 0.5 ? -1 : 1),
+                Drift = (0.004 + _random.NextDouble() * 0.008) * depth * (_random.NextDouble() < 0.5 ? -1 : 1),
                 Color = _random.NextDouble() switch { < 0.62 => 0, < 0.88 => 1, _ => 2 },
             });
         }
@@ -135,7 +137,7 @@ public sealed class Starfield : FrameworkElement
         var target = _mouse != null ? 1.0 : 0.0;
         _mouseStrength += (target - _mouseStrength) * (1 - Math.Exp(-6 * dt));
         var wantParallax = _mouse is { } m && ActualWidth > 0
-            ? new Vector((m.X / ActualWidth - 0.5) * -18, (m.Y / ActualHeight - 0.5) * -12)
+            ? new Vector((m.X / ActualWidth - 0.5) * -34, (m.Y / ActualHeight - 0.5) * -24)
             : new Vector();
         _parallax += (wantParallax - _parallax) * (1 - Math.Exp(-3 * dt));
 
@@ -155,7 +157,29 @@ public sealed class Starfield : FrameworkElement
         for (var i = 0; i < _stars.Count; i++)
         {
             var s = _stars[i];
-            points[i] = new Point(s.X * w + _parallax.X * s.Depth, s.Y * h + _parallax.Y * s.Depth);
+            var p = new Point(s.X * w + _parallax.X * s.Depth, s.Y * h + _parallax.Y * s.Depth);
+            if (_mouseStrength > 0.01)
+            {
+                var away = p - _lastMouse;
+                var d = away.Length;
+                if (d > 0.1 && d < PushRadius)
+                {
+                    away /= d;
+                    p += away * (1 - d / PushRadius) * 16 * s.Depth * _mouseStrength;
+                }
+            }
+            points[i] = p;
+        }
+
+        // Soft purple light that follows the mouse.
+        if (_mouseStrength > 0.01)
+        {
+            var light = new RadialGradientBrush(Color.FromArgb((byte)(46 * _mouseStrength), 0xA8, 0x55, 0xF7), Color.FromArgb(0, 0xA8, 0x55, 0xF7))
+            {
+                Center = _lastMouse, GradientOrigin = _lastMouse, RadiusX = LinkRadius, RadiusY = LinkRadius,
+                MappingMode = BrushMappingMode.Absolute,
+            };
+            dc.DrawEllipse(light, null, _lastMouse, LinkRadius, LinkRadius);
         }
 
         // Constellation lines around the mouse.
@@ -178,8 +202,20 @@ public sealed class Starfield : FrameworkElement
                     var fadeB = 1 - (pb - center).Length / LinkRadius;
                     var alpha = Math.Min(fadeA, fadeB) * (1 - d / LinkDistance) * _mouseStrength;
                     if (alpha < 0.02) continue;
-                    dc.DrawLine(Pen(alpha * 0.75, 0.8), pa, pb);
+                    dc.DrawLine(Pen(alpha, 1.0), pa, pb);
                 }
+            }
+        }
+
+        // A few lines from the mouse itself to the stars right next to it.
+        if (_mouseStrength > 0.01)
+        {
+            for (var i = 0; i < points.Length; i++)
+            {
+                var d = (points[i] - _lastMouse).Length;
+                if (d > MouseLinkRadius) continue;
+                var alpha = (1 - d / MouseLinkRadius) * 0.55 * _mouseStrength * _stars[i].Depth;
+                if (alpha > 0.03) dc.DrawLine(Pen(alpha, 0.7), _lastMouse, points[i]);
             }
         }
 
@@ -194,9 +230,9 @@ public sealed class Starfield : FrameworkElement
                 var d = (points[i] - center).Length;
                 if (d < LinkRadius) glow = (1 - d / LinkRadius) * _mouseStrength;
             }
-            var brightness = Math.Clamp((0.25 + 0.55 * s.Depth) * twinkle + glow * 0.5, 0, 1);
+            var brightness = Math.Clamp((0.4 + 0.6 * s.Depth) * twinkle + glow * 0.6, 0, 1);
             var brush = Brushes[s.Color, (int)Math.Round(brightness * 15)];
-            var r = s.Size * (1 + glow * 0.5) / 2;
+            var r = s.Size * (1 + glow * 0.8) / 2;
             dc.DrawEllipse(brush, null, points[i], r, r);
         }
 
