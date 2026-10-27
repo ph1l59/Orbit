@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Changelog – Orbit</title>
+  <title>Changelog · Orbit - Free Roblox Launcher</title>
   <meta name="description" content="Every Orbit release: new features, changes and fixes.">
   <meta name="theme-color" content="#0a090d">
   <link rel="icon" href="assets/logo.png">
@@ -67,7 +67,8 @@
     <p class="reveal">New features, improvements and fixes – release by release.</p>
   </div>
   <div class="wrap timeline" id="timeline">
-    <div class="loading">Loading releases…</div>
+    <div class="track" aria-hidden="true"><div class="beam"></div></div>
+    <div id="releases"><div class="loading">Loading releases…</div></div>
   </div>
 </main>
 
@@ -113,7 +114,9 @@
 <script>
   // Renders the release notes from GitHub as a timeline.
   (() => {
-    const box = document.getElementById("timeline");
+    const box = document.getElementById("releases");
+    const timeline = document.getElementById("timeline");
+    const beam = timeline.querySelector(".beam");
     const esc = s => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
     const inline = s => esc(s)
       .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
@@ -148,14 +151,37 @@
       box.innerHTML = releases.map((r, i) => `
         <article class="release reveal visible">
           <div class="date">${date(r.published_at || r.created_at)}</div>
-          <div class="rail"></div>
+          <div class="rail"><span class="node"></span></div>
           <div class="content">
             <div class="mobile-date">${date(r.published_at || r.created_at)}</div>
             <h2>${esc(r.tag_name)}${i === 0 ? '<span class="latest">LATEST</span>' : ""}</h2>
             ${r.body && r.body.trim() ? markdown(r.body) : '<p class="empty">No notes for this release.</p>'}
           </div>
         </article>`).join("");
+      requestAnimationFrame(updateBeam);
     });
+
+    // A beam of light runs down the timeline while scrolling; every release it passes lights up.
+    function updateBeam() {
+      const nodes = box.querySelectorAll(".node");
+      if (!nodes.length) return;
+      const top = timeline.getBoundingClientRect().top;
+      const first = nodes[0].getBoundingClientRect();
+      const last = nodes[nodes.length - 1].getBoundingClientRect();
+      const start = first.top + first.height / 2 - top;
+      const end = last.top + last.height / 2 - top;
+      // The head of the beam follows a point at 60 % of the screen height.
+      const head = Math.min(end, Math.max(start, window.innerHeight * 0.6 - top));
+      timeline.style.setProperty("--track-top", start + "px");
+      timeline.style.setProperty("--track-height", (end - start) + "px");
+      beam.style.height = (head - start) + "px";
+      nodes.forEach(n => {
+        const r = n.getBoundingClientRect();
+        n.closest(".release").classList.toggle("lit", r.top + r.height / 2 - top <= head + 1);
+      });
+    }
+    window.addEventListener("scroll", updateBeam, { passive: true });
+    window.addEventListener("resize", updateBeam);
   })();
 </script>
 </body>
