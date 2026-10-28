@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Orbit - Free Roblox Launcher</title>
-  <meta name="description" content="Orbit is a free, open-source Roblox launcher for Windows: Roblox multi instance (run multiple accounts at once), account manager, FPS unlocker and FastFlags, live friend notifications.">
+  <meta name="description" content="Orbit is a free, open-source Roblox launcher for Windows: Roblox multi instance (run multiple accounts at once), account manager, FPS unlocker and FastFlags, RAM cleaner, DNS optimizer and live friend notifications.">
   <meta name="theme-color" content="#0a090d">
   <meta property="og:title" content="Orbit - Free Roblox Launcher">
   <meta property="og:description" content="All your Roblox accounts. One launcher. Free and open source for Windows.">
@@ -50,6 +50,8 @@
     <symbol id="i-code" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 6l-6 6 6 6M16 6l6 6-6 6"/></symbol>
     <symbol id="i-robux" viewBox="0 0 10 10"><path fill="currentColor" fill-rule="evenodd" d="M5,0 L9.33,2.5 9.33,7.5 5,10 0.67,7.5 0.67,2.5 Z M5,1.45 L8.07,3.22 8.07,6.78 5,8.55 1.93,6.78 1.93,3.22 Z M3.75,3.75 L6.25,3.75 6.25,6.25 3.75,6.25 Z"/></symbol>
     <symbol id="i-avatar" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><rect x="8" y="2" width="8" height="7" rx="1.5"/><rect x="7" y="10" width="10" height="7" rx="1"/><path d="M9 17v5M15 17v5M7 11l-3 5M17 11l3 5"/></symbol>
+    <symbol id="i-memory" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="7" width="18" height="10" rx="2"/><path d="M7 7v10M11 7v10M15 7v10M5 17v3M19 17v3M9 17v3M13 17v3"/></symbol>
+    <symbol id="i-globe" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.5 2.6 3.8 5.6 3.8 9s-1.3 6.4-3.8 9c-2.5-2.6-3.8-5.6-3.8-9S9.5 5.6 12 3z"/></symbol>
   </defs>
 </svg>
 
@@ -77,7 +79,7 @@
     <div class="hero-content">
       <span class="pill reveal"><span class="dot"></span><span data-version>Latest version</span> · free &amp; open source</span>
       <h1 class="reveal">All your Roblox accounts.<br><span class="accent">One</span> launcher.</h1>
-      <p class="lead reveal">Run every account at once, see your friends live, and tune FPS and graphics – Orbit puts it all in one clean app.</p>
+      <p class="lead reveal">Run every account at once, see your friends live, tune FPS and graphics and keep your PC fast – Orbit puts it all in one clean app.</p>
       <p class="note reveal">For Windows 10 &amp; 11 · No sign-up · Your logins stay on your PC</p>
       <div class="actions reveal">
         <a class="btn btn-primary" href="https://github.com/ph1l59/Orbit/releases/latest/download/Orbit-Launcher.exe">
@@ -208,6 +210,26 @@
         </div>
       </div>
 
+      <!-- PC Tweaks -->
+      <div class="category">
+        <span class="tag reveal" style="--c:#4ade80"><svg><use href="#i-cpu"/></svg>PC Tweaks</span>
+        <h3 class="reveal">Keep your PC fast while you play.</h3>
+        <div class="cards">
+          <article class="card reveal" style="--c:#a78bfa">
+            <div class="media"><div class="art"><span class="ring"></span><svg><use href="#i-memory"/></svg></div></div>
+            <div class="body"><h4>RAM cleaner</h4><p>See your memory at a glance and free it with one click. The game you're playing is never touched, and an allow list keeps your apps safe.</p></div>
+          </article>
+          <article class="card reveal" style="--c:#4ade80">
+            <div class="media"><div class="art"><span class="ring"></span><svg><use href="#i-clock"/></svg></div></div>
+            <div class="body"><h4>Automatic cleaning</h4><p>Cleans by itself when your RAM is nearly full, or every 30 or 60 minutes – including Roblox windows in the background.</p></div>
+          </article>
+          <article class="card reveal" style="--c:#60a5fa">
+            <div class="media"><div class="art"><span class="ring"></span><svg><use href="#i-globe"/></svg></div></div>
+            <div class="body"><h4>DNS optimizer</h4><p>Tests popular DNS servers from your PC and switches to the fastest one with a single click – and back to automatic any time.</p></div>
+          </article>
+        </div>
+      </div>
+
       <!-- Extras -->
       <div class="category">
         <span class="tag reveal" style="--c:#60a5fa"><svg><use href="#i-sliders"/></svg>And more</span>
@@ -263,6 +285,10 @@
         <details class="reveal">
           <summary>How do I run several accounts at once?<svg class="plus"><use href="#i-plus"/></svg></summary>
           <div class="answer"><p>Turn on Multi-Roblox in Orbit, select your accounts on the Accounts page, paste a game link and press Launch. Orbit starts them one after another and keeps every window open.</p></div>
+        </details>
+        <details class="reveal">
+          <summary>Does the RAM cleaner really make Roblox faster?<svg class="plus"><use href="#i-plus"/></svg></summary>
+          <div class="answer"><p>It helps when your RAM is nearly full – for example with many Roblox windows open. It frees memory from apps you're not using, so the game you play has more room. When your RAM is far from full, Windows already handles it well, which is why Orbit only says "Needs cleaning" from 85 % on.</p></div>
         </details>
         <details class="reveal">
           <summary>How do I update Orbit?<svg class="plus"><use href="#i-plus"/></svg></summary>

@@ -28,6 +28,7 @@ public partial class MainWindow : Window
         new("global", "Global Settings", "", true, () => new GlobalSettingsView()),
         new("fastflags", "FastFlags", "", true, () => new FastFlagsView()),
         new("mods", "Mods", "", true, () => new ModsView()),
+        new("tweaks", "Tweaks", "\uEC4A", true, () => new TweaksView()),
         new("bootstrapper", "Bootstrapper", "", true, () => new BootstrapperView()),
         new("integrations", "Integrations", "", true, () => new IntegrationsView()),
         new("clicker", "Auto Clicker", "", true, () => new AutoClickerView()),
@@ -80,6 +81,7 @@ public partial class MainWindow : Window
             Integrations.SetLauncherOpen(IsVisible);
             WindowTitles.Start();
             Playtime.Start(Dispatcher);
+            RamCleaner.Start(Dispatcher);
             RobloxWindows.RefreshSaver(Dispatcher);
 
             // "What's new" once after an update – a moment after the window is up.

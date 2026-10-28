@@ -1,0 +1,308 @@
+<UserControl x:Class="Orbit.Views.TweaksView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <UserControl.Resources>
+        <!-- Small status pill: Healthy / High / Needs cleaning -->
+        <Style x:Key="Pill" TargetType="Border">
+            <Setter Property="CornerRadius" Value="7"/>
+            <Setter Property="Padding" Value="9,3"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+        </Style>
+
+        <!-- One DNS server row -->
+        <DataTemplate x:Key="DnsRow">
+            <Border x:Name="row" Background="Transparent" BorderBrush="{StaticResource LineBrush}" BorderThickness="0,0,0,1" Padding="4,12">
+                <DockPanel>
+                    <Grid DockPanel.Dock="Right">
+                        <Button x:Name="choose" Content="Choose" MinWidth="96" Height="34" Click="DnsChoose_Click" Tag="{Binding}"/>
+                        <Button x:Name="chooseFast" Style="{StaticResource SolidButton}" MinWidth="96" Height="34" Click="DnsChoose_Click" Tag="{Binding}"
+                                Visibility="Collapsed">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="&#xE945;" Style="{StaticResource Icon}" FontSize="11"/>
+                                <TextBlock Text="Choose fastest" Margin="7,0,0,0"/>
+                            </StackPanel>
+                        </Button>
+                    </Grid>
+                    <Border Width="36" Height="36" CornerRadius="9" BorderBrush="{StaticResource LineStrongBrush}" BorderThickness="1" Margin="0,0,14,0">
+                        <TextBlock Text="{Binding Rank}" HorizontalAlignment="Center" VerticalAlignment="Center" FontWeight="SemiBold"/>
+                    </Border>
+                    <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,20,0">
+                        <TextBlock Text="AVG. RESPONSE" Style="{StaticResource Crumb}" VerticalAlignment="Center" Margin="0,0,10,0"/>
+                        <Ellipse Width="7" Height="7" Fill="{Binding DotBrush}" VerticalAlignment="Center" Margin="0,0,7,0"/>
+                        <TextBlock Text="{Binding Time}" FontWeight="SemiBold" MinWidth="56" VerticalAlignment="Center"/>
+                    </StackPanel>
+                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                        <TextBlock Text="{Binding Name}" FontWeight="SemiBold" FontSize="14"/>
+                        <TextBlock Text="{Binding Servers}" Style="{StaticResource Crumb}" Margin="12,0,0,0" VerticalAlignment="Center"/>
+                        <Border x:Name="fastest" Visibility="Collapsed" Margin="10,0,0,0" CornerRadius="6" Padding="7,2"
+                                Background="#1A4ADE80" BorderBrush="#554ADE80" BorderThickness="1" VerticalAlignment="Center">
+                            <TextBlock Text="⚡ FASTEST" Style="{StaticResource Crumb}" FontSize="10" Foreground="{StaticResource OkBrush}"/>
+                        </Border>
+                        <Border x:Name="current" Visibility="Collapsed" Margin="10,0,0,0" CornerRadius="6" Padding="7,2"
+                                Background="{StaticResource SignalTintBrush}" BorderBrush="{StaticResource SignalBorderBrush}" BorderThickness="1" VerticalAlignment="Center">
+                            <TextBlock Text="IN USE" Style="{StaticResource Crumb}" FontSize="10" Foreground="{StaticResource SignalLightBrush}"/>
+                        </Border>
+                    </StackPanel>
+                </DockPanel>
+            </Border>
+            <DataTemplate.Triggers>
+                <DataTrigger Binding="{Binding IsFastest}" Value="True">
+                    <Setter TargetName="fastest" Property="Visibility" Value="Visible"/>
+                    <Setter TargetName="choose" Property="Visibility" Value="Collapsed"/>
+                    <Setter TargetName="chooseFast" Property="Visibility" Value="Visible"/>
+                </DataTrigger>
+                <DataTrigger Binding="{Binding IsCurrent}" Value="True">
+                    <Setter TargetName="current" Property="Visibility" Value="Visible"/>
+                    <Setter TargetName="choose" Property="Visibility" Value="Visible"/>
+                    <Setter TargetName="chooseFast" Property="Visibility" Value="Collapsed"/>
+                    <Setter TargetName="choose" Property="IsEnabled" Value="False"/>
+                    <Setter TargetName="choose" Property="Content" Value="In use"/>
+                </DataTrigger>
+            </DataTemplate.Triggers>
+        </DataTemplate>
+    </UserControl.Resources>
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <DockPanel Margin="0,0,0,8">
+            <Border DockPanel.Dock="Right" VerticalAlignment="Bottom" Background="{StaticResource InputBrush}" BorderBrush="{StaticResource LineBrush}"
+                    BorderThickness="1" CornerRadius="8" Padding="3" Width="300">
+                <UniformGrid Columns="2">
+                    <RadioButton x:Name="RamTab" Style="{StaticResource Segment}" Content="RAM Cleaner" IsChecked="True" Checked="Tab_Changed"/>
+                    <RadioButton x:Name="DnsTab" Style="{StaticResource Segment}" Content="DNS Optimizer" Checked="Tab_Changed"/>
+                </UniformGrid>
+            </Border>
+            <StackPanel>
+                <TextBlock Text="ORBIT / TWEAKS" Style="{StaticResource Crumb}"/>
+                <TextBlock Style="{StaticResource PageTitle}">
+                    <Run Text="PC"/> <Run Text="tweaks" Foreground="{StaticResource AccentTextBrush}"/>
+                </TextBlock>
+                <TextBlock Style="{StaticResource PageDesc}" Text="Free up memory and pick the fastest DNS server for your connection."/>
+            </StackPanel>
+        </DockPanel>
+
+        <!-- ===================== RAM cleaner ===================== -->
+        <ScrollViewer x:Name="RamPage" Grid.Row="1" VerticalScrollBarVisibility="Auto" Padding="0,0,10,0">
+            <StackPanel Margin="0,14,0,0">
+                <Border Style="{StaticResource Panel}" Padding="22" Tag="RAM cleaner|memory free ram clean boost performance">
+                    <StackPanel>
+                        <DockPanel>
+                            <Button DockPanel.Dock="Right" x:Name="CleanButton" Style="{StaticResource SolidButton}" Height="42" MinWidth="130"
+                                    Click="Clean_Click" VerticalAlignment="Center">
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="&#xE945;" Style="{StaticResource Icon}" FontSize="13"/>
+                                    <TextBlock x:Name="CleanText" Text="Clean" Margin="9,0,0,0" FontSize="14"/>
+                                </StackPanel>
+                            </Button>
+                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                <TextBlock Text="RAM cleaner" FontFamily="{StaticResource DisplayFont}" FontSize="19" FontWeight="Bold" VerticalAlignment="Center"/>
+                                <Border x:Name="StatusPill" Style="{StaticResource Pill}" Margin="12,0,0,0">
+                                    <StackPanel Orientation="Horizontal">
+                                        <Ellipse x:Name="StatusDot" Width="7" Height="7" VerticalAlignment="Center" Margin="0,0,7,0"/>
+                                        <TextBlock x:Name="StatusText" FontSize="12" FontWeight="SemiBold"/>
+                                    </StackPanel>
+                                </Border>
+                                <TextBlock x:Name="LastCleanText" Style="{StaticResource Crumb}" Margin="14,0,0,0" VerticalAlignment="Center"/>
+                            </StackPanel>
+                        </DockPanel>
+
+                        <!-- Usage bar -->
+                        <Grid Margin="0,20,0,0" Height="22">
+                            <Border CornerRadius="6" Background="{StaticResource InputBrush}" BorderBrush="{StaticResource LineBrush}" BorderThickness="1"/>
+                            <Border x:Name="UsedBar" CornerRadius="6" HorizontalAlignment="Left" Width="0" Margin="1">
+                                <Border.Background>
+                                    <LinearGradientBrush StartPoint="0,0" EndPoint="1,0">
+                                        <GradientStop Color="#5B21B6" Offset="0"/>
+                                        <GradientStop Color="#A855F7" Offset="1"/>
+                                    </LinearGradientBrush>
+                                </Border.Background>
+                            </Border>
+                        </Grid>
+                        <DockPanel Margin="0,12,0,0">
+                            <TextBlock x:Name="TotalText" DockPanel.Dock="Right" Style="{StaticResource RowDesc}" Margin="0"/>
+                            <StackPanel Orientation="Horizontal">
+                                <Rectangle Width="11" Height="11" RadiusX="3" RadiusY="3" Fill="{StaticResource SignalBrush}" VerticalAlignment="Center"/>
+                                <TextBlock Text="Used" FontWeight="SemiBold" Margin="7,0,5,0"/>
+                                <TextBlock x:Name="UsedText" Foreground="{StaticResource DimBrush}"/>
+                                <Rectangle Width="11" Height="11" RadiusX="3" RadiusY="3" Fill="{StaticResource InputBrush}" Stroke="{StaticResource LineStrongBrush}"
+                                           VerticalAlignment="Center" Margin="22,0,0,0"/>
+                                <TextBlock Text="Free" FontWeight="SemiBold" Margin="7,0,5,0"/>
+                                <TextBlock x:Name="FreeText" Foreground="{StaticResource DimBrush}"/>
+                            </StackPanel>
+                        </DockPanel>
+
+                        <TextBlock x:Name="ResultText" Margin="0,14,0,0" FontSize="13" Foreground="{StaticResource OkBrush}" Visibility="Collapsed"/>
+                    </StackPanel>
+                </Border>
+
+                <Grid Margin="0,12,0,0">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="12"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+
+                    <!-- Routine -->
+                    <Border Style="{StaticResource Panel}" Padding="22" Tag="Automatic RAM cleaning|auto clean routine memory">
+                        <StackPanel>
+                            <DockPanel>
+                                <CheckBox x:Name="AutoToggle" DockPanel.Dock="Right" Style="{StaticResource Toggle}" Click="Auto_Click"/>
+                                <StackPanel>
+                                    <TextBlock Text="Routine" FontSize="15" FontWeight="SemiBold"/>
+                                    <TextBlock Text="Clean automatically" Style="{StaticResource RowDesc}"/>
+                                </StackPanel>
+                            </DockPanel>
+                            <TextBlock Text="RUN WHEN" Style="{StaticResource Label}" Margin="0,18,0,8"/>
+                            <Border Background="{StaticResource InputBrush}" BorderBrush="{StaticResource LineBrush}" BorderThickness="1" CornerRadius="8" Padding="3">
+                                <UniformGrid Columns="3">
+                                    <RadioButton x:Name="ModeHigh" Style="{StaticResource Segment}" Content="RAM above 85 %" GroupName="ramMode" Checked="Mode_Checked" Tag="high"/>
+                                    <RadioButton x:Name="Mode30" Style="{StaticResource Segment}" Content="Every 30 min" GroupName="ramMode" Checked="Mode_Checked" Tag="30"/>
+                                    <RadioButton x:Name="Mode60" Style="{StaticResource Segment}" Content="Every hour" GroupName="ramMode" Checked="Mode_Checked" Tag="60"/>
+                                </UniformGrid>
+                            </Border>
+
+                            <Rectangle Height="1" Fill="{StaticResource LineBrush}" Margin="0,16,0,14"/>
+                            <DockPanel>
+                                <CheckBox x:Name="RobloxToggle" DockPanel.Dock="Right" Style="{StaticResource Toggle}" Click="Roblox_Click"/>
+                                <StackPanel Margin="0,0,12,0">
+                                    <TextBlock Text="Include Roblox windows in the background" FontSize="13.5" FontWeight="SemiBold"/>
+                                    <TextBlock Style="{StaticResource RowDesc}" Text="Great with Multi-Roblox. The window you're playing in is never cleaned."/>
+                                </StackPanel>
+                            </DockPanel>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- Allow list -->
+                    <Border Grid.Column="2" Style="{StaticResource Panel}" Padding="22" Tag="RAM allow list|exceptions apps not cleaned">
+                        <DockPanel>
+                            <DockPanel DockPanel.Dock="Top">
+                                <Button DockPanel.Dock="Right" Click="AddApp_Click" Height="34">
+                                    <StackPanel Orientation="Horizontal">
+                                        <TextBlock Text="&#xE710;" Style="{StaticResource Icon}" FontSize="11"/>
+                                        <TextBlock Text="Add app" Margin="8,0,0,0"/>
+                                    </StackPanel>
+                                </Button>
+                                <StackPanel>
+                                    <TextBlock Text="Allow list" FontSize="15" FontWeight="SemiBold"/>
+                                    <TextBlock Text="These apps are never cleaned" Style="{StaticResource RowDesc}"/>
+                                </StackPanel>
+                            </DockPanel>
+
+                            <Grid Margin="0,14,0,0">
+                                <StackPanel x:Name="AllowEmpty" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="0,16">
+                                    <TextBlock Text="&#xE946;" Style="{StaticResource Icon}" FontSize="22" HorizontalAlignment="Center" Foreground="{StaticResource FaintBrush}"/>
+                                    <TextBlock Text="No exceptions added" FontWeight="SemiBold" HorizontalAlignment="Center" Margin="0,10,0,2"/>
+                                    <TextBlock Text="Keep your essential apps untouched" Style="{StaticResource RowDesc}" HorizontalAlignment="Center"/>
+                                </StackPanel>
+                                <ItemsControl x:Name="AllowList">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate>
+                                            <Border Background="{StaticResource RaisedBrush}" BorderBrush="{StaticResource LineBrush}" BorderThickness="1"
+                                                    CornerRadius="8" Padding="12,6,6,6" Margin="0,0,0,6">
+                                                <DockPanel>
+                                                    <Button DockPanel.Dock="Right" Style="{StaticResource GhostButton}" Width="28" Height="28" Padding="0"
+                                                            Click="RemoveApp_Click" Tag="{Binding}" ToolTip="Remove">
+                                                        <TextBlock Text="&#xE711;" Style="{StaticResource Icon}" FontSize="10"/>
+                                                    </Button>
+                                                    <TextBlock Text="{Binding}" VerticalAlignment="Center" FontSize="13"/>
+                                                </DockPanel>
+                                            </Border>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                            </Grid>
+                        </DockPanel>
+                    </Border>
+                </Grid>
+
+                <Border Style="{StaticResource Panel}" Margin="0,12,0,0">
+                    <StackPanel>
+                        <TextBlock Text="HOW IT WORKS" Style="{StaticResource Crumb}"/>
+                        <TextBlock Style="{StaticResource RowDesc}" Margin="0,8,0,0" LineHeight="19"
+                                   Text="Cleaning asks apps you're not using right now to give back memory they don't need, so the game you play has more room. Windows already manages memory well – cleaning helps most when your RAM is nearly full, which is why Orbit only says &quot;Needs cleaning&quot; from 85 % on. Switching back to a cleaned app can take a moment while Windows loads its data again."/>
+                    </StackPanel>
+                </Border>
+            </StackPanel>
+        </ScrollViewer>
+
+        <!-- ===================== DNS optimizer ===================== -->
+        <ScrollViewer x:Name="DnsPage" Grid.Row="1" VerticalScrollBarVisibility="Auto" Padding="0,0,10,0" Visibility="Collapsed">
+            <StackPanel Margin="0,14,0,0">
+                <Border Style="{StaticResource Panel}" Padding="22" Tag="DNS optimizer|dns fastest server cloudflare google internet">
+                    <StackPanel>
+                        <DockPanel>
+                            <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center">
+                                <Button x:Name="ResetDnsButton" Content="Reset to automatic" Height="38" Click="ResetDns_Click" Margin="0,0,8,0"
+                                        ToolTip="Use the DNS from your router again"/>
+                                <Button x:Name="TestButton" Style="{StaticResource SolidButton}" Height="38" MinWidth="120" Click="Test_Click">
+                                    <StackPanel Orientation="Horizontal">
+                                        <TextBlock Text="&#xE72C;" Style="{StaticResource Icon}" FontSize="12"/>
+                                        <TextBlock x:Name="TestText" Text="Test again" Margin="8,0,0,0"/>
+                                    </StackPanel>
+                                </Button>
+                            </StackPanel>
+                            <StackPanel>
+                                <TextBlock Text="DNS optimizer" FontFamily="{StaticResource DisplayFont}" FontSize="19" FontWeight="Bold"/>
+                                <TextBlock Style="{StaticResource RowDesc}" Text="Finds the DNS server that answers fastest from your PC."/>
+                            </StackPanel>
+                        </DockPanel>
+
+                        <!-- Current -->
+                        <Border Margin="0,18,0,0" Background="{StaticResource RaisedBrush}" BorderBrush="{StaticResource LineBrush}" BorderThickness="1"
+                                CornerRadius="10" Padding="14,12">
+                            <DockPanel>
+                                <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center">
+                                    <TextBlock Text="AVG. RESPONSE" Style="{StaticResource Crumb}" VerticalAlignment="Center" Margin="0,0,10,0"/>
+                                    <Ellipse x:Name="CurrentDot" Width="7" Height="7" Fill="{StaticResource FaintBrush}" VerticalAlignment="Center" Margin="0,0,7,0"/>
+                                    <TextBlock x:Name="CurrentTime" Text="–" FontWeight="SemiBold" MinWidth="56" VerticalAlignment="Center"/>
+                                </StackPanel>
+                                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                    <TextBlock Text="&#xE774;" Style="{StaticResource Icon}" FontSize="15" Foreground="{StaticResource SignalLightBrush}" Margin="0,0,12,0"/>
+                                    <TextBlock x:Name="CurrentName" Text="Windows" FontWeight="SemiBold" FontSize="14"/>
+                                    <TextBlock x:Name="CurrentServers" Style="{StaticResource Crumb}" Margin="12,0,0,0" VerticalAlignment="Center"/>
+                                    <Border Margin="10,0,0,0" CornerRadius="6" Padding="7,2" Background="{StaticResource InputBrush}"
+                                            BorderBrush="{StaticResource LineStrongBrush}" BorderThickness="1" VerticalAlignment="Center">
+                                        <TextBlock Text="CURRENT" Style="{StaticResource Crumb}" FontSize="10"/>
+                                    </Border>
+                                </StackPanel>
+                            </DockPanel>
+                        </Border>
+
+                        <TextBlock x:Name="DnsStatus" Margin="0,14,0,0" FontSize="13" Visibility="Collapsed" TextWrapping="Wrap"/>
+                    </StackPanel>
+                </Border>
+
+                <Border Style="{StaticResource Panel}" Margin="0,12,0,0" Padding="22,10">
+                    <Grid>
+                        <!-- Testing … -->
+                        <StackPanel x:Name="DnsLoading" HorizontalAlignment="Center" Margin="0,40">
+                            <Grid Width="34" Height="34" HorizontalAlignment="Center" RenderTransformOrigin="0.5,0.5">
+                                <Grid.RenderTransform>
+                                    <RotateTransform x:Name="SpinnerTurn"/>
+                                </Grid.RenderTransform>
+                                <Ellipse Stroke="{StaticResource LineStrongBrush}" StrokeThickness="3"/>
+                                <Ellipse Stroke="{StaticResource SignalBrush}" StrokeThickness="3" StrokeDashArray="4 20" StrokeDashCap="Round"/>
+                            </Grid>
+                            <TextBlock Text="Testing DNS servers" FontWeight="SemiBold" FontSize="15" HorizontalAlignment="Center" Margin="0,16,0,4"/>
+                            <TextBlock Text="This only takes a few seconds…" Style="{StaticResource RowDesc}" HorizontalAlignment="Center"/>
+                        </StackPanel>
+                        <ItemsControl x:Name="DnsList" ItemTemplate="{StaticResource DnsRow}" Visibility="Collapsed"/>
+                    </Grid>
+                </Border>
+
+                <Border Style="{StaticResource Panel}" Margin="0,12,0,0">
+                    <StackPanel>
+                        <TextBlock Text="GOOD TO KNOW" Style="{StaticResource Crumb}"/>
+                        <TextBlock Style="{StaticResource RowDesc}" Margin="0,8,0,0" LineHeight="19"
+                                   Text="DNS turns names like roblox.com into addresses. A faster DNS makes websites, logins and joining games start a little quicker – it doesn't change your ping inside a game. Changing it needs administrator rights, so Windows asks once. &quot;Reset to automatic&quot; switches back to the DNS from your router at any time."/>
+                    </StackPanel>
+                </Border>
+            </StackPanel>
+        </ScrollViewer>
+    </Grid>
+</UserControl>

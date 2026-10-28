@@ -31,6 +31,7 @@
 | **Joining** | Place ID, game link, private server link, share link, share code or Job ID. Orbit figures it out. |
 | **Multi-Roblox** | Launch several accounts in a row and keep them all open. Each window shows the account name and the Orbit icon in the taskbar, and one button closes them all. |
 | **Presets & windows** | Save accounts and a game as a named preset and launch it with one click. Arrange all Roblox windows side by side, and let the resource saver give background windows less CPU. |
+| **PC Tweaks** | RAM cleaner with live usage, one-click and automatic cleaning and an allow list – the game you play is never touched. DNS optimizer that tests popular DNS servers and switches to the fastest one. |
 | **Notifications** | Get told when a Roblox window disconnects (with the reason), when a friend comes online and when a saved login has expired. |
 | **Game settings** | Graphics quality, FPS limit, transparency, font size, mouse sensitivity and more. Can be locked so Roblox doesn't reset them. |
 | **FastFlags** | Presets for mesh detail, MSAA, textures, rendering mode and more, plus a full editor with JSON import and export. |

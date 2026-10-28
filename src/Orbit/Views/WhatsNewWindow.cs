@@ -16,12 +16,14 @@ public sealed class WhatsNewWindow : Window
     /// <summary>The changes of this version. Edit this list for every release.</summary>
     private static readonly Change[] Changes =
     {
-        new("\uE716", "Live friend notifications",
-            "Orbit now has a live connection to Roblox, like the website. When a friend comes online or starts playing, you get told right away instead of up to 30 seconds later. A green LIVE badge in the friends panel shows that it's connected."),
-        new("\uE8FA", "Friend request notifications",
-            "New friend requests show up as a notification immediately – one click opens the friends panel to accept them."),
-        new("\uE72E", "Always up to date",
-            "If the live connection ever drops, Orbit reconnects by itself and keeps checking every 30 seconds in the meantime, so nothing gets lost."),
+        new("\uEC4A", "New: PC Tweaks",
+            "A new page in the sidebar with tools that keep your PC fast while you play."),
+        new("\uE945", "RAM cleaner",
+            "See how much memory is in use and free it with one click. The game you're playing is never touched, and an allow list keeps your important apps safe."),
+        new("\uE916", "Automatic cleaning",
+            "Let Orbit clean by itself when your RAM is nearly full, or every 30 or 60 minutes. Roblox windows in the background can be included – perfect for Multi-Roblox."),
+        new("\uE774", "DNS optimizer",
+            "Orbit tests the most popular DNS servers from your PC and switches to the fastest one with a single click. \"Reset to automatic\" brings your old setting back."),
     };
 
     private static T R<T>(string key) => (T)Application.Current.FindResource(key);

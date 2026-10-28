@@ -48,6 +48,17 @@ public sealed class AppSettings
     public bool ResourceSaver { get; set; }
     public List<LaunchPreset> Presets { get; set; } = new();
 
+    // ===== Tweaks: RAM cleaner =====
+    /// <summary>Clean RAM automatically.</summary>
+    public bool RamAutoClean { get; set; }
+    /// <summary>high = when RAM usage goes above 85 %, 30 / 60 = every 30 / 60 minutes.</summary>
+    public string RamAutoMode { get; set; } = "high";
+    /// <summary>Also clean Roblox windows in the background (the one you play in is never touched).</summary>
+    public bool RamIncludeRoblox { get; set; } = true;
+    /// <summary>Process names (without .exe) that are never cleaned.</summary>
+    public List<string> RamAllowList { get; set; } = new();
+    public DateTime? RamLastClean { get; set; }
+
     // ===== Updates =====
     /// <summary>Version whose "What's new" window was already shown.</summary>
     public string LastSeenVersion { get; set; } = "";
