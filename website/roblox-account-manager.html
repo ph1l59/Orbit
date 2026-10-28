@@ -1,0 +1,195 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Roblox Account Manager – Switch &amp; Launch Accounts in One Click | Orbit</title>
+  <meta name="description" content="Manage all your Roblox accounts in one free app. Orbit is a Roblox account manager for Windows: safe logins, one-click launch, Robux balance, online status and private server joining.">
+  <meta name="theme-color" content="#0a090d">
+  <meta property="og:type" content="article">
+  <meta property="og:title" content="Roblox Account Manager – Switch &amp; Launch Accounts in One Click | Orbit">
+  <meta property="og:description" content="Manage all your Roblox accounts in one free app. Orbit is a Roblox account manager for Windows: safe logins, one-click launch, Robux balance, online status and private server joining.">
+  <meta property="og:image" content="https://orbitlauncher.net/assets/accounts.webp">
+  <meta property="og:url" content="https://orbitlauncher.net/roblox-account-manager">
+  <link rel="canonical" href="https://orbitlauncher.net/roblox-account-manager">
+  <link rel="icon" href="/assets/logo.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/style.css">
+  <script type="application/ld+json">{"@context": "https://schema.org", "@graph": [{"@type": "HowTo", "name": "The Roblox account manager that just works", "description": "Manage all your Roblox accounts in one free app. Orbit is a Roblox account manager for Windows: safe logins, one-click launch, Robux balance, online status and private server joining.", "step": [{"@type": "HowToStep", "position": 1, "name": "Download and open Orbit", "text": "Free for Windows 10 and 11, no sign-up."}, {"@type": "HowToStep", "position": 2, "name": "Add an account", "text": "Click Add account. A window with the real roblox.com login opens – log in like always, including 2-step verification."}, {"@type": "HowToStep", "position": 3, "name": "Organise", "text": "Give accounts an alias, drag them into your order and see at a glance who is online or in a game."}, {"@type": "HowToStep", "position": 4, "name": "Launch", "text": "Pick an account on the Play page and press Launch, or select several on the Accounts page and join a game together."}]}, {"@type": "FAQPage", "mainEntity": [{"@type": "Question", "name": "Is it safe to add my account to Orbit?", "acceptedAnswer": {"@type": "Answer", "text": "You log in on the real roblox.com page, not in a form made by Orbit. Orbit only keeps the login session, encrypted with Windows (DPAPI) – it can only be read by your Windows user on your PC. Orbit is open source, so anyone can check the code."}}, {"@type": "Question", "name": "Does Orbit save my password?", "acceptedAnswer": {"@type": "Answer", "text": "No. Orbit keeps the login session Roblox gives you after logging in. If it expires, Orbit tells you and you simply log in again."}}, {"@type": "Question", "name": "Can I use it with 2-step verification?", "acceptedAnswer": {"@type": "Answer", "text": "Yes. The login happens on Roblox's own page, so 2-step verification works exactly like in your browser."}}, {"@type": "Question", "name": "What happens if I share the accounts file?", "acceptedAnswer": {"@type": "Answer", "text": "Never share accounts.dat or send it to anyone. Whoever has it on your PC could use your logins."}}]}, {"@type": "BreadcrumbList", "itemListElement": [{"@type": "ListItem", "position": 1, "name": "Orbit", "item": "https://orbitlauncher.net/"}, {"@type": "ListItem", "position": 2, "name": "Accounts", "item": "https://orbitlauncher.net/roblox-account-manager"}]}]}</script>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <symbol id="i-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></symbol>
+    <symbol id="i-download" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12M7 10l5 5 5-5M5 21h14"/></symbol>
+    <symbol id="i-users" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="4"/><path d="M2 21c0-4 3-6 7-6s7 2 7 6M16 4.2a4 4 0 0 1 0 7.6M22 21c0-3-1.6-5-4-5.6"/></symbol>
+    <symbol id="i-grid" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><rect x="3" y="3" width="8" height="8" rx="2"/><rect x="13" y="3" width="8" height="8" rx="2"/><rect x="3" y="13" width="8" height="8" rx="2"/><rect x="13" y="13" width="8" height="8" rx="2"/></symbol>
+    <symbol id="i-bolt" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M13 2 4 14h7l-1 8 9-12h-7z"/></symbol>
+    <symbol id="i-shield" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/><path d="M9 12l2 2 4-4"/></symbol>
+    <symbol id="i-lock" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></symbol>
+    <symbol id="i-bookmark" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M6 3h12v18l-6-4-6 4z"/></symbol>
+    <symbol id="i-cpu" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="6" y="6" width="12" height="12" rx="2"/><rect x="9.5" y="9.5" width="5" height="5" rx="1"/><path d="M9 2v4M15 2v4M9 18v4M15 18v4M2 9h4M2 15h4M18 9h4M18 15h4"/></symbol>
+    <symbol id="i-stack" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><rect x="8" y="8" width="13" height="10" rx="2"/><path d="M5 15H4a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1h11a1 1 0 0 1 1 1v1"/></symbol>
+    <symbol id="i-bell" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9a6 6 0 0 1 12 0c0 6 3 8 3 8H3s3-2 3-8M10 21a2 2 0 0 0 4 0"/></symbol>
+    <symbol id="i-alert" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 2 20h20zM12 10v4M12 17h.01"/></symbol>
+    <symbol id="i-play" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M7 4l13 8-13 8z"/></symbol>
+    <symbol id="i-chat" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M4 5h16v11H9l-5 4z"/><path d="M9 10h.01M12 10h.01M15 10h.01" stroke-linecap="round" stroke-width="2.4"/></symbol>
+    <symbol id="i-clock" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l3 2M10 2h4"/></symbol>
+    <symbol id="i-mouse" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="6" y="3" width="12" height="18" rx="6"/><path d="M12 7v4"/></symbol>
+    <symbol id="i-refresh" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 12a8 8 0 1 1-2.4-5.7M20 4v5h-5"/></symbol>
+    <symbol id="i-sliders" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 6h9M17 6h3M4 12h3M11 12h9M4 18h11M19 18h1"/><circle cx="15" cy="6" r="2"/><circle cx="9" cy="12" r="2"/><circle cx="17" cy="18" r="2"/></symbol>
+    <symbol id="i-brush" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M14 4l6 6-8 8H6v-6zM12 6l6 6M3 21l3-3"/></symbol>
+    <symbol id="i-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5 9-10"/></symbol>
+    <symbol id="i-plus" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></symbol>
+    <symbol id="i-down" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></symbol>
+    <symbol id="i-menu" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></symbol>
+    <symbol id="i-code" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 6l-6 6 6 6M16 6l6 6-6 6"/></symbol>
+    <symbol id="i-robux" viewBox="0 0 10 10"><path fill="currentColor" fill-rule="evenodd" d="M5,0 L9.33,2.5 9.33,7.5 5,10 0.67,7.5 0.67,2.5 Z M5,1.45 L8.07,3.22 8.07,6.78 5,8.55 1.93,6.78 1.93,3.22 Z M3.75,3.75 L6.25,3.75 6.25,6.25 3.75,6.25 Z"/></symbol>
+    <symbol id="i-avatar" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><rect x="8" y="2" width="8" height="7" rx="1.5"/><rect x="7" y="10" width="10" height="7" rx="1"/><path d="M9 17v5M15 17v5M7 11l-3 5M17 11l3 5"/></symbol>
+  </defs>
+</svg>
+
+<header class="nav">
+  <div class="nav-inner">
+    <a class="brand" href="/"><img src="/assets/logo.png" alt="">Orbit <span class="ver" data-version>v3</span></a>
+    <nav class="nav-links">
+      <a href="/#features">Features</a>
+      <a href="/#faq">FAQ</a>
+      <a href="/changelog">Changelog</a>
+      <a href="https://github.com/ph1l59/Orbit" target="_blank" rel="noopener">GitHub</a>
+    </nav>
+    <a class="btn btn-primary" href="https://github.com/ph1l59/Orbit/releases/latest/download/Orbit-Launcher.exe">
+      <svg><use href="#i-download"/></svg>Download
+    </a>
+    <button class="menu-toggle" aria-label="Menu"><svg><use href="#i-menu"/></svg></button>
+  </div>
+</header>
+
+<main>
+  <div class="wrap page-head">
+    <span class="pill reveal"><span class="dot"></span>Accounts</span>
+    <h1 class="reveal">The Roblox <span class="accent">account manager</span> that just works</h1>
+    <p class="reveal">Stop logging in and out. Orbit keeps all your Roblox accounts in one place and launches any of them – or all of them – with one click.</p>
+    <div class="actions reveal" style="margin-top:28px">
+      <a class="btn btn-primary" href="https://github.com/ph1l59/Orbit/releases/latest/download/Orbit-Launcher.exe"><svg><use href="#i-download"/></svg>Download Orbit – free</a>
+      <a class="btn btn-ghost" href="/#features">All features <svg class="arrow"><use href="#i-arrow"/></svg></a>
+    </div>
+  </div>
+
+  <div class="wrap guide">
+    <div class="guide-media reveal"><div class="window"><img src="/assets/accounts.webp" alt="Orbit Roblox account manager" width="1237" height="774"></div></div>
+
+    <section>
+      <h2 class="reveal">How it works</h2>
+      <ol class="steps">
+          <li class="reveal"><h3>Download and open Orbit</h3><p>Free for Windows 10 and 11, no sign-up.</p></li>
+          <li class="reveal"><h3>Add an account</h3><p>Click <b>Add account</b>. A window with the real roblox.com login opens – log in like always, including 2-step verification.</p></li>
+          <li class="reveal"><h3>Organise</h3><p>Give accounts an alias, drag them into your order and see at a glance who is online or in a game.</p></li>
+          <li class="reveal"><h3>Launch</h3><p>Pick an account on the Play page and press <b>Launch</b>, or select several on the Accounts page and join a game together.</p></li>
+      </ol>
+    </section>
+
+    <section>
+      <h2 class="reveal">What you get</h2>
+      <ul class="checks reveal">
+          <li><svg><use href="#i-check"/></svg><span>Logins stay on your PC, encrypted with Windows' own protection – nothing is sent to us</span></li>
+          <li><svg><use href="#i-check"/></svg><span><b>Login check</b> at start: Orbit tells you which accounts have to log in again</span></li>
+          <li><svg><use href="#i-check"/></svg><span>Robux balance and online status of every account</span></li>
+          <li><svg><use href="#i-check"/></svg><span>Open roblox.com in a browser that's already logged in as the account</span></li>
+          <li><svg><use href="#i-check"/></svg><span>Join games, private servers, share links or follow a player – with one or many accounts</span></li>
+          <li><svg><use href="#i-check"/></svg><span>Create new accounts faster: birthday and gender once, then a list of usernames</span></li>
+      </ul>
+    </section>
+
+    <section>
+      <h2 class="reveal">Questions</h2>
+      <div class="faq">
+        <details class="reveal">
+          <summary>Is it safe to add my account to Orbit?<svg class="plus"><use href="#i-plus"/></svg></summary>
+          <div class="answer"><p>You log in on the real roblox.com page, not in a form made by Orbit. Orbit only keeps the login session, encrypted with Windows (DPAPI) – it can only be read by your Windows user on your PC. Orbit is open source, so anyone can check the code.</p></div>
+        </details>
+        <details class="reveal">
+          <summary>Does Orbit save my password?<svg class="plus"><use href="#i-plus"/></svg></summary>
+          <div class="answer"><p>No. Orbit keeps the login session Roblox gives you after logging in. If it expires, Orbit tells you and you simply log in again.</p></div>
+        </details>
+        <details class="reveal">
+          <summary>Can I use it with 2-step verification?<svg class="plus"><use href="#i-plus"/></svg></summary>
+          <div class="answer"><p>Yes. The login happens on Roblox's own page, so 2-step verification works exactly like in your browser.</p></div>
+        </details>
+        <details class="reveal">
+          <summary>What happens if I share the accounts file?<svg class="plus"><use href="#i-plus"/></svg></summary>
+          <div class="answer"><p>Never share <code>accounts.dat</code> or send it to anyone. Whoever has it on your PC could use your logins.</p></div>
+        </details>
+      </div>
+    </section>
+
+    <section>
+      <h2 class="reveal">More guides</h2>
+      <div class="related">
+        <a class="related-card reveal" href="/roblox-multi-instance"><span class="tag">Multi-Roblox</span><strong>Run multiple Roblox accounts at once</strong><span class="more">Read guide <svg class="arrow"><use href="#i-arrow"/></svg></span></a>
+        <a class="related-card reveal" href="/roblox-fps-unlocker"><span class="tag">Performance</span><strong>Unlock Roblox FPS – the easy way</strong><span class="more">Read guide <svg class="arrow"><use href="#i-arrow"/></svg></span></a>
+      </div>
+    </section>
+  </div>
+
+  <section class="cta">
+    <div class="cta-bg"></div>
+    <h2 class="reveal">Ready to try it?<br><span class="accent">It's free.</span></h2>
+    <div class="actions reveal">
+      <a class="btn btn-primary" href="https://github.com/ph1l59/Orbit/releases/latest/download/Orbit-Launcher.exe"><svg><use href="#i-download"/></svg>Download for Windows</a>
+      <a class="btn btn-ghost" href="/">Back to Orbit <svg class="arrow"><use href="#i-arrow"/></svg></a>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <div class="foot-grid">
+      <div>
+        <a class="brand" href="/"><img src="/assets/logo.png" alt="">Orbit</a>
+        <p>The free, open-source Roblox launcher for Windows.</p>
+      </div>
+      <div>
+        <h5>Product</h5>
+        <ul>
+          <li><a href="https://github.com/ph1l59/Orbit/releases/latest/download/Orbit-Launcher.exe">Download</a></li>
+          <li><a href="/#features">Features</a></li>
+          <li><a href="/changelog">Changelog</a></li>
+          <li><a href="/#faq">FAQ</a></li>
+        </ul>
+      </div>
+      <div>
+        <h5>Guides</h5>
+        <ul>
+          <li><a href="/roblox-multi-instance">Roblox multi instance</a></li>
+          <li><a href="/roblox-account-manager">Roblox account manager</a></li>
+          <li><a href="/roblox-fps-unlocker">Roblox FPS unlocker</a></li>
+        </ul>
+      </div>
+      <div>
+        <h5>Community</h5>
+        <ul>
+          <li><a href="https://github.com/ph1l59/Orbit" target="_blank" rel="noopener">GitHub</a></li>
+          <li><a href="https://github.com/ph1l59/Orbit/issues" target="_blank" rel="noopener">Report a bug</a></li>
+          <li><span>Discord<span class="soon">SOON</span></span></li>
+        </ul>
+      </div>
+      <div>
+        <h5>Legal</h5>
+        <ul>
+          <li><a href="https://github.com/ph1l59/Orbit/blob/main/LICENSE" target="_blank" rel="noopener">License (GPL-3.0)</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="foot-bottom">
+      <span>© 2026 Orbit by ph1l59</span>
+      <span>Not affiliated with Roblox Corporation.</span>
+    </div>
+  </div>
+</footer>
+
+<script src="/script.js"></script>
+</body>
+</html>
