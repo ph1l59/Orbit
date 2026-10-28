@@ -43,7 +43,7 @@ public static class RobloxWindows
 
     // ---------------- Arrange / put back ----------------
 
-    private static readonly Dictionary<IntPtr, (RECT Rect, bool Maximized)> Original = new();
+    private static readonly Dictionary<IntPtr, (RECT Rect, bool Maximized, bool Fullscreen)> Original = new();
 
     public static bool CanRestore => Original.Keys.Any(IsWindow);
 
@@ -51,10 +51,17 @@ public static class RobloxWindows
     /// Makes every Roblox window as small as Roblox allows and stacks them exactly on top of each other
     /// in the middle of the given screen (index into Screen.AllScreens). Returns the number arranged.
     /// </summary>
-    public static int Arrange(int screenIndex)
+    public static async Task<int> ArrangeAsync(int screenIndex)
     {
         var windows = All();
         if (windows.Count == 0) return 0;
+
+        // 0. Windows in fullscreen have no title bar to move or close them – take them out of fullscreen first.
+        foreach (var win in windows)
+            if (!Original.ContainsKey(win.Handle) && GetWindowRect(win.Handle, out var before))
+                Original[win.Handle] = (before, IsZoomed(win.Handle), IsFullscreen(win.Handle));
+        var fullscreen = windows.Where(w => IsFullscreen(w.Handle)).ToList();
+        if (fullscreen.Count > 0) await ExitFullscreenAsync(fullscreen.Select(w => w.Handle).ToList());
 
         var screens = System.Windows.Forms.Screen.AllScreens;
         var screen = screenIndex >= 0 && screenIndex < screens.Length ? screens[screenIndex] : System.Windows.Forms.Screen.PrimaryScreen!;
@@ -66,8 +73,6 @@ public static class RobloxWindows
         foreach (var win in windows)
         {
             var hwnd = win.Handle;
-            if (!Original.ContainsKey(hwnd) && GetWindowRect(hwnd, out var rect))
-                Original[hwnd] = (rect, IsZoomed(hwnd));
             if (IsIconic(hwnd) || IsZoomed(hwnd)) ShowWindow(hwnd, SW_RESTORE);
             MoveVisible(hwnd, area.Left, area.Top, SmallestWidth, SmallestHeight);
             var size = VisibleSize(hwnd);
@@ -88,6 +93,45 @@ public static class RobloxWindows
             SetWindowPos(win.Handle, HWND_TOP, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE);
 
         return windows.Count;
+    }
+
+    /// <summary>Fullscreen = no title bar and the window covers its whole screen.</summary>
+    private static bool IsFullscreen(IntPtr hwnd)
+    {
+        var style = (long)GetWindowLongPtr(hwnd, GWL_STYLE);
+        if ((style & WS_CAPTION) == WS_CAPTION) return false;
+        if (!GetWindowRect(hwnd, out var r)) return false;
+        var info = new MONITORINFO { cbSize = Marshal.SizeOf<MONITORINFO>() };
+        if (!GetMonitorInfo(MonitorFromWindow(hwnd, MONITOR_DEFAULTTONEAREST), ref info)) return false;
+        var m = info.rcMonitor;
+        return r.Left <= m.Left && r.Top <= m.Top && r.Right >= m.Right && r.Bottom >= m.Bottom;
+    }
+
+    /// <summary>
+    /// Leaves Roblox's fullscreen: first the way Roblox itself does it (F11), and if the window
+    /// still has no title bar, Orbit gives it a normal window frame back.
+    /// </summary>
+    private static async Task ExitFullscreenAsync(List<IntPtr> windows)
+    {
+        foreach (var hwnd in windows) PressF11(hwnd);
+
+        for (var i = 0; i < 8 && windows.Any(IsFullscreen); i++)
+            await Task.Delay(100);
+
+        foreach (var hwnd in windows.Where(IsFullscreen))
+        {
+            var style = (long)GetWindowLongPtr(hwnd, GWL_STYLE);
+            style = (style & ~WS_POPUP) | WS_OVERLAPPEDWINDOW;
+            SetWindowLongPtr(hwnd, GWL_STYLE, (IntPtr)style);
+            SetWindowPos(hwnd, IntPtr.Zero, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_NOACTIVATE | SWP_FRAMECHANGED);
+        }
+    }
+
+    private static void PressF11(IntPtr hwnd)
+    {
+        const uint scan = 0x57;
+        PostMessage(hwnd, WM_KEYDOWN, (IntPtr)VK_F11, (IntPtr)(1 | (scan << 16)));
+        PostMessage(hwnd, WM_KEYUP, (IntPtr)VK_F11, unchecked((IntPtr)(1 | (scan << 16) | (1u << 30) | (1u << 31))));
     }
 
     /// <summary>Smallest size Orbit asks for (Roblox makes it bigger if it needs to).</summary>
@@ -119,11 +163,12 @@ public static class RobloxWindows
     public static int Restore()
     {
         var count = 0;
-        foreach (var (hwnd, (rect, maximized)) in Original)
+        foreach (var (hwnd, (rect, maximized, fullscreen)) in Original)
         {
             if (!IsWindow(hwnd)) continue;
             SetWindowPos(hwnd, IntPtr.Zero, rect.Left, rect.Top, rect.Right - rect.Left, rect.Bottom - rect.Top, SWP_NOZORDER | SWP_NOACTIVATE);
             if (maximized) ShowWindow(hwnd, SW_MAXIMIZE);
+            if (fullscreen) PressF11(hwnd); // back into Roblox's fullscreen
             count++;
         }
         Original.Clear();
@@ -263,6 +308,21 @@ public static class RobloxWindows
     }
 
     // ---------------- Win32 ----------------
+
+    private const int GWL_STYLE = -16;
+    private const long WS_CAPTION = 0x00C00000, WS_POPUP = 0x80000000, WS_OVERLAPPEDWINDOW = 0x00CF0000;
+    private const uint SWP_FRAMECHANGED = 0x0020, MONITOR_DEFAULTTONEAREST = 2;
+    private const uint WM_KEYDOWN = 0x0100, WM_KEYUP = 0x0101;
+    private const int VK_F11 = 0x7A;
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct MONITORINFO { public int cbSize; public RECT rcMonitor, rcWork; public uint dwFlags; }
+
+    [DllImport("user32.dll", EntryPoint = "GetWindowLongPtrW")] private static extern IntPtr GetWindowLongPtr(IntPtr hwnd, int index);
+    [DllImport("user32.dll", EntryPoint = "SetWindowLongPtrW")] private static extern IntPtr SetWindowLongPtr(IntPtr hwnd, int index, IntPtr value);
+    [DllImport("user32.dll")] private static extern IntPtr MonitorFromWindow(IntPtr hwnd, uint flags);
+    [DllImport("user32.dll")] private static extern bool GetMonitorInfo(IntPtr monitor, ref MONITORINFO info);
+    [DllImport("user32.dll")] private static extern bool PostMessage(IntPtr hwnd, uint msg, IntPtr wParam, IntPtr lParam);
 
     [StructLayout(LayoutKind.Sequential)]
     private struct RECT { public int Left, Top, Right, Bottom; }

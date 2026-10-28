@@ -228,9 +228,12 @@ public partial class AccountsView
         SaverText.Text = about;
     }
 
-    private void Arrange_Click(object sender, RoutedEventArgs e)
+    private async void Arrange_Click(object sender, RoutedEventArgs e)
     {
-        var count = RobloxWindows.Arrange(ScreenBox.SelectedIndex);
+        ArrangeButton.IsEnabled = false;
+        int count;
+        try { count = await RobloxWindows.ArrangeAsync(ScreenBox.SelectedIndex); }
+        finally { ArrangeButton.IsEnabled = true; }
         ShowWindowsStatus(count == 0 ? "No Roblox window is open." : $"{count} window{(count == 1 ? "" : "s")} arranged ✓");
         UpdateWindowsPanel();
     }

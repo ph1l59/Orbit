@@ -24,6 +24,8 @@ public sealed class WhatsNewWindow : Window
             "Let Orbit clean by itself when your RAM is nearly full, or every 30 or 60 minutes. Roblox windows in the background can be included – perfect for Multi-Roblox."),
         new("\uE774", "DNS optimizer",
             "Orbit tests the most popular DNS servers from your PC and switches to the fastest one with a single click. \"Reset to automatic\" brings your old setting back."),
+        new("\uECA5", "Arrange windows, now with fullscreen",
+            "Roblox windows in fullscreen are taken out of it when you arrange them, so every window gets its title bar back to move or close it. \"Put back\" returns them to fullscreen."),
     };
 
     private static T R<T>(string key) => (T)Application.Current.FindResource(key);
