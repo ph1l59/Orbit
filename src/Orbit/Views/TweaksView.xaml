@@ -136,7 +136,6 @@
                             </StackPanel>
                         </DockPanel>
 
-                        <TextBlock x:Name="ResultText" Margin="0,14,0,0" FontSize="13" Foreground="{StaticResource OkBrush}" Visibility="Collapsed"/>
                     </StackPanel>
                 </Border>
 
@@ -273,7 +272,6 @@
                             </DockPanel>
                         </Border>
 
-                        <TextBlock x:Name="DnsStatus" Margin="0,14,0,0" FontSize="13" Visibility="Collapsed" TextWrapping="Wrap"/>
                     </StackPanel>
                 </Border>
 

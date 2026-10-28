@@ -132,17 +132,13 @@ public partial class TweaksView : UserControl, IPage
         try
         {
             var result = await RamCleaner.CleanAsync();
-            ResultText.Text = result.FreedBytes > 50L * 1024 * 1024
-                ? $"✓ {Gb(result.FreedBytes)} freed from {result.Programs} apps."
-                : $"✓ Done – {result.Programs} apps cleaned. Not much to free right now, your RAM is in good shape.";
-            ResultText.Foreground = (Brush)FindResource("OkBrush");
-            ResultText.Visibility = Visibility.Visible;
+            Toast.Show("RAM cleaned", result.FreedBytes > 50L * 1024 * 1024
+                ? $"{Gb(result.FreedBytes)} freed from {result.Programs} apps."
+                : $"{result.Programs} apps cleaned. Not much to free right now – your RAM is in good shape.");
         }
         catch (Exception ex)
         {
-            ResultText.Text = "Cleaning failed: " + ex.Message;
-            ResultText.Foreground = (Brush)FindResource("WarnBrush");
-            ResultText.Visibility = Visibility.Visible;
+            Toast.Show("RAM cleaner", "Cleaning failed: " + ex.Message);
         }
         finally
         {
@@ -241,7 +237,7 @@ public partial class TweaksView : UserControl, IPage
         }
         catch (Exception ex)
         {
-            ShowDnsStatus("Testing failed: " + ex.Message, true);
+            Toast.Show("DNS optimizer", "Testing failed: " + ex.Message);
         }
         finally
         {
@@ -257,26 +253,17 @@ public partial class TweaksView : UserControl, IPage
     private async void DnsChoose_Click(object sender, RoutedEventArgs e)
     {
         if ((sender as FrameworkElement)?.Tag is not DnsRowItem row) return;
-        ShowDnsStatus($"Switching to {row.Name}… Windows will ask for permission.", false);
         var error = await DnsOptimizer.ApplyAsync(row.Provider);
-        if (error != null) { ShowDnsStatus(error, true); return; }
-        ShowDnsStatus($"✓ Now using {row.Name} ({row.Servers}).", false, ok: true);
+        if (error != null) { Toast.Show("DNS optimizer", error); return; }
+        Toast.Show("DNS changed", $"Now using {row.Name} ({row.Servers}).");
         await TestAsync();
     }
 
     private async void ResetDns_Click(object sender, RoutedEventArgs e)
     {
-        ShowDnsStatus("Switching back to automatic DNS… Windows will ask for permission.", false);
         var error = await DnsOptimizer.ResetAsync();
-        if (error != null) { ShowDnsStatus(error, true); return; }
-        ShowDnsStatus("✓ Back to the DNS from your router.", false, ok: true);
+        if (error != null) { Toast.Show("DNS optimizer", error); return; }
+        Toast.Show("DNS reset", "Back to the DNS from your router.");
         await TestAsync();
-    }
-
-    private void ShowDnsStatus(string text, bool warning, bool ok = false)
-    {
-        DnsStatus.Text = text;
-        DnsStatus.Foreground = (Brush)FindResource(warning ? "WarnBrush" : ok ? "OkBrush" : "DimBrush");
-        DnsStatus.Visibility = Visibility.Visible;
     }
 }
