@@ -142,6 +142,9 @@ public static class Integrations
     /// <summary>Shows a notification (title, text, picture) – set by the UI.</summary>
     public static Action<string, string, string?>? NotifyWithImage { get; set; }
 
+    /// <summary>What each account's Roblox window is doing (empty if the disconnect notification is off).</summary>
+    public static Dictionary<long, (long PlaceId, bool Disconnected)> GameSnapshot() => _disconnects?.Snapshot() ?? new();
+
     /// <summary>Starts or stops watching for lost connections according to the setting.</summary>
     public static void RefreshDisconnectWatcher()
     {

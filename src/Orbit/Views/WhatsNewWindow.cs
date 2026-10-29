@@ -16,16 +16,14 @@ public sealed class WhatsNewWindow : Window
     /// <summary>The changes of this version. Edit this list for every release.</summary>
     private static readonly Change[] Changes =
     {
-        new("\uEC4A", "New: PC Tweaks",
-            "A new page in the sidebar with tools that keep your PC fast while you play."),
-        new("\uE945", "RAM cleaner",
-            "See how much memory is in use and free it with one click. The game you're playing is never touched, and an allow list keeps your important apps safe."),
-        new("\uE916", "Automatic cleaning",
-            "Let Orbit clean by itself when your RAM is nearly full, or every 30 or 60 minutes. Roblox windows in the background can be included – perfect for Multi-Roblox."),
-        new("\uE774", "DNS optimizer",
-            "Orbit tests the most popular DNS servers from your PC and switches to the fastest one with a single click. \"Reset to automatic\" brings your old setting back."),
-        new("\uECA5", "Arrange windows, now with fullscreen",
-            "Roblox windows in fullscreen are taken out of it when you arrange them, so every window gets its title bar back to move or close it. \"Put back\" returns them to fullscreen."),
+        new("\uECA5", "New: Account overview",
+            "Every open Roblox window as a live tile on one page – with the account, the game it plays and how much RAM it uses. Click a tile to bring that window to the front."),
+        new("\uE73F", "Mini mode",
+            "Shrinks all Roblox windows to their smallest size and tucks them behind Orbit. You keep an eye on all of them in the overview."),
+        new("\uE945", "Stronger resource saver",
+            "Roblox windows in the background can now get a hard CPU limit (10, 25 or 50 %) and Windows' efficiency mode – the window you play in stays fast."),
+        new("\uE916", "Anti-AFK",
+            "Optional: Orbit presses Space in every window every 5, 10 or 15 minutes so Roblox doesn't kick you after 20 minutes. Off by default."),
     };
 
     private static T R<T>(string key) => (T)Application.Current.FindResource(key);

@@ -159,6 +159,15 @@ public static class RobloxWindows
         SetWindowPos(hwnd, IntPtr.Zero, x - left, y - top, w + left + right, h + top + bottom, SWP_NOZORDER | SWP_NOACTIVATE);
     }
 
+    /// <summary>Gives one arranged window its old size and place back.</summary>
+    public static void RestoreOne(IntPtr hwnd)
+    {
+        if (!Original.Remove(hwnd, out var o) || !IsWindow(hwnd)) return;
+        SetWindowPos(hwnd, IntPtr.Zero, o.Rect.Left, o.Rect.Top, o.Rect.Right - o.Rect.Left, o.Rect.Bottom - o.Rect.Top, SWP_NOZORDER | SWP_NOACTIVATE);
+        if (o.Maximized) ShowWindow(hwnd, SW_MAXIMIZE);
+        if (o.Fullscreen) PressF11(hwnd);
+    }
+
     /// <summary>Puts the windows back where they were before arranging.</summary>
     public static int Restore()
     {
@@ -175,6 +184,37 @@ public static class RobloxWindows
         return count;
     }
 
+    // ---------------- Single windows (Overview page) ----------------
+
+    public static bool IsMinimized(IntPtr hwnd) => IsIconic(hwnd);
+
+    /// <summary>Brings a Roblox window to the front (restores it if it's minimized).</summary>
+    public static void BringToFront(IntPtr hwnd)
+    {
+        if (IsIconic(hwnd)) ShowWindow(hwnd, SW_RESTORE);
+        // Windows only lets the program in front hand over the focus; a short Alt press counts as input.
+        keybd_event(VK_MENU, 0, 0, UIntPtr.Zero);
+        keybd_event(VK_MENU, 0, KEYEVENTF_KEYUP, UIntPtr.Zero);
+        SetForegroundWindow(hwnd);
+    }
+
+    /// <summary>Closes a Roblox window the normal way (like its X button).</summary>
+    public static void Close(IntPtr hwnd) => PostMessage(hwnd, WM_CLOSE, IntPtr.Zero, IntPtr.Zero);
+
+    /// <summary>Puts every Roblox window behind the given window (Orbit), without activating them.</summary>
+    public static void PushBehind(IntPtr window)
+    {
+        foreach (var w in All())
+            SetWindowPos(w.Handle, window, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE);
+    }
+
+    /// <summary>Memory the Roblox process uses right now (bytes).</summary>
+    public static long MemoryOf(int pid)
+    {
+        try { using var p = Process.GetProcessById(pid); return p.WorkingSet64; }
+        catch { return 0; }
+    }
+
     // ---------------- Resource saver ----------------
 
     private static DispatcherTimer? _saverTimer;
@@ -185,6 +225,16 @@ public static class RobloxWindows
     /// <summary>Windows Windows didn't let Orbit change.</summary>
     private static readonly HashSet<int> Failed = new();
     private static DateTime _lastVerify;
+
+    /// <summary>True if this Roblox process is slowed down right now.</summary>
+    public static bool IsThrottled(int pid) => Throttled.TryGetValue(pid, out var slow) && slow;
+
+    /// <summary>A saver setting changed (CPU limit, efficiency mode): apply it again to every window.</summary>
+    public static void ReapplySaver(Dispatcher ui)
+    {
+        Throttled.Clear();
+        RefreshSaver(ui);
+    }
 
     /// <summary>Number of windows that are slowed down right now (checked: Windows reports "Below normal").</summary>
     public static int ThrottledCount => Throttled.Count(kv => kv.Value);
@@ -246,6 +296,11 @@ public static class RobloxWindows
                 Throttled.Remove(gone);
                 changed = true;
             }
+            foreach (var gone in Jobs.Keys.Where(id => !ids.Contains(id)).ToList())
+            {
+                CloseHandle(Jobs[gone]);
+                Jobs.Remove(gone);
+            }
             changed |= Failed.RemoveWhere(id => !ids.Contains(id)) > 0;
             if (changed) SaverChanged?.Invoke();
         }
@@ -279,6 +334,7 @@ public static class RobloxWindows
                 var upper = all & ~((1L << (cores - keep)) - 1);
                 p.ProcessorAffinity = (IntPtr)(slow ? upper : all);
             }
+            ApplyLimits(p.Id, slow);
             // Ask Windows again whether it really took the change.
             p.Refresh();
             return p.PriorityClass == (slow ? ProcessPriorityClass.BelowNormal : ProcessPriorityClass.Normal);
@@ -289,12 +345,77 @@ public static class RobloxWindows
         }
     }
 
+    // ---------------- CPU limit and efficiency mode ----------------
+
+    /// <summary>Process id → Orbit's own job object that holds the CPU limit for that window.</summary>
+    private static readonly Dictionary<int, IntPtr> Jobs = new();
+
+    /// <summary>
+    /// Background window: a hard CPU limit (a Windows job object – Roblox's frame rate drops with it)
+    /// and Windows' efficiency mode. Foreground window: both off. Failures here are not fatal.
+    /// </summary>
+    private static void ApplyLimits(int pid, bool slow)
+    {
+        var s = AppState.Settings;
+        var cap = slow ? Math.Clamp(s.SaverCpuCap, 0, 100) : 0;
+        try
+        {
+            if (cap > 0 || Jobs.ContainsKey(pid))
+            {
+                if (!Jobs.TryGetValue(pid, out var job))
+                {
+                    job = CreateJobObject(IntPtr.Zero, null);
+                    var process = OpenProcess(PROCESS_SET_QUOTA | PROCESS_TERMINATE, false, pid);
+                    var assigned = job != IntPtr.Zero && process != IntPtr.Zero && AssignProcessToJobObject(job, process);
+                    if (process != IntPtr.Zero) CloseHandle(process);
+                    if (!assigned) { if (job != IntPtr.Zero) CloseHandle(job); job = IntPtr.Zero; }
+                    else Jobs[pid] = job;
+                }
+                if (job != IntPtr.Zero)
+                {
+                    var info = new JOBOBJECT_CPU_RATE_CONTROL_INFORMATION
+                    {
+                        ControlFlags = cap > 0 ? JOB_OBJECT_CPU_RATE_CONTROL_ENABLE | JOB_OBJECT_CPU_RATE_CONTROL_HARD_CAP : 0,
+                        CpuRate = (uint)(cap * 100), // in 1/100 percent
+                    };
+                    SetInformationJobObject(job, JobObjectCpuRateControlInformation, ref info, (uint)Marshal.SizeOf<JOBOBJECT_CPU_RATE_CONTROL_INFORMATION>());
+                }
+            }
+
+            var handle = OpenProcess(PROCESS_SET_INFORMATION, false, pid);
+            if (handle != IntPtr.Zero)
+            {
+                var state = new PROCESS_POWER_THROTTLING_STATE
+                {
+                    Version = 1,
+                    ControlMask = PROCESS_POWER_THROTTLING_EXECUTION_SPEED,
+                    StateMask = slow && s.SaverEco ? PROCESS_POWER_THROTTLING_EXECUTION_SPEED : 0,
+                };
+                SetProcessInformation(handle, ProcessPowerThrottling, ref state, (uint)Marshal.SizeOf<PROCESS_POWER_THROTTLING_STATE>());
+                CloseHandle(handle);
+            }
+        }
+        catch { /* optional extras */ }
+    }
+
+    private static void ReleaseJobs()
+    {
+        foreach (var (pid, job) in Jobs)
+        {
+            var off = new JOBOBJECT_CPU_RATE_CONTROL_INFORMATION();
+            SetInformationJobObject(job, JobObjectCpuRateControlInformation, ref off, (uint)Marshal.SizeOf<JOBOBJECT_CPU_RATE_CONTROL_INFORMATION>());
+            CloseHandle(job);
+        }
+        Jobs.Clear();
+    }
+
     private static void RestoreAllPriorities()
     {
-        if (Throttled.Count == 0 && Failed.Count == 0) return;
+        if (Throttled.Count == 0 && Failed.Count == 0 && Jobs.Count == 0) return;
         foreach (var p in RobloxPaths.RunningClients())
             using (p)
                 if (Throttled.ContainsKey(p.Id)) SetSlow(p, false);
+        ReleaseJobs();
         Throttled.Clear();
         Failed.Clear();
         SaverChanged?.Invoke();
@@ -308,6 +429,31 @@ public static class RobloxWindows
     }
 
     // ---------------- Win32 ----------------
+
+    private const uint WM_CLOSE = 0x0010, KEYEVENTF_KEYUP = 0x0002;
+    private const byte VK_MENU = 0x12;
+    [DllImport("user32.dll")] private static extern bool SetForegroundWindow(IntPtr hwnd);
+    [DllImport("user32.dll")] private static extern void keybd_event(byte vk, byte scan, uint flags, UIntPtr extra);
+
+    private const uint PROCESS_TERMINATE = 0x0001, PROCESS_SET_QUOTA = 0x0100, PROCESS_SET_INFORMATION = 0x0200;
+    private const uint JOB_OBJECT_CPU_RATE_CONTROL_ENABLE = 0x1, JOB_OBJECT_CPU_RATE_CONTROL_HARD_CAP = 0x4;
+    private const int JobObjectCpuRateControlInformation = 15, ProcessPowerThrottling = 4;
+    private const uint PROCESS_POWER_THROTTLING_EXECUTION_SPEED = 0x1;
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct JOBOBJECT_CPU_RATE_CONTROL_INFORMATION { public uint ControlFlags; public uint CpuRate; }
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct PROCESS_POWER_THROTTLING_STATE { public uint Version, ControlMask, StateMask; }
+
+    [DllImport("kernel32.dll", CharSet = CharSet.Unicode)] private static extern IntPtr CreateJobObject(IntPtr attributes, string? name);
+    [DllImport("kernel32.dll")] private static extern bool AssignProcessToJobObject(IntPtr job, IntPtr process);
+    [DllImport("kernel32.dll")]
+    private static extern bool SetInformationJobObject(IntPtr job, int infoClass, ref JOBOBJECT_CPU_RATE_CONTROL_INFORMATION info, uint length);
+    [DllImport("kernel32.dll")]
+    private static extern bool SetProcessInformation(IntPtr process, int infoClass, ref PROCESS_POWER_THROTTLING_STATE info, uint length);
+    [DllImport("kernel32.dll")] private static extern IntPtr OpenProcess(uint access, bool inherit, int pid);
+    [DllImport("kernel32.dll")] private static extern bool CloseHandle(IntPtr handle);
 
     private const int GWL_STYLE = -16;
     private const long WS_CAPTION = 0x00C00000, WS_POPUP = 0x80000000, WS_OVERLAPPEDWINDOW = 0x00CF0000;

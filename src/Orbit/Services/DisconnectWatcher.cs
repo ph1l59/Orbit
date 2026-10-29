@@ -45,6 +45,21 @@ public sealed class DisconnectWatcher : IDisposable
 
     public event Action<DisconnectInfo>? Disconnected;
 
+    /// <summary>Accounts whose window lost its game and hasn't joined again since.</summary>
+    private readonly HashSet<long> _disconnected = new();
+
+    /// <summary>What every account is doing right now: user id → (place id or 0, disconnected).</summary>
+    public Dictionary<long, (long PlaceId, bool Disconnected)> Snapshot()
+    {
+        lock (_logs)
+        {
+            var result = new Dictionary<long, (long, bool)>();
+            foreach (var st in _logs.Values.OrderBy(v => v.LastSeen))
+                if (st.UserId > 0) result[st.UserId] = (st.InGame ? st.PlaceId : 0, _disconnected.Contains(st.UserId));
+            return result;
+        }
+    }
+
     public DisconnectWatcher()
     {
         _timer = new System.Threading.Timer(_ => Poll(), null, TimeSpan.FromSeconds(2), TimeSpan.FromSeconds(1.5));
@@ -54,6 +69,18 @@ public sealed class DisconnectWatcher : IDisposable
     {
         if (Interlocked.Exchange(ref _busy, 1) == 1) return;
         try
+        {
+            lock (_logs) PollLocked();
+        }
+        catch { /* a log is locked or gone – next tick */ }
+        finally
+        {
+            Interlocked.Exchange(ref _busy, 0);
+        }
+    }
+
+    private void PollLocked()
+    {
         {
             var dir = RobloxPaths.LogsDir;
             if (!Directory.Exists(dir)) return;
@@ -85,11 +112,6 @@ public sealed class DisconnectWatcher : IDisposable
 
             CheckPending();
         }
-        catch { /* a log is locked or gone – next tick */ }
-        finally
-        {
-            Interlocked.Exchange(ref _busy, 0);
-        }
     }
 
     private void Read(string path, LogState state, bool silent)
@@ -120,7 +142,7 @@ public sealed class DisconnectWatcher : IDisposable
         }
     }
 
-    private static void Handle(string line, LogState state)
+    private void Handle(string line, LogState state)
     {
         var userId = UserIdRegex.Match(line);
         if (userId.Success && long.TryParse(userId.Groups[1].Value, out var id) && id > 0) state.UserId = id;
@@ -130,6 +152,7 @@ public sealed class DisconnectWatcher : IDisposable
         {
             state.InGame = true;
             state.PlaceId = long.Parse(joining.Groups[1].Value);
+            if (state.UserId > 0) _disconnected.Remove(state.UserId);
             state.Teleporting = null;
             state.DisconnectedAt = null;
             state.Reason = null;
@@ -206,6 +229,7 @@ public sealed class DisconnectWatcher : IDisposable
             // The window was closed (fewer Roblox windows than before): that's not a disconnect.
             if (RobloxPaths.RunningCount() < state.RunningAtDisconnect) { state.Reason = null; continue; }
 
+            if (state.UserId > 0) _disconnected.Add(state.UserId);
             var info = new DisconnectInfo(state.UserId, state.PlaceId, state.Reason);
             state.Reason = null;
             Disconnected?.Invoke(info);

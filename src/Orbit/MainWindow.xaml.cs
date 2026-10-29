@@ -24,6 +24,7 @@ public partial class MainWindow : Window
     private static readonly PageInfo[] PageList =
     {
         new("play", "Play", "\uE768", true, () => new PlayView()),
+        new("overview", "Overview", "\uECA5", true, () => new OverviewView()),
         new("accounts", "Accounts", "", true, () => new AccountsView()),
         new("global", "Global Settings", "", true, () => new GlobalSettingsView()),
         new("fastflags", "FastFlags", "", true, () => new FastFlagsView()),
@@ -82,6 +83,7 @@ public partial class MainWindow : Window
             WindowTitles.Start();
             Playtime.Start(Dispatcher);
             RamCleaner.Start(Dispatcher);
+            AntiAfk.Start(Dispatcher);
             RobloxWindows.RefreshSaver(Dispatcher);
 
             // "What's new" once after an update – a moment after the window is up.
@@ -540,6 +542,9 @@ public partial class MainWindow : Window
         };
         Friends.SetAccount(_play.CurrentAccount);
     }
+
+    /// <summary>True while something covers the page (friends drawer) – live window pictures hide then.</summary>
+    public bool IsOverlayOpen => DrawerLayer.Visibility == Visibility.Visible;
 
     private readonly System.Windows.Media.Effects.BlurEffect _blur = new() { Radius = 0 };
 

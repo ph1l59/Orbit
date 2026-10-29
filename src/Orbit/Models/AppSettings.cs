@@ -46,6 +46,19 @@ public sealed class AppSettings
     public bool NotifyDisconnect { get; set; } = true;
     /// <summary>Roblox windows in the background get less CPU time than the one you're playing in.</summary>
     public bool ResourceSaver { get; set; }
+    /// <summary>Hard CPU limit for Roblox windows in the background, in percent of the whole CPU (0 = off).</summary>
+    public int SaverCpuCap { get; set; } = 25;
+    /// <summary>Windows' efficiency mode for Roblox windows in the background.</summary>
+    public bool SaverEco { get; set; } = true;
+
+    // ===== Overview / Anti-AFK =====
+    /// <summary>Tile size on the Overview page: small | medium | large.</summary>
+    public string OverviewTileSize { get; set; } = "medium";
+    /// <summary>Presses a key in every Roblox window now and then, so Roblox doesn't kick for being idle (off by default).</summary>
+    public bool AntiAfk { get; set; }
+    public int AntiAfkMinutes { get; set; } = 15;
+    /// <summary>background = posts the key without moving the focus; focus = brings each window to the front for a moment (only while you're away).</summary>
+    public string AntiAfkMode { get; set; } = "background";
     public List<LaunchPreset> Presets { get; set; } = new();
 
     // ===== Tweaks: RAM cleaner =====
