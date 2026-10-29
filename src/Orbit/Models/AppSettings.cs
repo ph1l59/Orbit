@@ -59,8 +59,6 @@ public sealed class AppSettings
     /// <summary>Presses a key in every Roblox window now and then, so Roblox doesn't kick for being idle (off by default).</summary>
     public bool AntiAfk { get; set; }
     public int AntiAfkMinutes { get; set; } = 15;
-    /// <summary>background = posts the key without moving the focus; focus = brings each window to the front for a moment (only while you're away).</summary>
-    public string AntiAfkMode { get; set; } = "focus";
     public List<LaunchPreset> Presets { get; set; } = new();
 
     // ===== Tweaks: RAM cleaner =====

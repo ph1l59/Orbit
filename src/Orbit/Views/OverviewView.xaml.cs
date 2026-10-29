@@ -55,7 +55,6 @@ public partial class OverviewView : UserControl, IPage
         Select(CapBox, s.SaverCpuCap.ToString(CultureInfo.InvariantCulture));
         AfkToggle.IsChecked = s.AntiAfk;
         Select(AfkInterval, s.AntiAfkMinutes.ToString(CultureInfo.InvariantCulture));
-        Select(AfkMode, s.AntiAfkMode);
         _loading = false;
 
         _refresh.Tick += (_, _) => { RefreshTiles(); UpdateAfkStatus(); };
@@ -446,13 +445,6 @@ public partial class OverviewView : UserControl, IPage
         AppState.Settings.AntiAfkMinutes = int.Parse(tag, CultureInfo.InvariantCulture);
         AppState.SaveSettings();
         AntiAfk.Refresh();
-    }
-
-    private void AfkMode_Changed(object sender, SelectionChangedEventArgs e)
-    {
-        if (_loading || TagOf(AfkMode) is not { } tag) return;
-        AppState.Settings.AntiAfkMode = tag;
-        AppState.SaveSettings();
     }
 
     private async void AfkTest_Click(object sender, RoutedEventArgs e)
