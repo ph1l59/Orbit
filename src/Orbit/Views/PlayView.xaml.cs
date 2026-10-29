@@ -250,7 +250,6 @@ public partial class PlayView : UserControl, IPage
     private double _swayWeight = 1;      // fades to 0 while the user turns the avatar
     private DateTime _lastTouch = DateTime.MinValue;
     private bool _idleRunning, _idleWanted;
-    private TimeSpan _idleLastFrame;
 
     private void StartIdle()
     {
@@ -280,9 +279,6 @@ public partial class PlayView : UserControl, IPage
     {
         if (_model == null || !IsVisible) return;
         var now = ((System.Windows.Media.RenderingEventArgs)e).RenderingTime;
-        // 60 frames a second is enough for the slow breathing – high refresh screens would redraw the 3D model far more often.
-        if (now - _idleLastFrame < TimeSpan.FromMilliseconds(15)) return;
-        _idleLastFrame = now;
         if (_idleStart == TimeSpan.MinValue) _idleStart = now;
         var t = (now - _idleStart).TotalSeconds;
 

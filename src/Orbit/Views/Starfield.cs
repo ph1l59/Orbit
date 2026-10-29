@@ -151,8 +151,6 @@ public sealed class Starfield : FrameworkElement
 
         var now = ((RenderingEventArgs)e).RenderingTime;
         if (now == _lastFrame) return;
-        // About 40 frames a second is plenty for drifting stars – on 144/240 Hz screens this saves most of the work.
-        if (_lastFrame != TimeSpan.Zero && now - _lastFrame < TimeSpan.FromMilliseconds(24)) return;
         var dt = _lastFrame == TimeSpan.Zero ? 1 / 60.0 : Math.Min(0.05, (now - _lastFrame).TotalSeconds);
         _lastFrame = now;
         _time += dt;
