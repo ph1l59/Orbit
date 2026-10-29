@@ -55,7 +55,7 @@ public partial class BootstrapperView : UserControl, IPage
 
     private int UpdateRunningText()
     {
-        var count = RobloxPaths.RunningCount();
+        var count = RobloxPaths.ClientIds().Length;
         RunningText.Text = count switch
         {
             0 => "No Roblox instances running.",

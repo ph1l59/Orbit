@@ -1,5 +1,7 @@
 using System.Diagnostics;
 using System.IO;
+using System.Runtime.InteropServices;
+using System.Text;
 
 namespace Orbit.Services;
 
@@ -61,6 +63,60 @@ public static class RobloxPaths
 
     public static Process[] RunningClients() => Process.GetProcessesByName("RobloxPlayerBeta");
 
+    // ---------- Cheap list of running Roblox processes ----------
+    // Listing processes means Windows hands over every process on the PC – too slow to do on the UI thread
+    // every second. So the ids are fetched on a background thread and are at most about a second old.
+
+    private static int[] _ids = Array.Empty<int>();
+    private static long _idsAt;
+    private static int _idsRefreshing;
+
+    /// <summary>Process ids of the running Roblox windows (refreshed in the background, at most ~1 s old).</summary>
+    public static int[] ClientIds()
+    {
+        var at = Interlocked.Read(ref _idsAt);
+        if (at == 0) RefreshIds(); // very first call: wait for it once
+        else if (Environment.TickCount64 - at > 900 && Interlocked.Exchange(ref _idsRefreshing, 1) == 0)
+            Task.Run(() =>
+            {
+                try { RefreshIds(); }
+                finally { Volatile.Write(ref _idsRefreshing, 0); }
+            });
+        return Volatile.Read(ref _ids);
+    }
+
+    /// <summary>Something started or closed Roblox: fetch the list again on the next call.</summary>
+    public static void InvalidateIds() => Interlocked.Exchange(ref _idsAt, 1);
+
+    private static void RefreshIds()
+    {
+        var running = RunningClients();
+        var ids = new int[running.Length];
+        for (var i = 0; i < running.Length; i++) { ids[i] = running[i].Id; running[i].Dispose(); }
+        Volatile.Write(ref _ids, ids);
+        Interlocked.Exchange(ref _idsAt, Environment.TickCount64);
+    }
+
+    /// <summary>True if this process is a Roblox window – asks only for its file name, not the whole process list.</summary>
+    public static bool IsRobloxProcess(int pid)
+    {
+        var handle = OpenProcess(0x1000 /* PROCESS_QUERY_LIMITED_INFORMATION */, false, pid);
+        if (handle == IntPtr.Zero) return false;
+        try
+        {
+            var name = new StringBuilder(1024);
+            var size = name.Capacity;
+            return QueryFullProcessImageName(handle, 0, name, ref size) &&
+                   Path.GetFileName(name.ToString()).Equals(PlayerExe, StringComparison.OrdinalIgnoreCase);
+        }
+        finally { CloseHandle(handle); }
+    }
+
+    [DllImport("kernel32.dll")] private static extern IntPtr OpenProcess(uint access, bool inherit, int pid);
+    [DllImport("kernel32.dll")] private static extern bool CloseHandle(IntPtr handle);
+    [DllImport("kernel32.dll", CharSet = CharSet.Unicode)]
+    private static extern bool QueryFullProcessImageName(IntPtr process, uint flags, StringBuilder name, ref int size);
+
     public static int RunningCount()
     {
         var running = RunningClients();
@@ -78,6 +134,7 @@ public static class RobloxPaths
             try { p.Kill(); count++; } catch { /* already gone */ }
             finally { p.Dispose(); }
         }
+        InvalidateIds();
         return count;
     }
 }

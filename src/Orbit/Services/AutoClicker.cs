@@ -150,8 +150,7 @@ public sealed class AutoClicker
             _checkedAt = Environment.TickCount64;
             try
             {
-                using var p = Process.GetProcessById((int)pid);
-                var isRoblox = p.ProcessName.Equals("RobloxPlayerBeta", StringComparison.OrdinalIgnoreCase);
+                var isRoblox = RobloxPaths.IsRobloxProcess((int)pid);
                 if (isRoblox) _robloxPid = pid;
                 return isRoblox;
             }

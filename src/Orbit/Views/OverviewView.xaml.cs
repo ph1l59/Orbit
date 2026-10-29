@@ -60,6 +60,7 @@ public partial class OverviewView : UserControl, IPage
         _refresh.Tick += (_, _) => { RefreshTiles(); UpdateAfkStatus(); };
         AntiAfk.Changed += () => Dispatcher.InvokeAsync(UpdateAfkStatus);
         IsVisibleChanged += (_, _) => OnVisibilityChanged();
+        RenderGate.Changed += OnVisibilityChanged;
     }
 
     public void OnShown() => OnVisibilityChanged();
@@ -79,7 +80,8 @@ public partial class OverviewView : UserControl, IPage
 
     private void OnVisibilityChanged()
     {
-        if (IsVisible)
+        // Only while the page is open and Orbit isn't minimized or in the tray.
+        if (IsVisible && RenderGate.WindowShowing)
         {
             SaverToggle.IsChecked = AppState.Settings.ResourceSaver; // may have been switched on the Accounts page
             RefreshTiles();

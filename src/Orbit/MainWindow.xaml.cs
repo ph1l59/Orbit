@@ -66,9 +66,17 @@ public partial class MainWindow : Window
             if (e.Key == Key.Escape && DrawerLayer.Visibility == Visibility.Visible) { CloseDrawer(); e.Handled = true; }
         };
 
-        StateChanged += (_, _) => UpdateMaximizedState();
+        StateChanged += (_, _) =>
+        {
+            UpdateMaximizedState();
+            RenderGate.Set(IsVisible && WindowState != WindowState.Minimized);
+        };
         // Discord shows "In the launcher" only while the window is open (not while Orbit sits in the tray).
-        IsVisibleChanged += (_, _) => Integrations.SetLauncherOpen(IsVisible);
+        IsVisibleChanged += (_, _) =>
+        {
+            Integrations.SetLauncherOpen(IsVisible);
+            RenderGate.Set(IsVisible && WindowState != WindowState.Minimized);
+        };
         AppState.MultiInstanceChanged += UpdateMultiStatus;
         UpdateMultiStatus();
 

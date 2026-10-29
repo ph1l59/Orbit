@@ -293,7 +293,7 @@ public static class Integrations
 
     private static void CheckRoblox()
     {
-        var running = RobloxPaths.IsRobloxRunning();
+        var running = RobloxPaths.ClientIds().Length > 0;
         if (_robloxWasRunning && !running)
         {
             foreach (var p in CustomProcesses)

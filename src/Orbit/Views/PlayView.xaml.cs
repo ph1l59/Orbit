@@ -36,6 +36,8 @@ public partial class PlayView : UserControl, IPage
         };
         AppState.Accounts.CollectionChanged += (_, _) => Dispatcher.InvokeAsync(Refresh);
         Playtime.Changed += UpdatePlaytime;
+        IsVisibleChanged += (_, _) => UpdateIdleHook();
+        RenderGate.Changed += UpdateIdleHook;
         Refresh();
         UpdatePlaytime();
     }
@@ -247,28 +249,40 @@ public partial class PlayView : UserControl, IPage
     private TimeSpan _idleStart = TimeSpan.MinValue;
     private double _swayWeight = 1;      // fades to 0 while the user turns the avatar
     private DateTime _lastTouch = DateTime.MinValue;
-    private bool _idleRunning;
+    private bool _idleRunning, _idleWanted;
+    private TimeSpan _idleLastFrame;
 
     private void StartIdle()
     {
         _idleStart = TimeSpan.MinValue;
         _swayWeight = 1;
-        if (_idleRunning) return;
-        _idleRunning = true;
-        System.Windows.Media.CompositionTarget.Rendering += Idle;
+        _idleWanted = true;
+        UpdateIdleHook();
     }
 
     private void StopIdle()
     {
-        if (!_idleRunning) return;
-        _idleRunning = false;
-        System.Windows.Media.CompositionTarget.Rendering -= Idle;
+        _idleWanted = false;
+        UpdateIdleHook();
+    }
+
+    /// <summary>The avatar only moves while the Play page can be seen – otherwise WPF would keep drawing every frame.</summary>
+    private void UpdateIdleHook()
+    {
+        var want = _idleWanted && IsVisible && RenderGate.WindowShowing;
+        if (want == _idleRunning) return;
+        _idleRunning = want;
+        if (want) System.Windows.Media.CompositionTarget.Rendering += Idle;
+        else System.Windows.Media.CompositionTarget.Rendering -= Idle;
     }
 
     private void Idle(object? sender, EventArgs e)
     {
         if (_model == null || !IsVisible) return;
         var now = ((System.Windows.Media.RenderingEventArgs)e).RenderingTime;
+        // 60 frames a second is enough for the slow breathing – high refresh screens would redraw the 3D model far more often.
+        if (now - _idleLastFrame < TimeSpan.FromMilliseconds(15)) return;
+        _idleLastFrame = now;
         if (_idleStart == TimeSpan.MinValue) _idleStart = now;
         var t = (now - _idleStart).TotalSeconds;
 

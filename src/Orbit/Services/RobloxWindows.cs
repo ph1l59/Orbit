@@ -18,9 +18,7 @@ public static class RobloxWindows
 
     public static List<RobloxWindow> All()
     {
-        var pids = new HashSet<int>();
-        foreach (var p in RobloxPaths.RunningClients())
-            using (p) pids.Add(p.Id);
+        var pids = new HashSet<int>(RobloxPaths.ClientIds());
 
         var result = new List<RobloxWindow>();
         if (pids.Count == 0) return result;
@@ -211,8 +209,15 @@ public static class RobloxWindows
     /// <summary>Memory the Roblox process uses right now (bytes).</summary>
     public static long MemoryOf(int pid)
     {
-        try { using var p = Process.GetProcessById(pid); return p.WorkingSet64; }
-        catch { return 0; }
+        // Asks only this process (Process.WorkingSet64 would read the whole process list of the PC).
+        var handle = OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, false, pid);
+        if (handle == IntPtr.Zero) return 0;
+        try
+        {
+            var counters = new PROCESS_MEMORY_COUNTERS { cb = (uint)Marshal.SizeOf<PROCESS_MEMORY_COUNTERS>() };
+            return K32GetProcessMemoryInfo(handle, ref counters, counters.cb) ? (long)counters.WorkingSetSize : 0;
+        }
+        finally { CloseHandle(handle); }
     }
 
     // ---------------- Resource saver ----------------
@@ -263,24 +268,30 @@ public static class RobloxWindows
     private static void SaverTick()
     {
         GetWindowThreadProcessId(GetForegroundWindow(), out var foreground);
-        var clients = RobloxPaths.RunningClients();
-        try
+        var all = RobloxPaths.ClientIds();
         {
-            var ids = clients.Select(p => p.Id).ToHashSet();
+            var ids = all.ToHashSet();
             // The window you're in stays fast. While you're outside Roblox (e.g. in Orbit or a browser),
             // the Roblox window you used last stays fast.
             if (ids.Contains((int)foreground)) _lastPlayed = (int)foreground;
-            else if (!ids.Contains(_lastPlayed)) _lastPlayed = clients.Length == 1 ? clients[0].Id : 0;
+            else if (!ids.Contains(_lastPlayed)) _lastPlayed = all.Length == 1 ? all[0] : 0;
 
             var changed = false;
             // Every few seconds: check that the priority is really still set (Roblox could reset it).
             var verify = DateTime.UtcNow - _lastVerify > TimeSpan.FromSeconds(5);
             if (verify) _lastVerify = DateTime.UtcNow;
 
-            foreach (var p in clients)
+            foreach (var id in all)
             {
-                var slow = clients.Length > 1 && p.Id != _lastPlayed;
-                if (Throttled.TryGetValue(p.Id, out var current) && current == slow && !(verify && slow && !IsSlow(p))) continue;
+                var slow = all.Length > 1 && id != _lastPlayed;
+                var known = Throttled.TryGetValue(id, out var current) && current == slow;
+                if (known && !(verify && slow)) continue; // nothing to do – no need to even open the process
+
+                Process p;
+                try { p = Process.GetProcessById(id); }
+                catch { continue; } // just closed
+                using var process = p;
+                if (known && IsSlow(p)) continue;
                 var ok = SetSlow(p, slow);
                 if (ok)
                 {
@@ -303,10 +314,6 @@ public static class RobloxWindows
             }
             changed |= Failed.RemoveWhere(id => !ids.Contains(id)) > 0;
             if (changed) SaverChanged?.Invoke();
-        }
-        finally
-        {
-            foreach (var p in clients) p.Dispose();
         }
     }
 
@@ -453,6 +460,16 @@ public static class RobloxWindows
     [DllImport("kernel32.dll")]
     private static extern bool SetProcessInformation(IntPtr process, int infoClass, ref PROCESS_POWER_THROTTLING_STATE info, uint length);
     [DllImport("kernel32.dll")] private static extern IntPtr OpenProcess(uint access, bool inherit, int pid);
+    [DllImport("kernel32.dll")] private static extern bool K32GetProcessMemoryInfo(IntPtr process, ref PROCESS_MEMORY_COUNTERS counters, uint size);
+    private const uint PROCESS_QUERY_LIMITED_INFORMATION = 0x1000;
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct PROCESS_MEMORY_COUNTERS
+    {
+        public uint cb, PageFaultCount;
+        public UIntPtr PeakWorkingSetSize, WorkingSetSize, QuotaPeakPagedPoolUsage, QuotaPagedPoolUsage,
+            QuotaPeakNonPagedPoolUsage, QuotaNonPagedPoolUsage, PagefileUsage, PeakPagefileUsage;
+    }
     [DllImport("kernel32.dll")] private static extern bool CloseHandle(IntPtr handle);
 
     private const int GWL_STYLE = -16;

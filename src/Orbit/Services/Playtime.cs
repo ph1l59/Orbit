@@ -51,7 +51,7 @@ public static class Playtime
         var elapsed = Math.Clamp((now - _lastTick).TotalSeconds, 0, 60); // PC was asleep: don't count that
         _lastTick = now;
 
-        var running = RobloxPaths.IsRobloxRunning();
+        var running = RobloxPaths.ClientIds().Length > 0;
         // Count the time between two checks only if Roblox was open at both.
         if (running && _wasRunning && elapsed > 0)
         {

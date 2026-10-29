@@ -58,7 +58,7 @@ public sealed class ActivityWatcher : IDisposable
 
             ReadNewLines();
 
-            if (Current != null && !RobloxPaths.IsRobloxRunning()) EndSession();
+            if (Current != null && RobloxPaths.ClientIds().Length == 0) EndSession();
         }
         catch { /* log locked or deleted - try again next tick */ }
         finally
