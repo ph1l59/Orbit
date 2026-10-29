@@ -1,5 +1,6 @@
 using System.Windows;
 using System.Windows.Media;
+using System.Windows.Input;
 using Orbit.Services;
 
 namespace Orbit.Views;
@@ -154,6 +155,13 @@ public sealed class Starfield : FrameworkElement
         var dt = _lastFrame == TimeSpan.Zero ? 1 / 60.0 : Math.Min(0.05, (now - _lastFrame).TotalSeconds);
         _lastFrame = now;
         _time += dt;
+
+        // The glow follows where the mouse is right now, not where the last mouse event said it was.
+        if (_mouse != null)
+        {
+            _lastMouse = Mouse.GetPosition(this);
+            _mouse = _lastMouse;
+        }
 
         foreach (var s in _stars)
         {

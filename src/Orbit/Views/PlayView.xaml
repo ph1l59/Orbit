@@ -63,7 +63,11 @@
                         <Grid x:Name="root" RenderTransformOrigin="0.5,0.5">
 
                             <!-- glow -->
+                            <!-- BitmapCache: the blur is worked out once and reused, not again every frame behind the moving stars -->
                             <Border x:Name="glow" CornerRadius="18" Background="#A855F7" Opacity="0.35" Margin="10,14,10,0">
+                                <Border.CacheMode>
+                                    <BitmapCache/>
+                                </Border.CacheMode>
                                 <Border.Effect>
                                     <BlurEffect Radius="28"/>
                                 </Border.Effect>
