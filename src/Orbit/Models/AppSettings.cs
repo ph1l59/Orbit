@@ -47,13 +47,15 @@ public sealed class AppSettings
     /// <summary>Roblox windows in the background get less CPU time than the one you're playing in.</summary>
     public bool ResourceSaver { get; set; }
     /// <summary>Hard CPU limit for Roblox windows in the background, in percent of the whole CPU (0 = off).</summary>
-    public int SaverCpuCap { get; set; } = 25;
+    public int SaverCpuCap { get; set; } = 10;
     /// <summary>Windows' efficiency mode for Roblox windows in the background.</summary>
     public bool SaverEco { get; set; } = true;
 
     // ===== Overview / Anti-AFK =====
     /// <summary>Tile size on the Overview page: small | medium | large.</summary>
     public string OverviewTileSize { get; set; } = "medium";
+    /// <summary>Hide account names and pictures on the Overview page (screenshots, streams).</summary>
+    public bool OverviewHideNames { get; set; }
     /// <summary>Presses a key in every Roblox window now and then, so Roblox doesn't kick for being idle (off by default).</summary>
     public bool AntiAfk { get; set; }
     public int AntiAfkMinutes { get; set; } = 15;

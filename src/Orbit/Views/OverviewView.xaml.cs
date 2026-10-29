@@ -14,7 +14,7 @@ namespace Orbit.Views;
 
 /// <summary>
 /// All open Roblox windows as live tiles (drawn by Windows, so they cost almost nothing),
-/// with the account, the game and controls – plus mini mode, the resource saver and Anti-AFK.
+/// with the account, the game and controls – plus arranging, the resource saver and Anti-AFK.
 /// </summary>
 public partial class OverviewView : UserControl, IPage
 {
@@ -39,8 +39,8 @@ public partial class OverviewView : UserControl, IPage
     private readonly Dictionary<long, string> _gameNames = new();
     private bool _rendering;
     private bool _loading;
-    private bool _mini;
-    private int _miniCount;
+    /// <summary>Process id → CPU time and when it was read (for the CPU % on each tile).</summary>
+    private readonly Dictionary<int, (TimeSpan Cpu, DateTime At)> _cpu = new();
 
     public OverviewView()
     {
@@ -50,6 +50,7 @@ public partial class OverviewView : UserControl, IPage
         var s = AppState.Settings;
         (s.OverviewTileSize switch { "small" => SizeSmall, "large" => SizeLarge, _ => SizeMedium }).IsChecked = true;
         SaverToggle.IsChecked = s.ResourceSaver;
+        HideToggle.IsChecked = s.OverviewHideNames;
         EcoToggle.IsChecked = s.SaverEco;
         Select(CapBox, s.SaverCpuCap.ToString(CultureInfo.InvariantCulture));
         AfkToggle.IsChecked = s.AntiAfk;
@@ -81,6 +82,7 @@ public partial class OverviewView : UserControl, IPage
     {
         if (IsVisible)
         {
+            SaverToggle.IsChecked = AppState.Settings.ResourceSaver; // may have been switched on the Accounts page
             RefreshTiles();
             _refresh.Start();
             if (!_rendering)
@@ -166,22 +168,31 @@ public partial class OverviewView : UserControl, IPage
 
         // Texts.
         var games = Integrations.GameSnapshot();
+        var hide = AppState.Settings.OverviewHideNames;
         long total = 0;
+        var index = 0;
         foreach (var w in windows)
         {
+            index++;
             var t = _tiles[w.Handle];
             var account = AppState.Accounts.FirstOrDefault(a => a.UserId == w.UserId);
-            t.Name.Text = account == null ? $"Roblox · PID {w.Pid}" : string.IsNullOrWhiteSpace(account.Title) ? account.Username : account.Title;
-            if (account?.AvatarUrl is { } url && url != t.AvatarUrl)
+            t.Name.Text = hide ? $"Account {index}"
+                : account == null ? $"Roblox · PID {w.Pid}"
+                : string.IsNullOrWhiteSpace(account.Title) ? account.Username : account.Title;
+
+            var url = hide ? null : account?.AvatarUrl;
+            if (url != t.AvatarUrl)
             {
                 t.AvatarUrl = url;
-                try { t.Avatar.Fill = new ImageBrush(new BitmapImage(new Uri(url))) { Stretch = Stretch.UniformToFill }; }
+                try { t.Avatar.Fill = url == null ? (Brush)FindResource("Raised2Brush") : new ImageBrush(new BitmapImage(new Uri(url))) { Stretch = Stretch.UniformToFill }; }
                 catch { /* no picture */ }
             }
 
             var memory = RobloxWindows.MemoryOf(w.Pid);
             total += memory;
-            t.Memory.Text = (memory / 1024.0 / 1024 / 1024).ToString("0.0", CultureInfo.InvariantCulture) + " GB";
+            var cpu = CpuPercent(w.Pid);
+            t.Memory.Text = (cpu is { } c ? "CPU " + c.ToString(c < 10 ? "0.0" : "0", CultureInfo.InvariantCulture) + " %  ·  " : "")
+                            + (memory / 1024.0 / 1024 / 1024).ToString("0.0", CultureInfo.InvariantCulture) + " GB";
             t.SlowBadge.Visibility = RobloxWindows.IsThrottled(w.Pid) ? Visibility.Visible : Visibility.Collapsed;
 
             if (w.UserId > 0 && games.TryGetValue(w.UserId, out var g))
@@ -196,7 +207,7 @@ public partial class OverviewView : UserControl, IPage
             }
             else
             {
-                t.Detail.Text = account != null ? "@" + account.Username : "Not launched by Orbit";
+                t.Detail.Text = account == null ? "Not launched by Orbit" : hide ? "@••••••" : "@" + account.Username;
                 t.Detail.Foreground = (Brush)FindResource("DimBrush");
             }
         }
@@ -207,10 +218,29 @@ public partial class OverviewView : UserControl, IPage
             : $"{n} Roblox window{(n == 1 ? "" : "s")} open  ·  {(total / 1024.0 / 1024 / 1024).ToString("0.0", CultureInfo.InvariantCulture)} GB RAM";
         EmptyState.Visibility = n == 0 ? Visibility.Visible : Visibility.Collapsed;
 
-        // Mini mode: new windows join the others.
-        if (_mini && n > _miniCount) await MiniArrangeAsync();
-        _miniCount = n;
-        UpdateMiniStatus();
+        ArrangeButton.IsEnabled = n > 0;
+        PutBackButton.IsEnabled = RobloxWindows.CanRestore;
+        foreach (var gone in _cpu.Keys.Where(pid => windows.All(w => w.Pid != pid)).ToList()) _cpu.Remove(gone);
+    }
+
+    /// <summary>CPU use of a process since the last check, in percent of the whole CPU (like Task Manager).</summary>
+    private double? CpuPercent(int pid)
+    {
+        try
+        {
+            using var p = System.Diagnostics.Process.GetProcessById(pid);
+            var now = DateTime.UtcNow;
+            var cpu = p.TotalProcessorTime;
+            double? result = null;
+            if (_cpu.TryGetValue(pid, out var last) && now > last.At)
+                result = Math.Max(0, (cpu - last.Cpu).TotalMilliseconds / (now - last.At).TotalMilliseconds / Environment.ProcessorCount * 100);
+            _cpu[pid] = (cpu, now);
+            return result;
+        }
+        catch
+        {
+            return null; // not allowed to read it
+        }
     }
 
     private async Task<string> GameNameAsync(long placeId)
@@ -318,8 +348,6 @@ public partial class OverviewView : UserControl, IPage
 
     private void FocusWindow(IntPtr hwnd)
     {
-        // In mini mode the window gets its normal size back first, so you can actually play in it.
-        if (_mini) RobloxWindows.RestoreOne(hwnd);
         RobloxWindows.BringToFront(hwnd);
     }
 
@@ -344,28 +372,38 @@ public partial class OverviewView : UserControl, IPage
 
     private void GoAccounts_Click(object sender, RoutedEventArgs e) => (Owner as MainWindow)?.Navigate("accounts");
 
-    // =================== Mini mode ===================
+    // =================== Arrange / hide names ===================
 
-    private async void Mini_Click(object sender, RoutedEventArgs e)
-    {
-        _mini = MiniToggle.IsChecked == true;
-        if (_mini) await MiniArrangeAsync();
-        else RobloxWindows.Restore();
-        UpdateMiniStatus();
-    }
-
-    private async Task MiniArrangeAsync()
+    private async void Arrange_Click(object sender, RoutedEventArgs e)
     {
         if (Owner is not { } owner) return;
-        var hwnd = new WindowInteropHelper(owner).Handle;
-        var screen = System.Windows.Forms.Screen.FromHandle(hwnd);
-        var index = Array.IndexOf(System.Windows.Forms.Screen.AllScreens, screen);
-        _miniCount = await RobloxWindows.ArrangeAsync(index);
-        RobloxWindows.PushBehind(hwnd);
+        ArrangeButton.IsEnabled = false;
+        try
+        {
+            // On the screen Orbit is on.
+            var screen = System.Windows.Forms.Screen.FromHandle(new WindowInteropHelper(owner).Handle);
+            var count = await RobloxWindows.ArrangeAsync(Array.IndexOf(System.Windows.Forms.Screen.AllScreens, screen));
+            Toast.Show("Roblox windows", count == 0 ? "No Roblox window is open." : $"{count} window{(count == 1 ? "" : "s")} arranged.");
+        }
+        finally
+        {
+            ArrangeButton.IsEnabled = true;
+            PutBackButton.IsEnabled = RobloxWindows.CanRestore;
+        }
     }
 
-    private void UpdateMiniStatus() =>
-        MiniStatus.Text = _mini ? $"ON · {_tiles.Count} WINDOW{(_tiles.Count == 1 ? "" : "S")} TUCKED AWAY" : "OFF";
+    private void PutBack_Click(object sender, RoutedEventArgs e)
+    {
+        RobloxWindows.Restore();
+        PutBackButton.IsEnabled = false;
+    }
+
+    private void Hide_Click(object sender, RoutedEventArgs e)
+    {
+        AppState.Settings.OverviewHideNames = HideToggle.IsChecked == true;
+        AppState.SaveSettings();
+        RefreshTiles();
+    }
 
     // =================== Resource saver ===================
 

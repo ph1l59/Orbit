@@ -196,6 +196,7 @@ public partial class AccountsView
             ScreenBox.Visibility = screens.Length > 1 ? Visibility.Visible : Visibility.Collapsed;
         }
 
+        SaverToggle.IsChecked = AppState.Settings.ResourceSaver; // may have been switched on the Overview page
         var throttled = RobloxWindows.ThrottledCount;
         var failed = RobloxWindows.FailedCount;
         const string about = "Roblox windows in the background get less CPU. The one you're playing in stays fast.";

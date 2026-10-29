@@ -1,122 +1,46 @@
 <UserControl x:Class="Orbit.Views.OverviewView"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <UserControl.Resources>
+        <!-- Small section in the side column -->
+        <Style x:Key="Side" TargetType="Border" BasedOn="{StaticResource Panel}">
+            <Setter Property="Padding" Value="14,12"/>
+            <Setter Property="Margin" Value="0,0,0,10"/>
+        </Style>
+        <Style x:Key="SideTitle" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="13"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+        </Style>
+        <Style x:Key="SideLabel" TargetType="TextBlock" BasedOn="{StaticResource Label}">
+            <Setter Property="Margin" Value="0"/>
+            <Setter Property="FontSize" Value="10"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+        </Style>
+    </UserControl.Resources>
+
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
-            <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="*"/>
+            <ColumnDefinition Width="18"/>
+            <ColumnDefinition Width="220"/>
+        </Grid.ColumnDefinitions>
 
         <!-- Header -->
-        <DockPanel Margin="0,0,0,16">
-            <StackPanel DockPanel.Dock="Right" VerticalAlignment="Bottom">
-                <TextBlock Text="TILE SIZE" Style="{StaticResource Label}" HorizontalAlignment="Right"/>
-                <Border Background="{StaticResource InputBrush}" BorderBrush="{StaticResource LineBrush}" BorderThickness="1" CornerRadius="8" Padding="3" Width="210">
-                    <UniformGrid Columns="3">
-                        <RadioButton x:Name="SizeSmall" Style="{StaticResource Segment}" Content="Small" GroupName="tileSize" Tag="small" Checked="Size_Checked"/>
-                        <RadioButton x:Name="SizeMedium" Style="{StaticResource Segment}" Content="Medium" GroupName="tileSize" Tag="medium" Checked="Size_Checked"/>
-                        <RadioButton x:Name="SizeLarge" Style="{StaticResource Segment}" Content="Large" GroupName="tileSize" Tag="large" Checked="Size_Checked"/>
-                    </UniformGrid>
-                </Border>
-            </StackPanel>
-            <StackPanel>
-                <TextBlock Text="ORBIT / OVERVIEW" Style="{StaticResource Crumb}"/>
-                <TextBlock Style="{StaticResource PageTitle}">
-                    <Run Text="Account"/> <Run Text="overview" Foreground="{StaticResource AccentTextBrush}"/>
-                </TextBlock>
-                <TextBlock x:Name="CountText" Style="{StaticResource PageDesc}" Text="All your Roblox windows live, on one screen."/>
-            </StackPanel>
-        </DockPanel>
-
-        <!-- Controls -->
-        <Grid Grid.Row="1" Margin="0,0,0,16">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="*"/>
-                <ColumnDefinition Width="12"/>
-                <ColumnDefinition Width="*"/>
-                <ColumnDefinition Width="12"/>
-                <ColumnDefinition Width="*"/>
-            </Grid.ColumnDefinitions>
-
-            <!-- Mini mode -->
-            <Border Style="{StaticResource Panel}" Tag="Mini mode|small windows hide behind overview tiny">
-                <StackPanel>
-                    <DockPanel>
-                        <CheckBox x:Name="MiniToggle" DockPanel.Dock="Right" Style="{StaticResource Toggle}" Click="Mini_Click" VerticalAlignment="Top"/>
-                        <StackPanel Margin="0,0,10,0">
-                            <TextBlock Text="Mini mode" FontSize="14.5" FontWeight="SemiBold"/>
-                            <TextBlock Style="{StaticResource RowDesc}" Text="All Roblox windows as small as possible, tucked behind Orbit – you watch them here."/>
-                        </StackPanel>
-                    </DockPanel>
-                    <TextBlock x:Name="MiniStatus" Style="{StaticResource Crumb}" Margin="0,12,0,0" Text="OFF"/>
-                </StackPanel>
-            </Border>
-
-            <!-- Resource saver -->
-            <Border Grid.Column="2" Style="{StaticResource Panel}" Tag="Resource saver|cpu limit efficiency mode background windows performance">
-                <StackPanel>
-                    <DockPanel>
-                        <CheckBox x:Name="SaverToggle" DockPanel.Dock="Right" Style="{StaticResource Toggle}" Click="Saver_Click" VerticalAlignment="Top"/>
-                        <StackPanel Margin="0,0,10,0">
-                            <TextBlock Text="Resource saver" FontSize="14.5" FontWeight="SemiBold"/>
-                            <TextBlock Style="{StaticResource RowDesc}" Text="Windows in the background use less CPU. The one you play in stays fast."/>
-                        </StackPanel>
-                    </DockPanel>
-                    <DockPanel Margin="0,12,0,0">
-                        <ComboBox x:Name="CapBox" DockPanel.Dock="Right" Width="110" SelectionChanged="Cap_Changed">
-                            <ComboBoxItem Content="No limit" Tag="0"/>
-                            <ComboBoxItem Content="10 %" Tag="10"/>
-                            <ComboBoxItem Content="25 %" Tag="25"/>
-                            <ComboBoxItem Content="50 %" Tag="50"/>
-                        </ComboBox>
-                        <TextBlock Text="CPU LIMIT PER WINDOW" Style="{StaticResource Label}" VerticalAlignment="Center" Margin="0"/>
-                    </DockPanel>
-                    <DockPanel Margin="0,10,0,0">
-                        <CheckBox x:Name="EcoToggle" DockPanel.Dock="Right" Style="{StaticResource Toggle}" Click="Eco_Click"/>
-                        <TextBlock Text="EFFICIENCY MODE" Style="{StaticResource Label}" VerticalAlignment="Center" Margin="0"
-                                   ToolTip="Windows runs background Roblox windows on its power-saving cores"/>
-                    </DockPanel>
-                </StackPanel>
-            </Border>
-
-            <!-- Anti-AFK -->
-            <Border Grid.Column="4" Style="{StaticResource Panel}" Tag="Anti-AFK|afk idle kick 20 minutes 267 key press">
-                <StackPanel>
-                    <DockPanel>
-                        <CheckBox x:Name="AfkToggle" DockPanel.Dock="Right" Style="{StaticResource Toggle}" Click="Afk_Click" VerticalAlignment="Top"/>
-                        <StackPanel Margin="0,0,10,0">
-                            <TextBlock Text="Anti-AFK" FontSize="14.5" FontWeight="SemiBold"/>
-                            <TextBlock Style="{StaticResource RowDesc}" Text="Presses Space in every window now and then, so Roblox doesn't kick you after 20 minutes."/>
-                        </StackPanel>
-                    </DockPanel>
-                    <DockPanel Margin="0,12,0,0">
-                        <ComboBox x:Name="AfkInterval" DockPanel.Dock="Right" Width="110" SelectionChanged="AfkInterval_Changed">
-                            <ComboBoxItem Content="5 min" Tag="5"/>
-                            <ComboBoxItem Content="10 min" Tag="10"/>
-                            <ComboBoxItem Content="15 min" Tag="15"/>
-                        </ComboBox>
-                        <TextBlock Text="EVERY" Style="{StaticResource Label}" VerticalAlignment="Center" Margin="0"/>
-                    </DockPanel>
-                    <DockPanel Margin="0,8,0,0">
-                        <ComboBox x:Name="AfkMode" DockPanel.Dock="Right" Width="150" SelectionChanged="AfkMode_Changed">
-                            <ComboBoxItem Content="In the background" Tag="background"
-                                          ToolTip="Never moves your focus. Not every game counts it as activity."/>
-                            <ComboBoxItem Content="Bring to front" Tag="focus"
-                                          ToolTip="Each window comes to the front for a moment – only while you're away from mouse and keyboard. Works in every game."/>
-                        </ComboBox>
-                        <TextBlock Text="MODE" Style="{StaticResource Label}" VerticalAlignment="Center" Margin="0"/>
-                    </DockPanel>
-                    <DockPanel Margin="0,10,0,0">
-                        <Button DockPanel.Dock="Right" Content="Test" Height="28" Padding="12,0" Click="AfkTest_Click"/>
-                        <TextBlock x:Name="AfkStatus" Style="{StaticResource Crumb}" VerticalAlignment="Center" Text="OFF"/>
-                    </DockPanel>
-                </StackPanel>
-            </Border>
-        </Grid>
+        <StackPanel Grid.ColumnSpan="3" Margin="0,0,0,16">
+            <TextBlock Text="ORBIT / OVERVIEW" Style="{StaticResource Crumb}"/>
+            <TextBlock Style="{StaticResource PageTitle}">
+                <Run Text="Account"/> <Run Text="overview" Foreground="{StaticResource AccentTextBrush}"/>
+            </TextBlock>
+            <TextBlock x:Name="CountText" Style="{StaticResource PageDesc}" Text="All your Roblox windows live, on one screen."/>
+        </StackPanel>
 
         <!-- Tiles -->
-        <Grid Grid.Row="2">
+        <Grid Grid.Row="1">
             <ScrollViewer x:Name="TileScroll" VerticalScrollBarVisibility="Auto" Padding="0,0,6,0" ScrollChanged="Tiles_ScrollChanged">
                 <WrapPanel x:Name="TilePanel" Orientation="Horizontal"/>
             </ScrollViewer>
@@ -131,5 +55,97 @@
                 </StackPanel>
             </Border>
         </Grid>
+
+        <!-- Side column -->
+        <ScrollViewer Grid.Row="1" Grid.Column="2" VerticalScrollBarVisibility="Auto">
+            <StackPanel>
+                <!-- Tile size -->
+                <TextBlock Text="TILE SIZE" Style="{StaticResource SideLabel}" Margin="2,0,0,6"/>
+                <Border Background="{StaticResource InputBrush}" BorderBrush="{StaticResource LineBrush}" BorderThickness="1" CornerRadius="8" Padding="3" Margin="0,0,0,12">
+                    <UniformGrid Columns="3">
+                        <RadioButton x:Name="SizeSmall" Style="{StaticResource Segment}" Content="Small" GroupName="tileSize" Tag="small" Checked="Size_Checked"/>
+                        <RadioButton x:Name="SizeMedium" Style="{StaticResource Segment}" Content="Medium" GroupName="tileSize" Tag="medium" Checked="Size_Checked"/>
+                        <RadioButton x:Name="SizeLarge" Style="{StaticResource Segment}" Content="Large" GroupName="tileSize" Tag="large" Checked="Size_Checked"/>
+                    </UniformGrid>
+                </Border>
+
+                <!-- Hide names -->
+                <Border Style="{StaticResource Side}" Tag="Hide names|censor account names streamer privacy">
+                    <DockPanel>
+                        <CheckBox x:Name="HideToggle" DockPanel.Dock="Right" Style="{StaticResource Toggle}" Click="Hide_Click"/>
+                        <TextBlock Text="Hide names" Style="{StaticResource SideTitle}" ToolTip="Hides account names and pictures – for screenshots and streams"/>
+                    </DockPanel>
+                </Border>
+
+                <!-- Arrange -->
+                <Border Style="{StaticResource Side}" Tag="Arrange windows|tile stack small windows put back">
+                    <StackPanel>
+                        <TextBlock Text="Roblox windows" Style="{StaticResource SideTitle}"/>
+                        <UniformGrid Columns="2" Margin="0,10,0,0">
+                            <Button x:Name="ArrangeButton" Content="Arrange" Height="32" Margin="0,0,3,0" Click="Arrange_Click"
+                                    ToolTip="Shrinks all Roblox windows and stacks them in the middle of the screen"/>
+                            <Button x:Name="PutBackButton" Content="Put back" Height="32" Margin="3,0,0,0" Click="PutBack_Click" IsEnabled="False"
+                                    ToolTip="Puts the windows back where they were"/>
+                        </UniformGrid>
+                    </StackPanel>
+                </Border>
+
+                <!-- Resource saver -->
+                <Border Style="{StaticResource Side}" Tag="Resource saver|cpu limit efficiency mode background windows performance">
+                    <StackPanel>
+                        <DockPanel>
+                            <CheckBox x:Name="SaverToggle" DockPanel.Dock="Right" Style="{StaticResource Toggle}" Click="Saver_Click"/>
+                            <TextBlock Text="Resource saver" Style="{StaticResource SideTitle}"
+                                       ToolTip="Background Roblox windows get less CPU, the one you play in stays fast (same switch as on the Accounts page)"/>
+                        </DockPanel>
+                        <DockPanel Margin="0,10,0,0">
+                            <ComboBox x:Name="CapBox" DockPanel.Dock="Right" Width="92" SelectionChanged="Cap_Changed">
+                                <ComboBoxItem Content="No limit" Tag="0"/>
+                                <ComboBoxItem Content="2 %" Tag="2"/>
+                                <ComboBoxItem Content="5 %" Tag="5"/>
+                                <ComboBoxItem Content="10 %" Tag="10"/>
+                                <ComboBoxItem Content="25 %" Tag="25"/>
+                            </ComboBox>
+                            <TextBlock Text="MAX CPU" Style="{StaticResource SideLabel}"
+                                       ToolTip="The most CPU one background window may use (of your whole CPU, like in Task Manager). Windows that use less aren't affected."/>
+                        </DockPanel>
+                        <DockPanel Margin="0,8,0,0">
+                            <CheckBox x:Name="EcoToggle" DockPanel.Dock="Right" Style="{StaticResource Toggle}" Click="Eco_Click"/>
+                            <TextBlock Text="EFFICIENCY MODE" Style="{StaticResource SideLabel}"
+                                       ToolTip="Windows' own power-saving mode for background windows (the green leaf in Task Manager)"/>
+                        </DockPanel>
+                    </StackPanel>
+                </Border>
+
+                <!-- Anti-AFK -->
+                <Border Style="{StaticResource Side}" Tag="Anti-AFK|afk idle kick 20 minutes 267 key press">
+                    <StackPanel>
+                        <DockPanel>
+                            <CheckBox x:Name="AfkToggle" DockPanel.Dock="Right" Style="{StaticResource Toggle}" Click="Afk_Click"/>
+                            <TextBlock Text="Anti-AFK" Style="{StaticResource SideTitle}"
+                                       ToolTip="Presses Space in every window now and then, so Roblox doesn't kick you after 20 minutes"/>
+                        </DockPanel>
+                        <DockPanel Margin="0,10,0,0">
+                            <ComboBox x:Name="AfkInterval" DockPanel.Dock="Right" Width="92" SelectionChanged="AfkInterval_Changed">
+                                <ComboBoxItem Content="5 min" Tag="5"/>
+                                <ComboBoxItem Content="10 min" Tag="10"/>
+                                <ComboBoxItem Content="15 min" Tag="15"/>
+                            </ComboBox>
+                            <TextBlock Text="EVERY" Style="{StaticResource SideLabel}"/>
+                        </DockPanel>
+                        <ComboBox x:Name="AfkMode" Margin="0,8,0,0" SelectionChanged="AfkMode_Changed">
+                            <ComboBoxItem Content="In the background" Tag="background"
+                                          ToolTip="Never moves your focus. Not every game counts it as activity – check with Test."/>
+                            <ComboBoxItem Content="Bring to front" Tag="focus"
+                                          ToolTip="Each window comes to the front for a moment – only while you're away from mouse and keyboard. Works in every game."/>
+                        </ComboBox>
+                        <DockPanel Margin="0,10,0,0">
+                            <Button DockPanel.Dock="Right" Content="Test" Height="26" Padding="10,0" Click="AfkTest_Click"/>
+                            <TextBlock x:Name="AfkStatus" Style="{StaticResource SideLabel}" Text="OFF"/>
+                        </DockPanel>
+                    </StackPanel>
+                </Border>
+            </StackPanel>
+        </ScrollViewer>
     </Grid>
 </UserControl>

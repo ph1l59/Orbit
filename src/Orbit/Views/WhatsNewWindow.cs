@@ -17,11 +17,11 @@ public sealed class WhatsNewWindow : Window
     private static readonly Change[] Changes =
     {
         new("\uECA5", "New: Account overview",
-            "Every open Roblox window as a live tile on one page – with the account, the game it plays and how much RAM it uses. Click a tile to bring that window to the front."),
-        new("\uE73F", "Mini mode",
-            "Shrinks all Roblox windows to their smallest size and tucks them behind Orbit. You keep an eye on all of them in the overview."),
+            "Every open Roblox window as a live tile on one page – with the account, the game it plays, its CPU and RAM. Click a tile to bring that window to the front, or arrange all windows right from there."),
+        new("\uE7B3", "Hide names",
+            "One switch hides all account names and pictures on the overview – perfect for screenshots and streams."),
         new("\uE945", "Stronger resource saver",
-            "Roblox windows in the background can now get a hard CPU limit (10, 25 or 50 %) and Windows' efficiency mode – the window you play in stays fast."),
+            "Roblox windows in the background can now get a hard CPU limit (2 to 25 %) and Windows' efficiency mode – the window you play in stays fast."),
         new("\uE916", "Anti-AFK",
             "Optional: Orbit presses Space in every window every 5, 10 or 15 minutes so Roblox doesn't kick you after 20 minutes. Off by default."),
     };
