@@ -85,6 +85,7 @@ public partial class MainWindow : Window
 
         Loaded += async (_, _) =>
         {
+            PerfLog.Start(Dispatcher);
             ClickerHotkey.Start();
             Integrations.Start(Dispatcher);
             Integrations.SetLauncherOpen(IsVisible);
