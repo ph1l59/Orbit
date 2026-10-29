@@ -57,9 +57,13 @@ public static class WindowTitles
     /// <summary>The setting was switched off: put "Roblox" back on every window Orbit renamed.</summary>
     public static void RestoreAll()
     {
-        foreach (var t in Windows)
-            foreach (var hwnd in WindowsOf(t.Pid))
-                if (GetTitle(hwnd) != DefaultTitle) SetTitle(hwnd, DefaultTitle);
+        var pids = Windows.Select(t => t.Pid).ToList();
+        Worker.Add(() =>
+        {
+            foreach (var pid in pids)
+                foreach (var hwnd in WindowsOf(pid))
+                    if (GetTitle(hwnd) != DefaultTitle) SetTitle(hwnd, DefaultTitle);
+        });
     }
 
     private static void Tick()
@@ -100,21 +104,58 @@ public static class WindowTitles
         if (!s.ShowAccountNameOnWindows && !s.UseOrbitIconOnWindows) return;
         if (s.UseOrbitIconOnWindows) LoadIcons();
 
-        foreach (var t in Windows)
+        // What to apply (read here on the UI thread)...
+        var showNames = s.ShowAccountNameOnWindows;
+        var useIcon = s.UseOrbitIconOnWindows && _smallIcon != IntPtr.Zero;
+        var work = Windows.Select(t =>
         {
             var account = AppState.Accounts.FirstOrDefault(a => a.UserId == t.UserId);
             var title = account == null ? null : string.IsNullOrWhiteSpace(account.Title) ? account.Username : account.Title;
+            return (t.Pid, t.UserId, Title: title);
+        }).ToList();
+        if (work.Count == 0) return;
 
-            // Roblox sets its title/icon again now and then (e.g. after a teleport), so keep re-applying them.
-            foreach (var hwnd in WindowsOf(t.Pid))
+        // ...and applied on Orbit's own worker thread: talking to a Roblox window means waiting for it to answer,
+        // and a window slowed down by the resource saver answers late. On the UI thread that froze Orbit.
+        if (Interlocked.Exchange(ref _applying, 1) == 1) return; // the last round is still busy
+        Worker.Add(() =>
+        {
+            try
             {
-                if (s.ShowAccountNameOnWindows && title != null && GetTitle(hwnd) != title)
-                    SetTitle(hwnd, title);
-
-                if (s.UseOrbitIconOnWindows && _smallIcon != IntPtr.Zero) ApplyIcon(hwnd, t.UserId);
+                foreach (var (pid, userId, title) in work)
+                    // Roblox sets its title/icon again now and then (e.g. after a teleport), so keep re-applying them.
+                    foreach (var hwnd in WindowsOf(pid))
+                    {
+                        if (showNames && title != null && GetTitle(hwnd) != title)
+                            SetTitle(hwnd, title);
+                        if (useIcon) ApplyIcon(hwnd, userId);
+                    }
             }
-        }
+            finally { Volatile.Write(ref _applying, 0); }
+        });
     }
+
+    private static int _applying;
+
+    /// <summary>One background thread for everything that sends messages to Roblox windows.</summary>
+    private static readonly System.Collections.Concurrent.BlockingCollection<Action> Worker = StartWorker();
+
+    private static System.Collections.Concurrent.BlockingCollection<Action> StartWorker()
+    {
+        var queue = new System.Collections.Concurrent.BlockingCollection<Action>();
+        var thread = new Thread(() =>
+        {
+            foreach (var job in queue.GetConsumingEnumerable())
+                try { job(); } catch { /* cosmetic only */ }
+        })
+        { IsBackground = true, Name = "Orbit window titles", Priority = ThreadPriority.BelowNormal };
+        thread.SetApartmentState(ApartmentState.STA); // the taskbar property store is COM
+        thread.Start();
+        return queue;
+    }
+
+    /// <summary>Hwnd → when its icon was last checked (worker thread only).</summary>
+    private static readonly Dictionary<IntPtr, long> IconChecked = new();
 
     // ---------- Icon ----------
 
@@ -198,9 +239,15 @@ public static class WindowTitles
 
     private static void ApplyIcon(IntPtr hwnd, long userId)
     {
-        // Title bar + Alt+Tab.
-        if (Send(hwnd, WM_GETICON, ICON_SMALL, IntPtr.Zero) != _smallIcon) Send(hwnd, WM_SETICON, ICON_SMALL, _smallIcon);
-        if (Send(hwnd, WM_GETICON, ICON_BIG, IntPtr.Zero) != _bigIcon) Send(hwnd, WM_SETICON, ICON_BIG, _bigIcon);
+        // Title bar + Alt+Tab – checked every 10 s per window, that's plenty.
+        var now = Environment.TickCount64;
+        if (!IconChecked.TryGetValue(hwnd, out var last) || now - last > 10_000)
+        {
+            IconChecked[hwnd] = now;
+            if (IconChecked.Count > 200) IconChecked.Clear();
+            if (Send(hwnd, WM_GETICON, ICON_SMALL, IntPtr.Zero) != _smallIcon) Send(hwnd, WM_SETICON, ICON_SMALL, _smallIcon);
+            if (Send(hwnd, WM_GETICON, ICON_BIG, IntPtr.Zero) != _bigIcon) Send(hwnd, WM_SETICON, ICON_BIG, _bigIcon);
+        }
 
         // Taskbar: Roblox registers its own app id, and Windows then shows the icon of Roblox's shortcut
         // instead of the window's. Giving the window an id of its own makes the taskbar use our icon.
@@ -273,15 +320,20 @@ public static class WindowTitles
     /// <summary>The icon setting was switched off: give the windows their Roblox icon back.</summary>
     public static void RestoreIcons()
     {
-        foreach (var t in Windows)
-            foreach (var hwnd in WindowsOf(t.Pid))
-            {
-                // Removing the window's own icon makes Windows fall back to Roblox's built-in one.
-                Send(hwnd, WM_SETICON, ICON_SMALL, IntPtr.Zero);
-                Send(hwnd, WM_SETICON, ICON_BIG, IntPtr.Zero);
-                SetTaskbarIdentity(hwnd, null, null);
-                IdentitySet.Remove(hwnd);
-            }
+        var pids = Windows.Select(t => t.Pid).ToList();
+        Worker.Add(() =>
+        {
+            foreach (var pid in pids)
+                foreach (var hwnd in WindowsOf(pid))
+                {
+                    // Removing the window's own icon makes Windows fall back to Roblox's built-in one.
+                    Send(hwnd, WM_SETICON, ICON_SMALL, IntPtr.Zero);
+                    Send(hwnd, WM_SETICON, ICON_BIG, IntPtr.Zero);
+                    SetTaskbarIdentity(hwnd, null, null);
+                    IdentitySet.Remove(hwnd);
+                    IconChecked.Remove(hwnd);
+                }
+        });
     }
 
     private static void Add(Tracked t)

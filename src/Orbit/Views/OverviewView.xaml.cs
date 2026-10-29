@@ -100,7 +100,12 @@ public partial class OverviewView : UserControl, IPage
                 _rendering = false;
                 CompositionTarget.Rendering -= OnRendering;
             }
-            foreach (var t in _tiles.Values) t.Thumb?.Hide();
+            // Let go of the live pictures completely, so Windows doesn't keep them up to date for nothing.
+            foreach (var t in _tiles.Values)
+            {
+                t.Thumb?.Dispose();
+                t.Thumb = null;
+            }
         }
         UpdateAfkStatus();
     }
@@ -158,6 +163,9 @@ public partial class OverviewView : UserControl, IPage
             tile.Thumb = new LiveThumbnail(owner, w.Handle);
             _tiles[w.Handle] = tile;
         }
+        // Live pictures are let go while the page is closed – connect them again.
+        foreach (var t in _tiles.Values.Where(t => t.Thumb == null))
+            t.Thumb = new LiveThumbnail(owner, t.Window.Handle);
 
         // Keep the order of the Accounts page.
         var order = windows.Select(w => _tiles[w.Handle].Root).ToList();
