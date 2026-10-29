@@ -60,7 +60,7 @@ public sealed class AppSettings
     public bool AntiAfk { get; set; }
     public int AntiAfkMinutes { get; set; } = 15;
     /// <summary>background = posts the key without moving the focus; focus = brings each window to the front for a moment (only while you're away).</summary>
-    public string AntiAfkMode { get; set; } = "background";
+    public string AntiAfkMode { get; set; } = "focus";
     public List<LaunchPreset> Presets { get; set; } = new();
 
     // ===== Tweaks: RAM cleaner =====

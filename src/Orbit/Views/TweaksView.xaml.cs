@@ -48,6 +48,7 @@ public partial class TweaksView : UserControl, IPage
         (s.RamAutoMode switch { "30" => Mode30, "60" => Mode60, _ => ModeHigh }).IsChecked = true;
         _loadingSettings = false;
 
+        ((FrameworkElement)UsedBar.Parent).SizeChanged += (_, _) => UpdateBar(animate: false);
         RefreshAllowList();
         _ramTimer.Tick += (_, _) => UpdateRam();
         RamCleaner.Cleaned += () => Dispatcher.InvokeAsync(UpdateRam);
@@ -89,6 +90,26 @@ public partial class TweaksView : UserControl, IPage
 
     private static string Gb(double bytes) => (bytes / 1024 / 1024 / 1024).ToString("0.0", CultureInfo.InvariantCulture) + " GB";
 
+    private double _usedPercent;
+
+    /// <summary>Bar width from the last reading. First time (or after a resize) it's set right away, later it glides.</summary>
+    private void UpdateBar(bool animate)
+    {
+        var track = ((FrameworkElement)UsedBar.Parent).ActualWidth - 2;
+        if (track <= 0) return; // not laid out yet – SizeChanged calls again
+        var width = track * _usedPercent / 100;
+        if (!animate)
+        {
+            UsedBar.BeginAnimation(WidthProperty, null);
+            UsedBar.Width = width;
+            return;
+        }
+        UsedBar.BeginAnimation(WidthProperty, new DoubleAnimation(width, TimeSpan.FromMilliseconds(500))
+        {
+            EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut },
+        });
+    }
+
     private void UpdateRam()
     {
         var ram = RamCleaner.Read();
@@ -98,13 +119,8 @@ public partial class TweaksView : UserControl, IPage
         FreeText.Text = Gb(ram.Free);
         TotalText.Text = Gb(ram.Total) + " total";
 
-        // Bar glides to the new width.
-        var width = Math.Max(0, ((FrameworkElement)UsedBar.Parent).ActualWidth - 2) * ram.UsedPercent / 100;
-        if (width > 0)
-            UsedBar.BeginAnimation(WidthProperty, new DoubleAnimation(width, TimeSpan.FromMilliseconds(500))
-            {
-                EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut },
-            });
+        _usedPercent = ram.UsedPercent;
+        UpdateBar(animate: UsedBar.ActualWidth > 0);
 
         var (text, brush) = ram.UsedPercent switch
         {

@@ -277,10 +277,10 @@ public partial class OverviewView : UserControl, IPage
         var avatar = new Ellipse { Width = 30, Height = 30, Fill = (Brush)FindResource("Raised2Brush") };
         var name = new TextBlock { FontSize = 13.5, FontWeight = FontWeights.SemiBold, TextTrimming = TextTrimming.CharacterEllipsis };
         var detail = new TextBlock { FontSize = 11.5, Foreground = (Brush)FindResource("DimBrush"), TextTrimming = TextTrimming.CharacterEllipsis, Margin = new Thickness(0, 2, 0, 0) };
-        var memory = new TextBlock { Style = (Style)FindResource("Crumb"), VerticalAlignment = VerticalAlignment.Center };
+        var memory = new TextBlock { Style = (Style)FindResource("Crumb"), VerticalAlignment = VerticalAlignment.Center, TextTrimming = TextTrimming.CharacterEllipsis };
         var slow = new Border
         {
-            CornerRadius = new CornerRadius(5), Padding = new Thickness(6, 1, 6, 1), Margin = new Thickness(6, 0, 0, 0),
+            CornerRadius = new CornerRadius(5), Padding = new Thickness(6, 1, 6, 1), Margin = new Thickness(8, 0, 0, 0), VerticalAlignment = VerticalAlignment.Center,
             Background = (Brush)FindResource("SignalTintBrush"), BorderBrush = (Brush)FindResource("SignalBorderBrush"), BorderThickness = new Thickness(1),
             Child = new TextBlock { Text = "SAVER", Style = (Style)FindResource("Crumb"), FontSize = 9.5, Foreground = (Brush)FindResource("SignalLightBrush") },
             Visibility = Visibility.Collapsed,
@@ -307,23 +307,25 @@ public partial class OverviewView : UserControl, IPage
         buttons.Children.Add(close);
         DockPanel.SetDock(buttons, Dock.Right);
 
-        var badges = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(0, 4, 0, 0) };
-        badges.Children.Add(memory);
-        badges.Children.Add(slow);
-
-        var texts = new StackPanel { Margin = new Thickness(10, 0, 8, 0), VerticalAlignment = VerticalAlignment.Center };
+        var texts = new StackPanel { Margin = new Thickness(10, 0, 6, 0), VerticalAlignment = VerticalAlignment.Center };
         texts.Children.Add(name);
         texts.Children.Add(detail);
-        texts.Children.Add(badges);
 
-        var info = new DockPanel { Margin = new Thickness(12, 10, 8, 12) };
+        var info = new DockPanel { Margin = new Thickness(12, 10, 8, 0) };
         info.Children.Add(buttons);
         info.Children.Add(avatar);
         info.Children.Add(texts);
 
+        // CPU / RAM and the saver badge get their own line, so they fit on small tiles too.
+        DockPanel.SetDock(slow, Dock.Right);
+        var stats = new DockPanel { Margin = new Thickness(12, 8, 12, 12), LastChildFill = true };
+        stats.Children.Add(slow);
+        stats.Children.Add(memory);
+
         var stack = new StackPanel();
         stack.Children.Add(screen);
         stack.Children.Add(info);
+        stack.Children.Add(stats);
 
         var root = new Border
         {

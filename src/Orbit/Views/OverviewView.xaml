@@ -31,7 +31,7 @@
         </Grid.ColumnDefinitions>
 
         <!-- Header -->
-        <StackPanel Grid.ColumnSpan="3" Margin="0,0,0,16">
+        <StackPanel Margin="0,0,0,16">
             <TextBlock Text="ORBIT / OVERVIEW" Style="{StaticResource Crumb}"/>
             <TextBlock Style="{StaticResource PageTitle}">
                 <Run Text="Account"/> <Run Text="overview" Foreground="{StaticResource AccentTextBrush}"/>
@@ -57,8 +57,7 @@
         </Grid>
 
         <!-- Side column -->
-        <ScrollViewer Grid.Row="1" Grid.Column="2" VerticalScrollBarVisibility="Auto">
-            <StackPanel>
+        <StackPanel Grid.Column="2" Grid.RowSpan="2" VerticalAlignment="Top">
                 <!-- Tile size -->
                 <TextBlock Text="TILE SIZE" Style="{StaticResource SideLabel}" Margin="2,0,0,6"/>
                 <Border Background="{StaticResource InputBrush}" BorderBrush="{StaticResource LineBrush}" BorderThickness="1" CornerRadius="8" Padding="3" Margin="0,0,0,12">
@@ -98,18 +97,16 @@
                             <TextBlock Text="Resource saver" Style="{StaticResource SideTitle}"
                                        ToolTip="Background Roblox windows get less CPU, the one you play in stays fast (same switch as on the Accounts page)"/>
                         </DockPanel>
-                        <DockPanel Margin="0,10,0,0">
-                            <ComboBox x:Name="CapBox" DockPanel.Dock="Right" Width="92" SelectionChanged="Cap_Changed">
-                                <ComboBoxItem Content="No limit" Tag="0"/>
-                                <ComboBoxItem Content="2 %" Tag="2"/>
-                                <ComboBoxItem Content="5 %" Tag="5"/>
-                                <ComboBoxItem Content="10 %" Tag="10"/>
-                                <ComboBoxItem Content="25 %" Tag="25"/>
-                            </ComboBox>
-                            <TextBlock Text="MAX CPU" Style="{StaticResource SideLabel}"
-                                       ToolTip="The most CPU one background window may use (of your whole CPU, like in Task Manager). Windows that use less aren't affected."/>
-                        </DockPanel>
-                        <DockPanel Margin="0,8,0,0">
+                        <TextBlock Text="CPU LIMIT PER WINDOW" Style="{StaticResource SideLabel}" Margin="0,12,0,6"
+                                   ToolTip="The most CPU one background window may use (of your whole CPU, like in Task Manager). Windows that use less aren't affected."/>
+                        <ComboBox x:Name="CapBox" HorizontalAlignment="Stretch" SelectionChanged="Cap_Changed">
+                            <ComboBoxItem Content="No limit" Tag="0"/>
+                            <ComboBoxItem Content="2 %" Tag="2"/>
+                            <ComboBoxItem Content="5 %" Tag="5"/>
+                            <ComboBoxItem Content="10 %" Tag="10"/>
+                            <ComboBoxItem Content="25 %" Tag="25"/>
+                        </ComboBox>
+                        <DockPanel Margin="0,12,0,0">
                             <CheckBox x:Name="EcoToggle" DockPanel.Dock="Right" Style="{StaticResource Toggle}" Click="Eco_Click"/>
                             <TextBlock Text="EFFICIENCY MODE" Style="{StaticResource SideLabel}"
                                        ToolTip="Windows' own power-saving mode for background windows (the green leaf in Task Manager)"/>
@@ -125,19 +122,18 @@
                             <TextBlock Text="Anti-AFK" Style="{StaticResource SideTitle}"
                                        ToolTip="Presses Space in every window now and then, so Roblox doesn't kick you after 20 minutes"/>
                         </DockPanel>
-                        <DockPanel Margin="0,10,0,0">
-                            <ComboBox x:Name="AfkInterval" DockPanel.Dock="Right" Width="92" SelectionChanged="AfkInterval_Changed">
-                                <ComboBoxItem Content="5 min" Tag="5"/>
-                                <ComboBoxItem Content="10 min" Tag="10"/>
-                                <ComboBoxItem Content="15 min" Tag="15"/>
-                            </ComboBox>
-                            <TextBlock Text="EVERY" Style="{StaticResource SideLabel}"/>
-                        </DockPanel>
-                        <ComboBox x:Name="AfkMode" Margin="0,8,0,0" SelectionChanged="AfkMode_Changed">
-                            <ComboBoxItem Content="In the background" Tag="background"
-                                          ToolTip="Never moves your focus. Not every game counts it as activity – check with Test."/>
+                        <TextBlock Text="PRESS SPACE EVERY" Style="{StaticResource SideLabel}" Margin="0,12,0,6"/>
+                        <ComboBox x:Name="AfkInterval" HorizontalAlignment="Stretch" SelectionChanged="AfkInterval_Changed">
+                            <ComboBoxItem Content="5 min" Tag="5"/>
+                            <ComboBoxItem Content="10 min" Tag="10"/>
+                            <ComboBoxItem Content="15 min" Tag="15"/>
+                        </ComboBox>
+                        <TextBlock Text="MODE" Style="{StaticResource SideLabel}" Margin="0,10,0,6"/>
+                        <ComboBox x:Name="AfkMode" HorizontalAlignment="Stretch" SelectionChanged="AfkMode_Changed">
                             <ComboBoxItem Content="Bring to front" Tag="focus"
-                                          ToolTip="Each window comes to the front for a moment – only while you're away from mouse and keyboard. Works in every game."/>
+                                          ToolTip="Each window comes to the front for a moment – only while you're away from mouse and keyboard."/>
+                            <ComboBoxItem Content="In the background" Tag="background"
+                                          ToolTip="Never moves your focus – but Roblox often ignores it. Check with Test."/>
                         </ComboBox>
                         <DockPanel Margin="0,10,0,0">
                             <Button DockPanel.Dock="Right" Content="Test" Height="26" Padding="10,0" Click="AfkTest_Click"/>
@@ -145,7 +141,6 @@
                         </DockPanel>
                     </StackPanel>
                 </Border>
-            </StackPanel>
-        </ScrollViewer>
+        </StackPanel>
     </Grid>
 </UserControl>

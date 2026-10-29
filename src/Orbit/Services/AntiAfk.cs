@@ -6,8 +6,8 @@ namespace Orbit.Services;
 /// <summary>
 /// Roblox disconnects players after 20 minutes without input. When switched on, Orbit presses a key
 /// in every Roblox window now and then:
-/// - background: the key is sent to the window without moving the focus (works while you use the PC,
-///   but not every game counts it as activity);
+/// - background: the key is posted to the window without moving the focus (works while you use the PC,
+///   but Roblox often ignores it);
 /// - focus: each window comes to the front for a moment and gets a real key press, then your window
 ///   gets the focus back – only while you haven't touched mouse or keyboard for a few seconds.
 /// Nothing is read from or written into the game.
@@ -83,18 +83,34 @@ public static class AntiAfk
             }
             else
             {
+                MarkInjected();
                 var before = GetForegroundWindow();
                 foreach (var w in windows)
                 {
                     if (IsIconic(w.Handle)) continue; // minimized windows can't take the focus without popping up
-                    if (!force && IdleTime() < TimeSpan.FromSeconds(3)) break; // you came back – stop
+                    if (!force && UserCameBack()) break; // you touched mouse or keyboard – stop
+
                     RobloxWindows.BringToFront(w.Handle);
-                    await Task.Delay(80);
-                    SendKey(0x39); // Space, by scan code like a real keyboard
+                    MarkInjected();
+                    // Wait until Windows really gave it the focus, then a bit more so Roblox notices it.
+                    for (var i = 0; i < 25 && GetForegroundWindow() != w.Handle; i++) await Task.Delay(20);
+                    if (GetForegroundWindow() != w.Handle) continue;
+                    await Task.Delay(250);
+
+                    // Space, by scan code like a real keyboard – held for a moment, Roblox reads keys once per frame.
+                    SendKey(0x39, up: false);
+                    MarkInjected();
+                    await Task.Delay(150);
+                    SendKey(0x39, up: true);
+                    MarkInjected();
                     count++;
-                    await Task.Delay(60);
+                    await Task.Delay(120);
                 }
-                if (before != IntPtr.Zero) RobloxWindows.BringToFront(before);
+                if (before != IntPtr.Zero)
+                {
+                    RobloxWindows.BringToFront(before);
+                    MarkInjected();
+                }
             }
 
             LastCount = count;
@@ -114,14 +130,25 @@ public static class AntiAfk
         PostMessage(hwnd, WM_KEYUP, (IntPtr)vk, (IntPtr)(1 | (scan << 16) | (1u << 30) | (1u << 31)));
     }
 
-    private static void SendKey(ushort scan)
+    private static void SendKey(ushort scan, bool up)
     {
         var inputs = new[]
         {
-            new INPUT { type = INPUT_KEYBOARD, ki = new KEYBDINPUT { wScan = scan, dwFlags = KEYEVENTF_SCANCODE } },
-            new INPUT { type = INPUT_KEYBOARD, ki = new KEYBDINPUT { wScan = scan, dwFlags = KEYEVENTF_SCANCODE | KEYEVENTF_KEYUP } },
+            new INPUT { type = INPUT_KEYBOARD, ki = new KEYBDINPUT { wScan = scan, dwFlags = KEYEVENTF_SCANCODE | (up ? KEYEVENTF_KEYUP : 0) } },
         };
         SendInput((uint)inputs.Length, inputs, Marshal.SizeOf<INPUT>());
+    }
+
+    // Our own key presses count as input for Windows too – remember when we sent the last one,
+    // so only input that came after it means you're back.
+    private static int _lastInjected;
+    private static void MarkInjected() => _lastInjected = Environment.TickCount;
+
+    private static bool UserCameBack()
+    {
+        var info = new LASTINPUTINFO { cbSize = (uint)Marshal.SizeOf<LASTINPUTINFO>() };
+        if (!GetLastInputInfo(ref info)) return false;
+        return unchecked((int)info.dwTime - _lastInjected) > 100;
     }
 
     private static TimeSpan IdleTime()
