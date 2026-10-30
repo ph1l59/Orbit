@@ -9,13 +9,14 @@
 </p>
 
 <p align="center">
-  <a href="https://orbitlauncher.net"><b>orbitlauncher.net</b></a>
+  <a href="https://orbitlauncher.net"><b>orbitlauncher.net</b></a> · <a href="https://discord.gg/orbitlauncher"><b>Discord</b></a>
 </p>
 
 <p align="center">
   <a href="../../releases/latest"><img src="https://img.shields.io/github/v/release/ph1l59/Orbit?color=a855f7&label=download&cacheSeconds=300" alt="Download"></a>
   <img src="https://img.shields.io/badge/windows-10%20%7C%2011-a855f7" alt="Windows 10 | 11">
   <a href="../../releases"><img src="https://img.shields.io/github/downloads/ph1l59/Orbit/total?color=a855f7&label=downloads&cacheSeconds=3600" alt="Downloads"></a>
+  <a href="https://discord.gg/orbitlauncher"><img src="https://img.shields.io/badge/discord-join-5865F2?logo=discord&logoColor=white" alt="Discord"></a>
   <img src="https://img.shields.io/github/license/ph1l59/Orbit?color=a855f7" alt="License">
 </p>
 
