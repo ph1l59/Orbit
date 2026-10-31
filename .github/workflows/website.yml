@@ -5,10 +5,15 @@ on:
   push:
     branches: [ main ]
     paths: [ 'website/**', '.github/workflows/website.yml' ]
+  release:
+    types: [ published ]
+  schedule:
+    - cron: '17 */6 * * *'   # refresh the download count every 6 hours
   workflow_dispatch:
 
 permissions:
   contents: read
+  actions: read
   pages: write
   id-token: write
 
@@ -25,6 +30,15 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: actions/configure-pages@v5
+
+      # Download count for the README badge (shields.io reads this file).
+      - name: Download count
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          total=$(gh api "repos/${GITHUB_REPOSITORY}/releases" --paginate --jq '.[].assets[].download_count' | awk '{s+=$1} END {print s+0}')
+          echo "{\"schemaVersion\":1,\"label\":\"downloads\",\"message\":\"$total\",\"color\":\"a855f7\"}" > website/downloads.json
+          cat website/downloads.json
       - uses: actions/upload-pages-artifact@v3
         with:
           path: website
