@@ -85,8 +85,10 @@ public sealed class AppSettings
     public string SignupGender { get; set; } = "none";
 
     // ===== Bootstrapper =====
-    /// <summary>Orbit installs and updates its own copy of Roblox (like Fishstrap).</summary>
+    /// <summary>Orbit installs and updates its own copy of Roblox.</summary>
     public bool UseManagedInstall { get; set; } = true;
+    /// <summary>Start Orbit's Roblox from Roblox's own folder (hard links), so NVIDIA's game filters and overlay recognize it.</summary>
+    public bool NvidiaBridge { get; set; } = true;
     /// <summary>Orbit handles roblox-player:// links from the website.</summary>
     public bool DefaultLauncher { get; set; }
     public string? PreviousPlayerHandler { get; set; }

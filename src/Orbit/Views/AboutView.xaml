@@ -96,7 +96,7 @@
                     <TextBlock Style="{StaticResource RowDesc}" Margin="0"
                                Text="Orbit is open source under the GNU General Public License v3.0."/>
                     <TextBlock Style="{StaticResource RowDesc}"
-                               Text="Inspired by Bloxstrap, Fishstrap and Roblox Account Manager. Orbit is not affiliated with, endorsed by or associated with Roblox Corporation."/>
+                               Text="Inspired by Bloxstrap and Roblox Account Manager. Orbit is not affiliated with, endorsed by or associated with Roblox Corporation."/>
                 </StackPanel>
             </Border>
         </StackPanel>

@@ -93,7 +93,7 @@
                             <CheckBox x:Name="ManagedToggle" DockPanel.Dock="Right" Style="{StaticResource Toggle}" Click="Changed"/>
                             <StackPanel Style="{StaticResource RowText}">
                                 <TextBlock Style="{StaticResource RowTitle}" Text="Use Orbit's own Roblox install"/>
-                                <TextBlock Style="{StaticResource RowDesc}" Text="Orbit downloads and updates its own copy of Roblox, like Fishstrap. Your FastFlags and mods are never overwritten. Recommended."/>
+                                <TextBlock Style="{StaticResource RowDesc}" Text="Orbit downloads and updates its own copy of Roblox. Your FastFlags and mods are never overwritten. Recommended."/>
                             </StackPanel>
                         </DockPanel>
                         <DockPanel Margin="0,12,0,0">
@@ -105,6 +105,16 @@
                             </StackPanel>
                         </DockPanel>
                     </StackPanel>
+                </Border>
+
+                <Border Style="{StaticResource Row}" Tag="NVIDIA game filters|nvidia overlay filters instant replay geforce recognized as game">
+                    <DockPanel>
+                        <CheckBox x:Name="NvidiaToggle" DockPanel.Dock="Right" Style="{StaticResource Toggle}" Click="Changed"/>
+                        <StackPanel Style="{StaticResource RowText}">
+                            <TextBlock Style="{StaticResource RowTitle}" Text="Work with NVIDIA game filters"/>
+                            <TextBlock Style="{StaticResource RowDesc}" Text="Starts Orbit's Roblox from Roblox's own folder, so the NVIDIA app recognizes every window as Roblox (game filters, overlay, Instant Replay). Uses no extra disk space."/>
+                        </StackPanel>
+                    </DockPanel>
                 </Border>
 
                 <Border Style="{StaticResource Row}" Tag="Use Orbit as the default Roblox launcher|protocol website play button">

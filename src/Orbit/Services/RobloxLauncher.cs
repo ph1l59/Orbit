@@ -130,6 +130,13 @@ public static class RobloxLauncher
         {
             FlagService.Apply(s, new[] { dir });
             ModService.Apply(s, dir);
+            // NVIDIA only treats Roblox in Roblox's own folder as the game – start it from a mirror there.
+            if (s.UseManagedInstall && s.NvidiaBridge)
+            {
+                var bridged = NvidiaBridge.Prepare(dir);
+                if (bridged != dir) ModService.ApplyCompatibility(s, Path.Combine(bridged, RobloxPaths.PlayerExe));
+                dir = bridged;
+            }
         });
 
         return Path.Combine(dir, RobloxPaths.PlayerExe);
@@ -194,7 +201,7 @@ public static class RobloxLauncher
     }
 
     /// <summary>
-    /// Opens the Roblox app on its home page, logged in as this account (like "Launch Roblox" in Fishstrap).
+    /// Opens the Roblox app on its home page, logged in as this account.
     /// </summary>
     public static async Task LaunchAppAsync(Account account, string exe)
     {

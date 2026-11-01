@@ -12,7 +12,7 @@ namespace Orbit.Views;
 
 /// <summary>
 /// Start page: pick one of your accounts and open the Roblox app on its home page,
-/// like "Launch Roblox" in Fishstrap.
+/// like "Launch Roblox" in other launchers.
 /// </summary>
 public partial class PlayView : UserControl, IPage
 {

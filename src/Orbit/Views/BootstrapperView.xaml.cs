@@ -95,6 +95,7 @@ public partial class BootstrapperView : UserControl, IPage
         WindowIconToggle.IsChecked = s.UseOrbitIconOnWindows;
         Option.Select(DelayCombo, s.LaunchDelaySeconds);
         ManagedToggle.IsChecked = s.UseManagedInstall;
+        NvidiaToggle.IsChecked = s.NvidiaBridge;
         DefaultToggle.IsChecked = s.DefaultLauncher;
         Option.Select(CleanerCombo, s.CleanerDays);
         CacheToggle.IsChecked = s.CleanCache;
@@ -127,6 +128,9 @@ public partial class BootstrapperView : UserControl, IPage
         s.ConfirmLaunchWhenRunning = ConfirmToggle.IsChecked == true;
         s.LaunchDelaySeconds = Option.Get(DelayCombo, 8);
         s.UseManagedInstall = ManagedToggle.IsChecked == true;
+        var bridge = NvidiaToggle.IsChecked == true;
+        if (s.NvidiaBridge && !bridge) NvidiaBridge.RemoveAll();
+        s.NvidiaBridge = bridge;
         s.CleanerDays = Option.Get(CleanerCombo, 14);
         s.CleanCache = CacheToggle.IsChecked == true;
         s.CleanLogs = LogsToggle.IsChecked == true;

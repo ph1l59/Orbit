@@ -9,7 +9,7 @@ public readonly record struct BootstrapProgress(string Message, double Percent);
 
 /// <summary>
 /// Installs and updates Orbit's own copy of the Roblox player from Roblox's CDN,
-/// the same way Bloxstrap and Fishstrap do. Lives in %LocalAppData%\Orbit\Versions.
+/// the same way other launchers do. Lives in %LocalAppData%\Orbit\Versions.
 /// </summary>
 public static class Bootstrapper
 {

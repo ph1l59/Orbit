@@ -313,7 +313,7 @@
         </Setter>
     </Style>
 
-    <!-- A full-width clickable row (like Fishstrap's "Open Mods Folder >") -->
+    <!-- A full-width clickable row -->
     <Style x:Key="LinkRow" TargetType="Button">
         <Setter Property="Foreground" Value="{StaticResource TextBrush}"/>
         <Setter Property="HorizontalContentAlignment" Value="Stretch"/>

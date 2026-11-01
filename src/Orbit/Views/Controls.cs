@@ -6,7 +6,7 @@ using System.Windows.Input;
 
 namespace Orbit.Views;
 
-/// <summary>A slider with a number box next to it (like Fishstrap's quality slider).</summary>
+/// <summary>A slider with a number box next to it.</summary>
 public sealed class NumberSlider : Grid
 {
     public static readonly DependencyProperty ValueProperty = DependencyProperty.Register(

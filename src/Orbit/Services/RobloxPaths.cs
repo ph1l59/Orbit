@@ -5,7 +5,7 @@ using System.Text;
 
 namespace Orbit.Services;
 
-/// <summary>Finds Roblox player installations (Orbit's own, the official client, Bloxstrap/Fishstrap copies).</summary>
+/// <summary>Finds Roblox player installations (Orbit's own, the official client, copies made by other launchers).</summary>
 public static class RobloxPaths
 {
     public const string PlayerExe = "RobloxPlayerBeta.exe";
