@@ -16,14 +16,14 @@ public sealed class WhatsNewWindow : Window
     /// <summary>The changes of this version. Edit this list for every release.</summary>
     private static readonly Change[] Changes =
     {
-        new("\uECA5", "New: Account overview",
-            "Every open Roblox window as a live tile on one page – with the account, the game it plays, its CPU and RAM. Click a tile to bring that window to the front, or arrange all windows right from there."),
-        new("\uE7B3", "Hide names",
-            "One switch hides all account names and pictures on the overview – perfect for screenshots and streams."),
-        new("\uE945", "Stronger resource saver",
-            "Roblox windows in the background can now get a hard CPU limit (2 to 25 %) and Windows' efficiency mode – the window you play in stays fast."),
-        new("\uE916", "Anti-AFK",
-            "Optional: Orbit presses Space in every window every 5, 10 or 15 minutes so Roblox doesn't kick you after 20 minutes. Off by default."),
+        new("\uE790", "New: Game Filter",
+            "Color filters for Roblox, like NVIDIA's: exposure, contrast, saturation, temperature, tint, looks, color blind modes, vignette and letterbox – with profiles and a live preview. Only while Roblox is in front."),
+        new("\uE945", "Enhanced mode",
+            "Orbit's own GPU filter adds sharpen, clarity, HDR toning, bloom, vibrance and highlight and shadow curves. Roblox itself is never touched."),
+        new("\uE706", "Digital vibrance",
+            "On NVIDIA cards, Orbit turns up the driver's digital vibrance while you play and puts your own setting back right after."),
+        new("\uE765", "Hotkeys in game",
+            "Ctrl + Alt + F turns the filter on or off, Ctrl + Alt + G switches to the next profile."),
     };
 
     private static T R<T>(string key) => (T)Application.Current.FindResource(key);

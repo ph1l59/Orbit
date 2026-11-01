@@ -111,8 +111,8 @@
                     <DockPanel>
                         <CheckBox x:Name="NvidiaToggle" DockPanel.Dock="Right" Style="{StaticResource Toggle}" Click="Changed"/>
                         <StackPanel Style="{StaticResource RowText}">
-                            <TextBlock Style="{StaticResource RowTitle}" Text="Work with NVIDIA game filters"/>
-                            <TextBlock Style="{StaticResource RowDesc}" Text="Starts Orbit's Roblox from Roblox's own folder, so the NVIDIA app recognizes every window as Roblox (game filters, overlay, Instant Replay). Uses no extra disk space."/>
+                            <TextBlock Style="{StaticResource RowTitle}" Text="Start Roblox from its own folder (NVIDIA)"/>
+                            <TextBlock Style="{StaticResource RowDesc}" Text="Starts Orbit's Roblox from Roblox's own folder, so the NVIDIA app sees it like a normal Roblox install. Uses no extra disk space. NVIDIA's game filters don't support Roblox right now – Orbit's Game Filter page does the same."/>
                         </StackPanel>
                     </DockPanel>
                 </Border>

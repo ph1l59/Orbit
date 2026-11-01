@@ -77,6 +77,8 @@ public sealed class EnhancedFilter
     private IDXGIOutputDuplication? _dup;
     private RawRect _dupBounds;
     private IntPtr _window;
+    private RawRect _shownRect;
+    private uint _adapterIndex;
     private uint _width, _height;
     private WndProc? _wndProc;
 
@@ -86,7 +88,6 @@ public sealed class EnhancedFilter
         {
             SetThreadDpiAwarenessContext(new IntPtr(-4)); // real pixels on every monitor
             CreateWindow();
-            CreateDevice();
             Loop();
         }
         catch (Exception ex)
@@ -110,6 +111,9 @@ public sealed class EnhancedFilter
             if (game == IntPtr.Zero || !IsWindow(game))
             {
                 if (lastShown) { ShowWindow(_window, SW_HIDE); lastShown = false; }
+                // Let go of the screen duplication while there's nothing to draw.
+                _dup?.Dispose();
+                _dup = null;
                 Running = false;
                 Status = "Waiting for Roblox";
                 Thread.Sleep(60);
@@ -122,9 +126,14 @@ public sealed class EnhancedFilter
             ClientToScreen(game, ref origin);
             var rect = new RawRect(origin.X, origin.Y, origin.X + client.Right, origin.Y + client.Bottom);
 
+            if (_device == null) CreateDevice(rect);
             EnsureSize((uint)client.Right, (uint)client.Bottom);
             EnsureDuplication(rect);
-            SetWindowPos(_window, HWND_TOPMOST, rect.Left, rect.Top, client.Right, client.Bottom, SWP_NOACTIVATE | SWP_SHOWWINDOW);
+            if (!lastShown || !rect.Equals(_shownRect))
+            {
+                SetWindowPos(_window, HWND_TOPMOST, rect.Left, rect.Top, client.Right, client.Bottom, SWP_NOACTIVATE | SWP_SHOWWINDOW);
+                _shownRect = rect;
+            }
             lastShown = true;
 
             // Wait for a new picture of the screen.
@@ -194,11 +203,12 @@ public sealed class EnhancedFilter
 
     // ---------------- Setup ----------------
 
-    private void CreateDevice()
+    private void CreateDevice(RawRect game)
     {
         _factory = DXGI.CreateDXGIFactory1<IDXGIFactory2>();
-        // The device must be on the graphics card that drives the monitors (for desktop duplication).
-        _factory.EnumAdapters1(0, out var adapter).CheckError();
+        // The device must be on the graphics card that drives the game's monitor (for desktop duplication).
+        _adapterIndex = AdapterFor(game);
+        _factory.EnumAdapters1(_adapterIndex, out var adapter).CheckError();
         using (adapter)
         {
             D3D11.D3D11CreateDevice(adapter, DriverType.Unknown, DeviceCreationFlags.BgraSupport,
@@ -264,7 +274,7 @@ public sealed class EnhancedFilter
         _dup?.Dispose();
         _dup = null;
 
-        _factory!.EnumAdapters1(0, out var adapter).CheckError();
+        _factory!.EnumAdapters1(_adapterIndex, out var adapter).CheckError();
         using (adapter)
         {
             for (uint i = 0; adapter.EnumOutputs(i, out var output).Success; i++)
@@ -281,6 +291,28 @@ public sealed class EnhancedFilter
             }
         }
         throw new InvalidOperationException("The Roblox window is on a monitor of another graphics card.");
+    }
+
+    /// <summary>The graphics card whose monitor shows the middle of the game.</summary>
+    private uint AdapterFor(RawRect game)
+    {
+        var cx = (game.Left + game.Right) / 2;
+        var cy = (game.Top + game.Bottom) / 2;
+        for (uint a = 0; _factory!.EnumAdapters1(a, out var adapter).Success; a++)
+        {
+            using (adapter)
+            {
+                for (uint i = 0; adapter.EnumOutputs(i, out var output).Success; i++)
+                {
+                    using (output)
+                    {
+                        var b = output.Description.DesktopCoordinates;
+                        if (cx >= b.Left && cx < b.Right && cy >= b.Top && cy < b.Bottom) return a;
+                    }
+                }
+            }
+        }
+        return 0;
     }
 
     private void CreateWindow()

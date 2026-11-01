@@ -33,6 +33,7 @@
 | **Multi-Roblox** | Launch several accounts in a row and keep them all open. Each window shows the account name and the Orbit icon in the taskbar, and one button closes them all. |
 | **Account overview** | Every open Roblox window as a live tile with account, game and RAM. Arrange them right from there, hide names for streams, limit background windows' CPU, and an optional Anti-AFK keeps them from being kicked. |
 | **Presets & windows** | Save accounts and a game as a named preset and launch it with one click. Arrange all Roblox windows side by side, and let the resource saver give background windows less CPU. |
+| **Game Filter** | Color filters for Roblox like NVIDIA's: exposure, contrast, saturation, temperature, tint, looks and color blind modes, vignette and letterbox, with profiles, a live preview and hotkeys. Enhanced mode adds sharpen, clarity, HDR toning, bloom, vibrance and curves. NVIDIA digital vibrance while you play. Roblox itself is never touched. |
 | **PC Tweaks** | RAM cleaner with live usage, one-click and automatic cleaning and an allow list – the game you play is never touched. DNS optimizer that tests popular DNS servers and switches to the fastest one. |
 | **Notifications** | Get told when a Roblox window disconnects (with the reason), when a friend comes online and when a saved login has expired. |
 | **Game settings** | Graphics quality, FPS limit, transparency, font size, mouse sensitivity and more. Can be locked so Roblox doesn't reset them. |
