@@ -203,7 +203,7 @@ public sealed class EnhancedFilter
         {
             D3D11.D3D11CreateDevice(adapter, DriverType.Unknown, DeviceCreationFlags.BgraSupport,
                 new[] { FeatureLevel.Level_11_0, FeatureLevel.Level_10_1, FeatureLevel.Level_10_0 },
-                out var device, out var context).CheckError();
+                out ID3D11Device device, out ID3D11DeviceContext context).CheckError();
             _device = device;
             _context = context;
         }
