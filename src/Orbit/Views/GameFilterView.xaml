@@ -111,6 +111,16 @@
                         </StackPanel>
                     </DockPanel>
                 </Border>
+
+                <Border Style="{StaticResource Row}" Tag="Game filter log|problem error vibrance enhanced not working">
+                    <DockPanel>
+                        <Button DockPanel.Dock="Right" Content="Open log" Click="OpenLog_Click"/>
+                        <StackPanel Style="{StaticResource RowText}">
+                            <TextBlock Style="{StaticResource RowTitle}" Text="Something doesn't work?"/>
+                            <TextBlock Style="{StaticResource RowDesc}" Text="Orbit writes down what the filter, enhanced mode and digital vibrance did. Send this file when you report a problem."/>
+                        </StackPanel>
+                    </DockPanel>
+                </Border>
             </StackPanel>
         </ScrollViewer>
 

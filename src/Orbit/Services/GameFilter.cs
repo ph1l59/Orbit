@@ -51,6 +51,9 @@ public static class GameFilter
     public static void Start(Window main)
     {
         if (_timer != null) return;
+        var st = AppState.Settings;
+        FilterLog.Write($"---- Orbit {Updater.DisplayVersion} started · Windows {Environment.OSVersion.Version} · filter {(st.GameFilterEnabled ? "on" : "off")}, enhanced {(st.GameFilterEnhanced ? "on" : "off")}, profile \"{Current.Name}\" ----");
+        FilterLog.Write("NVIDIA driver interface: " + (NvidiaVibrance.Available ? "found" : "not available (" + NvidiaVibrance.InitError + ")"));
         _timer = new DispatcherTimer(TimeSpan.FromMilliseconds(150), DispatcherPriority.Background, (_, _) => Tick(), main.Dispatcher);
         _timer.Start();
 
@@ -79,6 +82,8 @@ public static class GameFilter
         _overlay = null;
     }
 
+    private static string _lastState = "";
+
     private static void Tick()
     {
         var s = AppState.Settings;
@@ -86,6 +91,12 @@ public static class GameFilter
         var inGame = RobloxInFront(out game);
         var want = s.GameFilterEnabled && (PreviewOnScreen || inGame);
         var profile = want ? Current : null;
+        var state = $"{(s.GameFilterEnabled ? "on" : "off")}, Roblox {(inGame ? "in front" : "not in front")}{(PreviewOnScreen ? ", whole-screen preview" : "")}{(s.GameFilterEnhanced ? ", enhanced" : "")}";
+        if (state != _lastState)
+        {
+            _lastState = state;
+            FilterLog.Write("filter: " + state + (want ? $" → profile \"{Current.Name}\", vibrance {Current.DigitalVibrance} %" : ""));
+        }
 
         // Enhanced mode: Orbit's own GPU filter draws over the game (it already includes the colors,
         // vignette and bars). Until it runs – or if it can't – the normal filter does the job.
@@ -116,12 +127,21 @@ public static class GameFilter
 
         try
         {
-            if (!_magReady) _magReady = MagInitialize();
+            if (!_magReady)
+            {
+                _magReady = MagInitialize();
+                FilterLog.Write("color filter: magnification " + (_magReady ? "ready" : "couldn't start"));
+            }
             if (!_magReady) return;
             var effect = new MAGCOLOREFFECT { transform = matrix ?? GameFilterMath.IdentityMatrix() };
-            if (MagSetFullscreenColorEffect(ref effect)) _shown = matrix;
+            if (MagSetFullscreenColorEffect(ref effect))
+            {
+                if ((_shown == null) != (matrix == null)) FilterLog.Write("color filter " + (matrix == null ? "off" : "on"));
+                _shown = matrix;
+            }
+            else FilterLog.Sometimes("mag", TimeSpan.FromMinutes(1), "color filter: Windows refused it (MagSetFullscreenColorEffect failed)");
         }
-        catch { /* not supported on this PC */ }
+        catch (Exception ex) { FilterLog.Sometimes("mag-ex", TimeSpan.FromMinutes(1), "color filter not supported: " + ex.Message); }
     }
 
     private static void UpdateOverlay(GameFilterProfile? profile, IntPtr game)

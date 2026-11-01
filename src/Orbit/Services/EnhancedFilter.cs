@@ -84,22 +84,47 @@ public sealed class EnhancedFilter
 
     private void Run()
     {
+        FilterLog.Write("enhanced: starting");
         try
         {
             SetThreadDpiAwarenessContext(new IntPtr(-4)); // real pixels on every monitor
             CreateWindow();
-            Loop();
         }
         catch (Exception ex)
         {
+            // Without the window there's no way at all – stop for good.
             Fail(ex.Message);
-        }
-        finally
-        {
             Release();
             _thread = null;
+            return;
+        }
+
+        // Anything else (Windows pausing the screen capture, the graphics driver resetting, the game
+        // window changing) is temporary: start the graphics again after a short pause.
+        var errorsInRow = 0;
+        while (true)
+        {
+            try
+            {
+                Loop();
+            }
+            catch (Exception ex)
+            {
+                errorsInRow++;
+                var wait = TimeSpan.FromMilliseconds(Math.Min(10_000, 300 * Math.Pow(2, Math.Min(errorsInRow - 1, 6))));
+                FilterLog.Write($"enhanced: error ({ex.GetType().Name}: {ex.Message}) – trying again in {wait.TotalSeconds:0.#} s (#{errorsInRow})");
+                Running = false;
+                Status = "Retrying: " + ex.Message;
+                ReleaseGraphics();
+                if (_window != IntPtr.Zero) ShowWindow(_window, SW_HIDE);
+                Thread.Sleep(wait);
+                continue;
+            }
         }
     }
+
+    private int _frames, _timeouts;
+    private DateTime _statsSince = DateTime.UtcNow, _lastNewFrame = DateTime.UtcNow, _lastRaise;
 
     private void Loop()
     {
@@ -110,7 +135,7 @@ public sealed class EnhancedFilter
             var game = _target;
             if (game == IntPtr.Zero || !IsWindow(game))
             {
-                if (lastShown) { ShowWindow(_window, SW_HIDE); lastShown = false; }
+                if (lastShown) { ShowWindow(_window, SW_HIDE); lastShown = false; FilterLog.Write("enhanced: Roblox not in front – hidden"); }
                 // Let go of the screen duplication while there's nothing to draw.
                 _dup?.Dispose();
                 _dup = null;
@@ -132,19 +157,29 @@ public sealed class EnhancedFilter
             if (!lastShown || !rect.Equals(_shownRect))
             {
                 SetWindowPos(_window, HWND_TOPMOST, rect.Left, rect.Top, client.Right, client.Bottom, SWP_NOACTIVATE | SWP_SHOWWINDOW);
+                if (!rect.Equals(_shownRect)) FilterLog.Write($"enhanced: over Roblox at {rect.Left},{rect.Top} size {client.Right}×{client.Bottom}");
                 _shownRect = rect;
+                _lastRaise = DateTime.UtcNow;
+            }
+            else if (DateTime.UtcNow - _lastRaise > TimeSpan.FromMilliseconds(200))
+            {
+                // Roblox in fullscreen keeps putting itself on top – stay above it, without taking the focus.
+                SetWindowPos(_window, HWND_TOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE | SWP_SHOWWINDOW);
+                _lastRaise = DateTime.UtcNow;
             }
             lastShown = true;
+            LogStats();
 
             // Wait for a new picture of the screen.
             var result = _dup!.AcquireNextFrame(20, out var info, out var resource);
-            if (result == Vortice.DXGI.ResultCode.WaitTimeout) { continue; }
+            if (result == Vortice.DXGI.ResultCode.WaitTimeout) { _timeouts++; continue; }
             if (result.Failure)
             {
-                // Desktop switched (UAC, lock screen, resolution) – start the duplication again.
+                // Desktop switched (UAC, lock screen, resolution, a game changing its display mode) – start the capture again.
+                FilterLog.Write($"enhanced: screen capture interrupted ({result}) – starting it again");
                 _dup.Dispose();
                 _dup = null;
-                Thread.Sleep(100);
+                Thread.Sleep(150);
                 continue;
             }
 
@@ -163,9 +198,23 @@ public sealed class EnhancedFilter
             }
 
             Draw();
+            _frames++;
+            _lastNewFrame = DateTime.UtcNow;
+            if (!Running) FilterLog.Write("enhanced: running");
             Running = true;
             Status = "Running";
         }
+    }
+
+    /// <summary>Every 30 s: how many pictures were drawn – shows when the game stopped sending new ones.</summary>
+    private void LogStats()
+    {
+        var since = DateTime.UtcNow - _statsSince;
+        if (since < TimeSpan.FromSeconds(30)) return;
+        FilterLog.Write($"enhanced: {_frames / since.TotalSeconds:0} pictures/s drawn, {_timeouts} waits" +
+                        (DateTime.UtcNow - _lastNewFrame > TimeSpan.FromSeconds(3) ? " – NO NEW PICTURE FROM THE SCREEN FOR " + (DateTime.UtcNow - _lastNewFrame).TotalSeconds.ToString("0") + " s" : ""));
+        _frames = _timeouts = 0;
+        _statsSince = DateTime.UtcNow;
     }
 
     private void CopyGame(ID3D11Texture2D desktop, RawRect rect)
@@ -198,7 +247,9 @@ public sealed class EnhancedFilter
         _context.PSSetSampler(0, _sampler);
         _context.PSSetConstantBuffer(0, _cb);
         _context.Draw(3, 0);
-        _swapChain!.Present(1, PresentFlags.None);
+        var presented = _swapChain!.Present(1, PresentFlags.None);
+        if (presented.Failure)
+            throw new InvalidOperationException($"showing the picture failed ({presented}, device {_device!.DeviceRemovedReason})");
     }
 
     // ---------------- Setup ----------------
@@ -216,6 +267,7 @@ public sealed class EnhancedFilter
                 out ID3D11Device device, out ID3D11DeviceContext context).CheckError();
             _device = device;
             _context = context;
+            FilterLog.Write($"enhanced: graphics card #{_adapterIndex}: {adapter.Description1.Description}");
         }
 
         var vs = Compiler.Compile(Shader, "VS", "orbit-filter", "vs_4_0");
@@ -286,6 +338,7 @@ public sealed class EnhancedFilter
                     using var output1 = output.QueryInterface<IDXGIOutput1>();
                     _dup = output1.DuplicateOutput(_device!);
                     _dupBounds = bounds;
+                    FilterLog.Write($"enhanced: capturing monitor {output.Description.DeviceName} ({bounds.Left},{bounds.Top} – {bounds.Right},{bounds.Bottom})");
                     return;
                 }
             }
@@ -332,7 +385,8 @@ public sealed class EnhancedFilter
         SetLayeredWindowAttributes(_window, 0, 255, LWA_ALPHA);
         // Never part of screen captures – otherwise the filter would read its own picture again and again.
         if (!SetWindowDisplayAffinity(_window, WDA_EXCLUDEFROMCAPTURE))
-            throw new InvalidOperationException("Needs Windows 10 (version 2004) or newer.");
+            throw new InvalidOperationException($"Windows didn't allow leaving the filter out of screen captures (error {Marshal.GetLastWin32Error()}) – needs Windows 10 version 2004 or newer.");
+        FilterLog.Write("enhanced: filter window ready");
     }
 
     private void Pump()
@@ -349,11 +403,17 @@ public sealed class EnhancedFilter
         Failed = true;
         Running = false;
         Status = "Couldn't start: " + reason;
-        try { File.AppendAllText(Path.Combine(AppPaths.DataDir, "game-filter.log"), $"{DateTime.Now:u} enhanced mode: {reason}{Environment.NewLine}"); }
-        catch { /* ignore */ }
+        FilterLog.Write("enhanced: can't run on this PC – " + reason);
     }
 
     private void Release()
+    {
+        ReleaseGraphics();
+        if (_window != IntPtr.Zero) { DestroyWindow(_window); _window = IntPtr.Zero; }
+    }
+
+    /// <summary>Everything except the window – made again on the next try.</summary>
+    private void ReleaseGraphics()
     {
         Running = false;
         _dup?.Dispose(); _dup = null;
@@ -371,8 +431,8 @@ public sealed class EnhancedFilter
         _context?.Dispose(); _context = null;
         _device?.Dispose(); _device = null;
         _factory?.Dispose(); _factory = null;
-        if (_window != IntPtr.Zero) { DestroyWindow(_window); _window = IntPtr.Zero; }
         _width = _height = 0;
+        _shownRect = default;
     }
 
     // =================== Shader ===================
@@ -508,7 +568,7 @@ public sealed class EnhancedFilter
     private const int WS_EX_TRANSPARENT = 0x20, WS_EX_TOPMOST = 0x8, WS_EX_TOOLWINDOW = 0x80, WS_EX_LAYERED = 0x80000,
         WS_EX_NOACTIVATE = 0x08000000, WS_EX_NOREDIRECTIONBITMAP = 0x00200000;
     private const uint WS_POPUP = 0x80000000, LWA_ALPHA = 0x2, WDA_EXCLUDEFROMCAPTURE = 0x11, PM_REMOVE = 0x1;
-    private const uint SWP_NOACTIVATE = 0x10, SWP_SHOWWINDOW = 0x40;
+    private const uint SWP_NOSIZE = 0x1, SWP_NOMOVE = 0x2, SWP_NOACTIVATE = 0x10, SWP_SHOWWINDOW = 0x40;
     private const int SW_HIDE = 0;
     private static readonly IntPtr HWND_TOPMOST = new(-1);
 
@@ -521,7 +581,7 @@ public sealed class EnhancedFilter
     [DllImport("user32.dll")] private static extern bool TranslateMessage(ref MSG msg);
     [DllImport("user32.dll")] private static extern IntPtr DispatchMessage(ref MSG msg);
     [DllImport("user32.dll")] private static extern bool SetLayeredWindowAttributes(IntPtr hwnd, uint key, byte alpha, uint flags);
-    [DllImport("user32.dll")] private static extern bool SetWindowDisplayAffinity(IntPtr hwnd, uint affinity);
+    [DllImport("user32.dll", SetLastError = true)] private static extern bool SetWindowDisplayAffinity(IntPtr hwnd, uint affinity);
     [DllImport("user32.dll")] private static extern bool SetWindowPos(IntPtr hwnd, IntPtr after, int x, int y, int w, int h, uint flags);
     [DllImport("user32.dll")] private static extern bool ShowWindow(IntPtr hwnd, int cmd);
     [DllImport("user32.dll")] private static extern bool IsWindow(IntPtr hwnd);

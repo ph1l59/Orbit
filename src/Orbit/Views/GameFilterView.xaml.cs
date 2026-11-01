@@ -188,6 +188,18 @@ public partial class GameFilterView : UserControl, IPage
         return $"#{(int)(r * 255):X2}{(int)(g * 255):X2}{(int)(b * 255):X2}";
     }
 
+    private void OpenLog_Click(object sender, RoutedEventArgs e)
+    {
+        var file = FilterLog.FilePath;
+        if (!System.IO.File.Exists(file)) FilterLog.Write("log opened (nothing happened yet)");
+        try
+        {
+            // Opens the folder with the file selected – easy to drag into Discord.
+            System.Diagnostics.Process.Start("explorer.exe", $"/select,\"{file}\"");
+        }
+        catch { /* ignore */ }
+    }
+
     private void ScreenPreview_Click(object sender, RoutedEventArgs e)
     {
         GameFilter.PreviewOnScreen = ScreenPreviewToggle.IsChecked == true;
