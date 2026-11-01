@@ -22,6 +22,41 @@ public sealed class LaunchPreset
     public string GameName { get; set; } = "";
 }
 
+/// <summary>One game filter profile (Game filter page). Values are -100..100 (0 = unchanged) unless noted.</summary>
+public sealed class GameFilterProfile
+{
+    public string Name { get; set; } = "";
+    public int Exposure { get; set; }
+    public int Brightness { get; set; }
+    public int Contrast { get; set; }
+    public int Saturation { get; set; }
+    /// <summary>Negative = colder (blue), positive = warmer (orange).</summary>
+    public int Temperature { get; set; }
+    /// <summary>Tint color as #RRGGBB.</summary>
+    public string TintColor { get; set; } = "#A855F7";
+    /// <summary>0..100</summary>
+    public int TintStrength { get; set; }
+    /// <summary>none | bw | sepia | night | protan | deutan | tritan</summary>
+    public string Look { get; set; } = "none";
+    /// <summary>0..100</summary>
+    public int LookStrength { get; set; } = 100;
+    /// <summary>0..100 – dark edges.</summary>
+    public int Vignette { get; set; }
+    /// <summary>none | 1.85 | 2.39 – black bars for a cinema look.</summary>
+    public string Letterbox { get; set; } = "none";
+
+    public GameFilterProfile Clone() => (GameFilterProfile)MemberwiseClone();
+
+    public static List<GameFilterProfile> Defaults() => new()
+    {
+        new() { Name = "Vivid", Saturation = 40, Contrast = 12 },
+        new() { Name = "Cinematic", Contrast = 22, Saturation = -18, Temperature = 18, Vignette = 45, Letterbox = "2.39" },
+        new() { Name = "Night", Look = "night", LookStrength = 80, Brightness = -6 },
+        new() { Name = "Black & white", Look = "bw", Contrast = 25 },
+        new() { Name = "Retro", Look = "sepia", LookStrength = 70, Contrast = -10, Vignette = 35 },
+    };
+}
+
 public sealed class AppSettings
 {
     // ===== Launching =====
@@ -60,6 +95,13 @@ public sealed class AppSettings
     public bool AntiAfk { get; set; }
     public int AntiAfkMinutes { get; set; } = 15;
     public List<LaunchPreset> Presets { get; set; } = new();
+
+    // ===== Game filter =====
+    /// <summary>Color filter over the screen while a Roblox window is in front.</summary>
+    public bool GameFilterEnabled { get; set; }
+    /// <summary>Index into GameFilterProfiles.</summary>
+    public int GameFilterIndex { get; set; }
+    public List<GameFilterProfile> GameFilterProfiles { get; set; } = GameFilterProfile.Defaults();
 
     // ===== Tweaks: RAM cleaner =====
     /// <summary>Clean RAM automatically.</summary>

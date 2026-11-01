@@ -30,6 +30,7 @@ public partial class MainWindow : Window
         new("fastflags", "FastFlags", "", true, () => new FastFlagsView()),
         new("mods", "Mods", "", true, () => new ModsView()),
         new("tweaks", "Tweaks", "\uEC4A", true, () => new TweaksView()),
+        new("filter", "Game Filter", "\uE790", true, () => new GameFilterView()),
         new("bootstrapper", "Bootstrapper", "", true, () => new BootstrapperView()),
         new("integrations", "Integrations", "", true, () => new IntegrationsView()),
         new("clicker", "Auto Clicker", "", true, () => new AutoClickerView()),
@@ -94,6 +95,7 @@ public partial class MainWindow : Window
             RamCleaner.Start(Dispatcher);
             AntiAfk.Start(Dispatcher);
             RobloxWindows.RefreshSaver(Dispatcher);
+            GameFilter.Start(this);
 
             // "What's new" once after an update – a moment after the window is up.
             await Task.Delay(700);
@@ -396,6 +398,7 @@ public partial class MainWindow : Window
         Integrations.Stop();
         Playtime.Stop();
         RobloxWindows.StopSaver();
+        GameFilter.Stop();
         base.OnClosed(e);
     }
 

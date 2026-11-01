@@ -219,6 +219,7 @@ public partial class App : Application
     protected override void OnExit(ExitEventArgs e)
     {
         Integrations.Stop();
+        GameFilter.Stop();
         MultiInstance.Disable();
         _singleInstance?.Dispose();
         base.OnExit(e);
