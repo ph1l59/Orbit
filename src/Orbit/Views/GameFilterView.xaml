@@ -209,10 +209,10 @@
                     <StackPanel>
                         <Button Style="{StaticResource SectionHeader}" Content="Digital Vibrance (NVIDIA)" Tag="{Binding ElementName=DvcBody}" Click="Section_Click"/>
                         <StackPanel x:Name="DvcBody" Margin="16,0,16,14">
-                            <TextBlock Text="INTENSITY (%)" Style="{StaticResource SliderLabel}"/>
+                            <TextBlock Text="LEVEL (%)  ·  50 = NORMAL  ·  0 = OFF" Style="{StaticResource SliderLabel}"/>
                             <local:NumberSlider x:Name="DvcSlider" Minimum="0" Maximum="100" Step="1" ValueChanged="Changed"/>
                             <TextBlock x:Name="DvcNote" Style="{StaticResource RowDesc}" Margin="0,8,0,0"
-                                       Text="Set by your NVIDIA driver, costs no performance. Only while Roblox is in front – your normal setting comes back right after."/>
+                                       Text="The same value as 'Digital vibrance' in the NVIDIA Control Panel. Set by the driver, costs no performance – only while Roblox is in front, your own setting comes back right after."/>
                         </StackPanel>
                     </StackPanel>
                 </Border>

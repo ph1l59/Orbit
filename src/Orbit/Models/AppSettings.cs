@@ -62,14 +62,14 @@ public sealed class GameFilterProfile
     /// <summary>0..100</summary>
     public int Bloom { get; set; }
 
-    /// <summary>NVIDIA's digital vibrance (graphics driver) while Roblox is in front, 0..100 (0 = your normal setting).</summary>
+    /// <summary>NVIDIA's digital vibrance while Roblox is in front, like the NVIDIA Control Panel: 50 = normal, 100 = max, 0 = don't change.</summary>
     public int DigitalVibrance { get; set; }
 
     public GameFilterProfile Clone() => (GameFilterProfile)MemberwiseClone();
 
     public static List<GameFilterProfile> Defaults() => new()
     {
-        new() { Name = "Vivid", Saturation = 25, Contrast = 12, Vibrance = 40, DigitalVibrance = 50, Sharpen = 20 },
+        new() { Name = "Vivid", Saturation = 25, Contrast = 12, Vibrance = 40, DigitalVibrance = 75, Sharpen = 20 },
         new() { Name = "Cinematic", Contrast = 22, Saturation = -18, Temperature = 18, Vignette = 45, Letterbox = "2.39", Bloom = 25, HdrToning = 30 },
         new() { Name = "Night", Look = "night", LookStrength = 80, Brightness = -6 },
         new() { Name = "Black & white", Look = "bw", Contrast = 25 },
