@@ -13,12 +13,12 @@ namespace Orbit.Views;
 public partial class GameFilterView : UserControl, IPage
 {
     private const int PreviewW = 640, PreviewH = 360;
-    private static readonly string[] Tints = { "#A855F7", "#3B82F6", "#06B6D4", "#22C55E", "#F59E0B", "#EF4444", "#EC4899" };
 
     private readonly byte[] _scene;
     private readonly byte[] _filtered = new byte[PreviewW * PreviewH * 4];
     private readonly WriteableBitmap _preview = new(PreviewW, PreviewH, 96, 96, PixelFormats.Bgra32, null);
     private readonly DispatcherTimer _saveDelay = new() { Interval = TimeSpan.FromMilliseconds(400) };
+    private readonly DispatcherTimer _statusTimer = new() { Interval = TimeSpan.FromSeconds(1) };
     private bool _loading;
 
     public GameFilterView()
@@ -28,23 +28,18 @@ public partial class GameFilterView : UserControl, IPage
         PreviewImage.Source = _preview;
         PreviewArea.SizeChanged += (_, _) => UpdateFrame();
 
-        foreach (var hex in Tints)
-        {
-            var color = (Color)ColorConverter.ConvertFromString(hex);
-            var swatch = new RadioButton
-            {
-                GroupName = "tint", Tag = hex, Width = 26, Height = 26, Margin = new Thickness(0, 0, 8, 0), Cursor = System.Windows.Input.Cursors.Hand,
-                Template = SwatchTemplate(color), ToolTip = "Tint color",
-            };
-            swatch.Checked += (_, _) => Changed(this, EventArgs.Empty);
-            TintColors.Children.Add(swatch);
-        }
+        // Closed at first, like NVIDIA's panel: the first two are open.
+        foreach (var body in new FrameworkElement[] { DvcBody, DetailsBody, LookBody, FrameBody }) body.Visibility = Visibility.Collapsed;
+        if (!NvidiaVibrance.Available)
+            DvcNote.Text = "Needs an NVIDIA graphics card – no NVIDIA driver was found on this PC.";
 
+        _statusTimer.Tick += (_, _) => UpdateStatus();
         _saveDelay.Tick += (_, _) => { _saveDelay.Stop(); AppState.SaveSettings(); };
         GameFilter.Changed += () => Dispatcher.InvokeAsync(Load);
         IsVisibleChanged += (_, _) =>
         {
-            if (IsVisible) return;
+            if (IsVisible) { _statusTimer.Start(); return; }
+            _statusTimer.Stop();
             // The whole-screen preview only lives while you're on this page.
             ScreenPreviewToggle.IsChecked = false;
             GameFilter.PreviewOnScreen = false;
@@ -84,14 +79,23 @@ public partial class GameFilterView : UserControl, IPage
         }
 
         EnabledToggle.IsChecked = s.GameFilterEnabled;
+        EnhancedToggle.IsChecked = s.GameFilterEnhanced;
         ExposureSlider.Value = p.Exposure;
         BrightnessSlider.Value = p.Brightness;
         ContrastSlider.Value = p.Contrast;
-        SaturationSlider.Value = p.Saturation;
-        TemperatureSlider.Value = p.Temperature;
+        HighlightsSlider.Value = p.Highlights;
+        ShadowsSlider.Value = p.Shadows;
+        GammaSlider.Value = p.Gamma;
+        TintHueSlider.Value = p.TintHue;
         TintSlider.Value = p.TintStrength;
-        foreach (var swatch in TintColors.Children.OfType<RadioButton>())
-            swatch.IsChecked = string.Equals((string)swatch.Tag, p.TintColor, StringComparison.OrdinalIgnoreCase);
+        TemperatureSlider.Value = p.Temperature;
+        SaturationSlider.Value = p.Saturation;
+        VibranceSlider.Value = p.Vibrance;
+        DvcSlider.Value = p.DigitalVibrance;
+        SharpenSlider.Value = p.Sharpen;
+        ClaritySlider.Value = p.Clarity;
+        HdrSlider.Value = p.HdrToning;
+        BloomSlider.Value = p.Bloom;
         Select(LookBox, p.Look);
         LookSlider.Value = p.LookStrength;
         VignetteSlider.Value = p.Vignette;
@@ -118,10 +122,20 @@ public partial class GameFilterView : UserControl, IPage
         p.Exposure = ExposureSlider.IntValue;
         p.Brightness = BrightnessSlider.IntValue;
         p.Contrast = ContrastSlider.IntValue;
-        p.Saturation = SaturationSlider.IntValue;
-        p.Temperature = TemperatureSlider.IntValue;
+        p.Highlights = HighlightsSlider.IntValue;
+        p.Shadows = ShadowsSlider.IntValue;
+        p.Gamma = GammaSlider.IntValue;
+        p.TintHue = TintHueSlider.IntValue;
+        p.TintColor = HueToHex(p.TintHue);
         p.TintStrength = TintSlider.IntValue;
-        p.TintColor = TintColors.Children.OfType<RadioButton>().FirstOrDefault(r => r.IsChecked == true)?.Tag as string ?? p.TintColor;
+        p.Temperature = TemperatureSlider.IntValue;
+        p.Saturation = SaturationSlider.IntValue;
+        p.Vibrance = VibranceSlider.IntValue;
+        p.DigitalVibrance = DvcSlider.IntValue;
+        p.Sharpen = SharpenSlider.IntValue;
+        p.Clarity = ClaritySlider.IntValue;
+        p.HdrToning = HdrSlider.IntValue;
+        p.Bloom = BloomSlider.IntValue;
         p.Look = TagOf(LookBox, "none");
         p.LookStrength = LookSlider.IntValue;
         p.Vignette = VignetteSlider.IntValue;
@@ -141,6 +155,39 @@ public partial class GameFilterView : UserControl, IPage
         GameFilter.Refresh();
     }
 
+    private void Enhanced_Click(object sender, RoutedEventArgs e)
+    {
+        AppState.Settings.GameFilterEnhanced = EnhancedToggle.IsChecked == true;
+        AppState.SaveSettings();
+        if (AppState.Settings.GameFilterEnhanced) EnhancedFilter.Instance.ResetFailure();
+        UpdateStatus();
+        UpdatePreview();
+        GameFilter.Refresh();
+    }
+
+    private void Section_Click(object sender, RoutedEventArgs e)
+    {
+        if ((sender as Button)?.Tag is FrameworkElement body)
+            body.Visibility = body.Visibility == Visibility.Visible ? Visibility.Collapsed : Visibility.Visible;
+    }
+
+    /// <summary>Hue 0..360 → a strong color of that hue, as #RRGGBB.</summary>
+    private static string HueToHex(int hue)
+    {
+        double h = (hue % 360 + 360) % 360 / 60.0;
+        var x = 1 - Math.Abs(h % 2 - 1);
+        var (r, g, b) = (int)h switch
+        {
+            0 => (1.0, x, 0.0),
+            1 => (x, 1.0, 0.0),
+            2 => (0.0, 1.0, x),
+            3 => (0.0, x, 1.0),
+            4 => (x, 0.0, 1.0),
+            _ => (1.0, 0.0, x),
+        };
+        return $"#{(int)(r * 255):X2}{(int)(g * 255):X2}{(int)(b * 255):X2}";
+    }
+
     private void ScreenPreview_Click(object sender, RoutedEventArgs e)
     {
         GameFilter.PreviewOnScreen = ScreenPreviewToggle.IsChecked == true;
@@ -156,9 +203,21 @@ public partial class GameFilterView : UserControl, IPage
 
     private void UpdateStatus()
     {
-        StatusText.Text = AppState.Settings.GameFilterEnabled
+        var s = AppState.Settings;
+        StatusText.Text = s.GameFilterEnabled
             ? $"On · \"{GameFilter.Current.Name}\" – active whenever a Roblox window is in front."
             : "Off. Turn it on, or press Ctrl + Alt + F in game.";
+
+        // Settings that only work in enhanced mode look switched off without it.
+        var enhanced = s.GameFilterEnhanced;
+        foreach (var panel in new FrameworkElement[] { CurvesPanel, VibrancePanel, DetailsBody }) panel.Opacity = enhanced ? 1 : 0.45;
+
+        var engine = EnhancedFilter.Instance;
+        EnhancedStatus.Visibility = enhanced ? Visibility.Visible : Visibility.Collapsed;
+        EnhancedStatus.Text = engine.Failed ? engine.Status.ToUpperInvariant()
+            : engine.Running ? "● RUNNING OVER ROBLOX"
+            : "WAITING FOR A ROBLOX WINDOW IN FRONT";
+        EnhancedStatus.Foreground = (Brush)FindResource(engine.Failed ? "WarnBrush" : engine.Running ? "OkBrush" : "DimBrush");
     }
 
     private void New_Click(object sender, RoutedEventArgs e)
@@ -209,16 +268,73 @@ public partial class GameFilterView : UserControl, IPage
 
     // ---------------- Preview ----------------
 
-    /// <summary>Runs the same color matrix Windows will use over every pixel of the preview picture.</summary>
+    /// <summary>
+    /// Runs the filter over every pixel of the preview picture: the color matrix Windows uses, and with
+    /// enhanced mode on the same steps as Orbit's GPU filter (curves, vibrance, details).
+    /// </summary>
     private void UpdatePreview()
     {
-        var m = GameFilterMath.Build(GameFilter.Current);
-        for (var i = 0; i < _scene.Length; i += 4)
+        var p = GameFilter.Current;
+        var m = GameFilterMath.Build(p);
+        var enhanced = AppState.Settings.GameFilterEnhanced;
+        float sharpen = p.Sharpen / 100f, clarity = p.Clarity / 100f, hdr = p.HdrToning / 100f, bloom = p.Bloom / 100f;
+        float shadows = p.Shadows / 100f, highlights = p.Highlights / 100f, gamma = MathF.Pow(2, -p.Gamma / 100f), vibrance = p.Vibrance / 100f;
+
+        for (int y = 0, i = 0; y < PreviewH; y++)
+        for (var x = 0; x < PreviewW; x++, i += 4)
         {
-            float b = _scene[i] / 255f, g = _scene[i + 1] / 255f, r = _scene[i + 2] / 255f;
+            var (r, g, b) = Pixel(x, y);
+            if (enhanced)
+            {
+                if (sharpen > 0)
+                {
+                    var (r1, g1, b1) = Pixel(x - 1, y);
+                    var (r2, g2, b2) = Pixel(x + 1, y);
+                    var (r3, g3, b3) = Pixel(x, y - 1);
+                    var (r4, g4, b4) = Pixel(x, y + 1);
+                    r += (r - (r1 + r2 + r3 + r4) * 0.25f) * sharpen * 1.6f;
+                    g += (g - (g1 + g2 + g3 + g4) * 0.25f) * sharpen * 1.6f;
+                    b += (b - (b1 + b2 + b3 + b4) * 0.25f) * sharpen * 1.6f;
+                }
+                float u = (x + 0.5f) / PreviewW, v = (y + 0.5f) / PreviewH;
+                if (clarity > 0)
+                {
+                    var d = (Luma(r, g, b) - Luma(Blurred(3, u, v))) * clarity * 1.4f;
+                    r += d; g += d; b += d;
+                }
+                if (hdr > 0)
+                {
+                    var d = (0.5f - Luma(Blurred(5, u, v))) * hdr * 0.45f * (1 - MathF.Abs(Luma(r, g, b) - 0.5f));
+                    r += d; g += d; b += d;
+                }
+                if (bloom > 0)
+                {
+                    var (gr1, gg1, gb1) = Blurred(4, u, v);
+                    var (gr2, gg2, gb2) = Blurred(6, u, v);
+                    r += MathF.Max((gr1 + gr2) * 0.5f - 0.55f, 0) * bloom * 1.8f;
+                    g += MathF.Max((gg1 + gg2) * 0.5f - 0.55f, 0) * bloom * 1.8f;
+                    b += MathF.Max((gb1 + gb2) * 0.5f - 0.55f, 0) * bloom * 1.8f;
+                }
+                r = Math.Clamp(r, 0, 1); g = Math.Clamp(g, 0, 1); b = Math.Clamp(b, 0, 1);
+                var l = Luma(r, g, b);
+                var lift = (shadows * (1 - SmoothStep(0, 0.55f, l)) + highlights * SmoothStep(0.45f, 1, l)) * 0.3f;
+                r = MathF.Pow(Math.Clamp(r + lift, 0.0001f, 1), gamma);
+                g = MathF.Pow(Math.Clamp(g + lift, 0.0001f, 1), gamma);
+                b = MathF.Pow(Math.Clamp(b + lift, 0.0001f, 1), gamma);
+            }
+
             var nr = r * m[0] + g * m[5] + b * m[10] + m[20];
             var ng = r * m[1] + g * m[6] + b * m[11] + m[21];
             var nb = r * m[2] + g * m[7] + b * m[12] + m[22];
+
+            if (enhanced && vibrance > 0)
+            {
+                var sat = Math.Clamp(MathF.Max(nr, MathF.Max(ng, nb)) - MathF.Min(nr, MathF.Min(ng, nb)), 0, 1);
+                var k = 1 + vibrance * (1 - sat);
+                var lv = Luma(nr, ng, nb);
+                nr = lv + (nr - lv) * k; ng = lv + (ng - lv) * k; nb = lv + (nb - lv) * k;
+            }
+
             _filtered[i] = ToByte(nb);
             _filtered[i + 1] = ToByte(ng);
             _filtered[i + 2] = ToByte(nr);
@@ -226,6 +342,70 @@ public partial class GameFilterView : UserControl, IPage
         }
         _preview.WritePixels(new Int32Rect(0, 0, PreviewW, PreviewH), _filtered, PreviewW * 4, 0);
         UpdateFrame();
+    }
+
+    private (float R, float G, float B) Pixel(int x, int y)
+    {
+        x = Math.Clamp(x, 0, PreviewW - 1);
+        y = Math.Clamp(y, 0, PreviewH - 1);
+        var i = (y * PreviewW + x) * 4;
+        return (_scene[i + 2] / 255f, _scene[i + 1] / 255f, _scene[i] / 255f);
+    }
+
+    private static float Luma(float r, float g, float b) => r * 0.2126f + g * 0.7152f + b * 0.0722f;
+    private static float Luma((float R, float G, float B) c) => Luma(c.R, c.G, c.B);
+
+    private static float SmoothStep(float a, float b, float x)
+    {
+        var t = Math.Clamp((x - a) / (b - a), 0, 1);
+        return t * t * (3 - 2 * t);
+    }
+
+    /// <summary>Blurred copies of the preview picture (each half the size of the one before, like GPU mipmaps).</summary>
+    private float[][]? _mips;
+    private int[]? _mipW, _mipH;
+
+    private (float R, float G, float B) Blurred(int level, float u, float v)
+    {
+        if (_mips == null)
+        {
+            _mips = new float[7][];
+            _mipW = new int[7];
+            _mipH = new int[7];
+            _mipW[0] = PreviewW; _mipH[0] = PreviewH;
+            _mips[0] = new float[PreviewW * PreviewH * 3];
+            for (var i = 0; i < PreviewW * PreviewH; i++)
+            {
+                _mips[0][i * 3] = _scene[i * 4 + 2] / 255f;
+                _mips[0][i * 3 + 1] = _scene[i * 4 + 1] / 255f;
+                _mips[0][i * 3 + 2] = _scene[i * 4] / 255f;
+            }
+            for (var l = 1; l < 7; l++)
+            {
+                int pw = _mipW[l - 1], ph = _mipH[l - 1], w = Math.Max(1, pw / 2), h = Math.Max(1, ph / 2);
+                _mipW[l] = w; _mipH[l] = h;
+                var dst = _mips[l] = new float[w * h * 3];
+                var src = _mips[l - 1];
+                for (var y = 0; y < h; y++)
+                for (var x = 0; x < w; x++)
+                for (var c = 0; c < 3; c++)
+                {
+                    int x0 = Math.Min(x * 2, pw - 1), x1 = Math.Min(x * 2 + 1, pw - 1), y0 = Math.Min(y * 2, ph - 1), y1 = Math.Min(y * 2 + 1, ph - 1);
+                    dst[(y * w + x) * 3 + c] = (src[(y0 * pw + x0) * 3 + c] + src[(y0 * pw + x1) * 3 + c] + src[(y1 * pw + x0) * 3 + c] + src[(y1 * pw + x1) * 3 + c]) * 0.25f;
+                }
+            }
+        }
+
+        // Bilinear sample, like the GPU does.
+        int mw = _mipW![level], mh = _mipH![level];
+        var data = _mips[level];
+        float fx = Math.Clamp(u * mw - 0.5f, 0, mw - 1), fy = Math.Clamp(v * mh - 0.5f, 0, mh - 1);
+        int ix = (int)fx, iy = (int)fy, ix1 = Math.Min(ix + 1, mw - 1), iy1 = Math.Min(iy + 1, mh - 1);
+        float tx = fx - ix, ty = fy - iy;
+        float Get(int xx, int yy, int c) => data[(yy * mw + xx) * 3 + c];
+        float Mix(int c) =>
+            (Get(ix, iy, c) * (1 - tx) + Get(ix1, iy, c) * tx) * (1 - ty) + (Get(ix, iy1, c) * (1 - tx) + Get(ix1, iy1, c) * tx) * ty;
+        return (Mix(0), Mix(1), Mix(2));
     }
 
     private static byte ToByte(float v) => (byte)(Math.Clamp(v, 0f, 1f) * 255 + 0.5f);
@@ -255,26 +435,6 @@ public partial class GameFilterView : UserControl, IPage
         PreviewBarTop.Height = PreviewBarBottom.Height = bar;
         PreviewBarTop.Margin = new Thickness(0, gap, 0, 0);
         PreviewBarBottom.Margin = new Thickness(0, 0, 0, gap);
-    }
-
-    private static ControlTemplate SwatchTemplate(Color color)
-    {
-        var template = new ControlTemplate(typeof(RadioButton));
-        var ring = new FrameworkElementFactory(typeof(Border), "ring");
-        ring.SetValue(Border.CornerRadiusProperty, new CornerRadius(13));
-        ring.SetValue(Border.BorderThicknessProperty, new Thickness(2));
-        ring.SetValue(Border.BorderBrushProperty, Brushes.Transparent);
-        ring.SetValue(Border.PaddingProperty, new Thickness(3));
-        var dot = new FrameworkElementFactory(typeof(Ellipse));
-        dot.SetValue(Shape.FillProperty, new SolidColorBrush(color));
-        ring.AppendChild(dot);
-        template.VisualTree = ring;
-        template.Triggers.Add(new Trigger
-        {
-            Property = System.Windows.Controls.Primitives.ToggleButton.IsCheckedProperty, Value = true,
-            Setters = { new Setter(Border.BorderBrushProperty, Brushes.White, "ring") },
-        });
-        return template;
     }
 
     /// <summary>A small, bright blocky game scene for the preview (sky, sun, ground, blocks, a figure).</summary>
@@ -352,4 +512,13 @@ public partial class GameFilterView : UserControl, IPage
     }
 
     private static string F(FormattableString s) => s.ToString(System.Globalization.CultureInfo.InvariantCulture);
+}
+
+/// <summary>Chevron of a section header: points down when closed, up when open.</summary>
+public sealed class ChevronAngle : System.Windows.Data.IValueConverter
+{
+    public static readonly ChevronAngle Instance = new();
+    public object Convert(object value, Type targetType, object parameter, System.Globalization.CultureInfo culture) =>
+        value is Visibility.Visible ? 180.0 : 0.0;
+    public object ConvertBack(object value, Type targetType, object parameter, System.Globalization.CultureInfo culture) => System.Windows.Data.Binding.DoNothing;
 }

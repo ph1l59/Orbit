@@ -18,7 +18,7 @@
     <Authors>Floshiii</Authors>
     <Copyright>Copyright (c) 2026 Floshiii</Copyright>
     <Description>Roblox account manager, multi-instance launcher and FPS/graphics tweaks in one app.</Description>
-    <Version>3.3.0</Version>
+    <Version>3.4.0</Version>
 
     <!-- Single .exe -->
     <RuntimeIdentifier>win-x64</RuntimeIdentifier>
@@ -33,6 +33,10 @@
   <ItemGroup>
     <PackageReference Include="Microsoft.Web.WebView2" Version="1.0.2210.55" />
     <PackageReference Include="System.Security.Cryptography.ProtectedData" Version="8.0.0" />
+    <!-- Game filter, enhanced mode: Direct3D 11, desktop duplication and DirectComposition -->
+    <PackageReference Include="Vortice.Direct3D11" Version="3.8.3" />
+    <PackageReference Include="Vortice.D3DCompiler" Version="3.8.3" />
+    <PackageReference Include="Vortice.DirectComposition" Version="3.8.3" />
   </ItemGroup>
 
   <!-- Windows Forms is only used for the tray icon; keep its names out of the WPF code. -->

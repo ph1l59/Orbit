@@ -71,6 +71,8 @@ public static class GameFilter
     public static void Stop()
     {
         _timer?.Stop();
+        EnhancedFilter.Instance.Stop();
+        NvidiaVibrance.Restore();
         Show(null);
         if (_magReady) { MagUninitialize(); _magReady = false; }
         _overlay?.Close();
@@ -81,10 +83,20 @@ public static class GameFilter
     {
         var s = AppState.Settings;
         IntPtr game = IntPtr.Zero;
-        var want = s.GameFilterEnabled && (PreviewOnScreen || RobloxInFront(out game));
+        var inGame = RobloxInFront(out game);
+        var want = s.GameFilterEnabled && (PreviewOnScreen || inGame);
         var profile = want ? Current : null;
-        Show(profile == null ? null : GameFilterMath.Build(profile));
-        UpdateOverlay(profile, game);
+
+        // Enhanced mode: Orbit's own GPU filter draws over the game (it already includes the colors,
+        // vignette and bars). Until it runs – or if it can't – the normal filter does the job.
+        var enhanced = EnhancedFilter.Instance;
+        var useEnhanced = profile != null && s.GameFilterEnhanced && inGame && !enhanced.Failed;
+        enhanced.Update(useEnhanced ? game : IntPtr.Zero, useEnhanced ? profile : null);
+        var enhancedDrawing = useEnhanced && enhanced.Running;
+
+        Show(profile == null || enhancedDrawing ? null : GameFilterMath.Build(profile));
+        UpdateOverlay(enhancedDrawing ? null : profile, game);
+        NvidiaVibrance.Set(profile?.DigitalVibrance ?? 0);
     }
 
     private static bool RobloxInFront(out IntPtr window)

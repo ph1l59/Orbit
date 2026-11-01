@@ -32,7 +32,9 @@ public sealed class GameFilterProfile
     public int Saturation { get; set; }
     /// <summary>Negative = colder (blue), positive = warmer (orange).</summary>
     public int Temperature { get; set; }
-    /// <summary>Tint color as #RRGGBB.</summary>
+    /// <summary>Tint color as a hue, 0..360 (NVIDIA-style slider).</summary>
+    public int TintHue { get; set; } = 270;
+    /// <summary>Tint color as #RRGGBB (kept in step with TintHue).</summary>
     public string TintColor { get; set; } = "#A855F7";
     /// <summary>0..100</summary>
     public int TintStrength { get; set; }
@@ -45,12 +47,30 @@ public sealed class GameFilterProfile
     /// <summary>none | 1.85 | 2.39 – black bars for a cinema look.</summary>
     public string Letterbox { get; set; } = "none";
 
+    // Enhanced mode only (curves and details need Orbit's own GPU filter).
+    public int Highlights { get; set; }
+    public int Shadows { get; set; }
+    public int Gamma { get; set; }
+    /// <summary>Boosts dull colors more than colorful ones. 0..100</summary>
+    public int Vibrance { get; set; }
+    /// <summary>0..100</summary>
+    public int Sharpen { get; set; }
+    /// <summary>0..100</summary>
+    public int Clarity { get; set; }
+    /// <summary>0..100</summary>
+    public int HdrToning { get; set; }
+    /// <summary>0..100</summary>
+    public int Bloom { get; set; }
+
+    /// <summary>NVIDIA's digital vibrance (graphics driver) while Roblox is in front, 0..100 (0 = your normal setting).</summary>
+    public int DigitalVibrance { get; set; }
+
     public GameFilterProfile Clone() => (GameFilterProfile)MemberwiseClone();
 
     public static List<GameFilterProfile> Defaults() => new()
     {
-        new() { Name = "Vivid", Saturation = 40, Contrast = 12 },
-        new() { Name = "Cinematic", Contrast = 22, Saturation = -18, Temperature = 18, Vignette = 45, Letterbox = "2.39" },
+        new() { Name = "Vivid", Saturation = 25, Contrast = 12, Vibrance = 40, DigitalVibrance = 50, Sharpen = 20 },
+        new() { Name = "Cinematic", Contrast = 22, Saturation = -18, Temperature = 18, Vignette = 45, Letterbox = "2.39", Bloom = 25, HdrToning = 30 },
         new() { Name = "Night", Look = "night", LookStrength = 80, Brightness = -6 },
         new() { Name = "Black & white", Look = "bw", Contrast = 25 },
         new() { Name = "Retro", Look = "sepia", LookStrength = 70, Contrast = -10, Vignette = 35 },
@@ -99,6 +119,8 @@ public sealed class AppSettings
     // ===== Game filter =====
     /// <summary>Color filter over the screen while a Roblox window is in front.</summary>
     public bool GameFilterEnabled { get; set; }
+    /// <summary>Orbit's own GPU filter on top of the color filter: curves, vibrance and details (about one frame of delay).</summary>
+    public bool GameFilterEnhanced { get; set; }
     /// <summary>Index into GameFilterProfiles.</summary>
     public int GameFilterIndex { get; set; }
     public List<GameFilterProfile> GameFilterProfiles { get; set; } = GameFilterProfile.Defaults();
@@ -130,7 +152,7 @@ public sealed class AppSettings
     /// <summary>Orbit installs and updates its own copy of Roblox.</summary>
     public bool UseManagedInstall { get; set; } = true;
     /// <summary>Start Orbit's Roblox from Roblox's own folder (hard links), so NVIDIA's game filters and overlay recognize it.</summary>
-    public bool NvidiaBridge { get; set; } = true;
+    public bool NvidiaBridge { get; set; }
     /// <summary>Orbit handles roblox-player:// links from the website.</summary>
     public bool DefaultLauncher { get; set; }
     public string? PreviousPlayerHandler { get; set; }

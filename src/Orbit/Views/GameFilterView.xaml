@@ -11,8 +11,37 @@
             <Setter Property="Padding" Value="16,4,16,16"/>
             <Setter Property="Margin" Value="0,0,0,10"/>
         </Style>
-        <Style x:Key="BoxTitle" TargetType="TextBlock" BasedOn="{StaticResource Section}">
-            <Setter Property="Margin" Value="0,12,0,0"/>
+        <!-- A section that opens and closes (like NVIDIA's filter panel) -->
+        <Style x:Key="Section2" TargetType="Border" BasedOn="{StaticResource Panel}">
+            <Setter Property="Padding" Value="0"/>
+            <Setter Property="Margin" Value="0,0,0,8"/>
+        </Style>
+        <Style x:Key="SectionHeader" TargetType="Button">
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+            <Setter Property="Foreground" Value="{StaticResource TextBrush}"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="bd" Background="Transparent" CornerRadius="10" Padding="16,13">
+                            <DockPanel>
+                                <TextBlock x:Name="chevron" DockPanel.Dock="Right" Text="&#xE70D;" Style="{StaticResource Icon}" FontSize="11"
+                                           Foreground="{StaticResource DimBrush}" RenderTransformOrigin="0.5,0.5">
+                                    <TextBlock.RenderTransform>
+                                        <RotateTransform Angle="{Binding Tag.Visibility, RelativeSource={RelativeSource TemplatedParent}, Converter={x:Static local:ChevronAngle.Instance}}"/>
+                                    </TextBlock.RenderTransform>
+                                </TextBlock>
+                                <ContentPresenter VerticalAlignment="Center" TextElement.FontSize="13.5" TextElement.FontWeight="SemiBold"/>
+                            </DockPanel>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="bd" Property="Background" Value="#0DFFFFFF"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
         </Style>
     </UserControl.Resources>
 
@@ -85,10 +114,10 @@
             </StackPanel>
         </ScrollViewer>
 
-        <!-- Right: settings -->
+        <!-- Right: settings, in sections you open and close like NVIDIA's filter panel -->
         <ScrollViewer Grid.Row="1" Grid.Column="2" VerticalScrollBarVisibility="Auto" Padding="0,0,8,0">
             <StackPanel>
-                <Border Style="{StaticResource Panel}" Padding="16,14" Margin="0,0,0,10" Tag="Game filter|nvidia filter color saturation">
+                <Border Style="{StaticResource Panel}" Padding="16,14" Margin="0,0,0,10" Tag="Game filter|nvidia filter color saturation enhanced">
                     <StackPanel>
                         <DockPanel>
                             <CheckBox x:Name="EnabledToggle" DockPanel.Dock="Right" Style="{StaticResource Toggle}" Click="Enabled_Click"/>
@@ -96,63 +125,140 @@
                         </DockPanel>
                         <TextBlock x:Name="StatusText" Style="{StaticResource RowDesc}" Margin="0,6,0,0"
                                    Text="Turns on by itself whenever a Roblox window is in front."/>
+                        <Border Height="1" Background="{StaticResource LineBrush}" Margin="0,12,0,12"/>
+                        <DockPanel>
+                            <CheckBox x:Name="EnhancedToggle" DockPanel.Dock="Right" Style="{StaticResource Toggle}" Click="Enhanced_Click"/>
+                            <StackPanel>
+                                <TextBlock Text="Enhanced mode" FontSize="13.5" FontWeight="SemiBold"/>
+                                <TextBlock Style="{StaticResource RowDesc}" Text="Orbit's own GPU filter: unlocks the settings marked ENHANCED. Adds about one frame of delay."/>
+                            </StackPanel>
+                        </DockPanel>
+                        <TextBlock x:Name="EnhancedStatus" Style="{StaticResource Crumb}" Margin="0,8,0,0" Visibility="Collapsed"/>
                     </StackPanel>
                 </Border>
 
-                <Border Style="{StaticResource Box}">
+                <!-- Brightness / Contrast -->
+                <Border Style="{StaticResource Section2}">
                     <StackPanel>
-                        <TextBlock Text="// LIGHT" Style="{StaticResource BoxTitle}"/>
-                        <TextBlock Text="EXPOSURE" Style="{StaticResource SliderLabel}"/>
-                        <local:NumberSlider x:Name="ExposureSlider" Minimum="-100" Maximum="100" Step="1" ValueChanged="Changed"/>
-                        <TextBlock Text="BRIGHTNESS" Style="{StaticResource SliderLabel}"/>
-                        <local:NumberSlider x:Name="BrightnessSlider" Minimum="-100" Maximum="100" Step="1" ValueChanged="Changed"/>
-                        <TextBlock Text="CONTRAST" Style="{StaticResource SliderLabel}"/>
-                        <local:NumberSlider x:Name="ContrastSlider" Minimum="-100" Maximum="100" Step="1" ValueChanged="Changed"/>
+                        <Button Style="{StaticResource SectionHeader}" Content="Brightness / Contrast" Tag="{Binding ElementName=LightBody}" Click="Section_Click"/>
+                        <StackPanel x:Name="LightBody" Margin="16,0,16,14">
+                            <TextBlock Text="EXPOSURE" Style="{StaticResource SliderLabel}"/>
+                            <local:NumberSlider x:Name="ExposureSlider" Minimum="-100" Maximum="100" Step="1" ValueChanged="Changed"/>
+                            <TextBlock Text="BRIGHTNESS" Style="{StaticResource SliderLabel}"/>
+                            <local:NumberSlider x:Name="BrightnessSlider" Minimum="-100" Maximum="100" Step="1" ValueChanged="Changed"/>
+                            <TextBlock Text="CONTRAST" Style="{StaticResource SliderLabel}"/>
+                            <local:NumberSlider x:Name="ContrastSlider" Minimum="-100" Maximum="100" Step="1" ValueChanged="Changed"/>
+                            <StackPanel x:Name="CurvesPanel">
+                                <TextBlock Style="{StaticResource SliderLabel}"><Run Text="HIGHLIGHTS"/><Run Text="  ENHANCED" Foreground="{StaticResource SignalLightBrush}"/></TextBlock>
+                                <local:NumberSlider x:Name="HighlightsSlider" Minimum="-100" Maximum="100" Step="1" ValueChanged="Changed"/>
+                                <TextBlock Style="{StaticResource SliderLabel}"><Run Text="SHADOWS"/><Run Text="  ENHANCED" Foreground="{StaticResource SignalLightBrush}"/></TextBlock>
+                                <local:NumberSlider x:Name="ShadowsSlider" Minimum="-100" Maximum="100" Step="1" ValueChanged="Changed"/>
+                                <TextBlock Style="{StaticResource SliderLabel}"><Run Text="GAMMA"/><Run Text="  ENHANCED" Foreground="{StaticResource SignalLightBrush}"/></TextBlock>
+                                <local:NumberSlider x:Name="GammaSlider" Minimum="-100" Maximum="100" Step="1" ValueChanged="Changed"/>
+                            </StackPanel>
+                        </StackPanel>
                     </StackPanel>
                 </Border>
 
-                <Border Style="{StaticResource Box}">
+                <!-- Color -->
+                <Border Style="{StaticResource Section2}">
                     <StackPanel>
-                        <TextBlock Text="// COLOR" Style="{StaticResource BoxTitle}"/>
-                        <TextBlock Text="SATURATION" Style="{StaticResource SliderLabel}"/>
-                        <local:NumberSlider x:Name="SaturationSlider" Minimum="-100" Maximum="100" Step="1" ValueChanged="Changed"/>
-                        <TextBlock Text="TEMPERATURE  ·  COLD ← → WARM" Style="{StaticResource SliderLabel}"/>
-                        <local:NumberSlider x:Name="TemperatureSlider" Minimum="-100" Maximum="100" Step="1" ValueChanged="Changed"/>
-                        <TextBlock Text="TINT" Style="{StaticResource SliderLabel}"/>
-                        <WrapPanel x:Name="TintColors" Margin="0,2,0,6"/>
-                        <local:NumberSlider x:Name="TintSlider" Minimum="0" Maximum="100" Step="1" ValueChanged="Changed"/>
+                        <Button Style="{StaticResource SectionHeader}" Content="Color" Tag="{Binding ElementName=ColorBody}" Click="Section_Click"/>
+                        <StackPanel x:Name="ColorBody" Margin="16,0,16,14">
+                            <TextBlock Text="TINT COLOR" Style="{StaticResource SliderLabel}"/>
+                            <Border Height="6" CornerRadius="3" Width="220" HorizontalAlignment="Left" Margin="0,0,0,6">
+                                <Border.Background>
+                                    <LinearGradientBrush StartPoint="0,0" EndPoint="1,0">
+                                        <GradientStop Color="#FF0000" Offset="0"/>
+                                        <GradientStop Color="#FFFF00" Offset="0.1667"/>
+                                        <GradientStop Color="#00FF00" Offset="0.3333"/>
+                                        <GradientStop Color="#00FFFF" Offset="0.5"/>
+                                        <GradientStop Color="#0000FF" Offset="0.6667"/>
+                                        <GradientStop Color="#FF00FF" Offset="0.8333"/>
+                                        <GradientStop Color="#FF0000" Offset="1"/>
+                                    </LinearGradientBrush>
+                                </Border.Background>
+                            </Border>
+                            <local:NumberSlider x:Name="TintHueSlider" Minimum="0" Maximum="360" Step="1" ValueChanged="Changed"/>
+                            <TextBlock Text="TINT INTENSITY" Style="{StaticResource SliderLabel}"/>
+                            <local:NumberSlider x:Name="TintSlider" Minimum="0" Maximum="100" Step="1" ValueChanged="Changed"/>
+                            <TextBlock Text="TEMPERATURE  ·  COLD ← → WARM" Style="{StaticResource SliderLabel}"/>
+                            <local:NumberSlider x:Name="TemperatureSlider" Minimum="-100" Maximum="100" Step="1" ValueChanged="Changed"/>
+                            <TextBlock Text="SATURATION" Style="{StaticResource SliderLabel}"/>
+                            <local:NumberSlider x:Name="SaturationSlider" Minimum="-100" Maximum="100" Step="1" ValueChanged="Changed"/>
+                            <StackPanel x:Name="VibrancePanel">
+                                <TextBlock Style="{StaticResource SliderLabel}"><Run Text="VIBRANCE"/><Run Text="  ENHANCED" Foreground="{StaticResource SignalLightBrush}"/></TextBlock>
+                                <local:NumberSlider x:Name="VibranceSlider" Minimum="0" Maximum="100" Step="1" ValueChanged="Changed"/>
+                            </StackPanel>
+                        </StackPanel>
                     </StackPanel>
                 </Border>
 
-                <Border Style="{StaticResource Box}">
+                <!-- Digital vibrance (NVIDIA) -->
+                <Border Style="{StaticResource Section2}">
                     <StackPanel>
-                        <TextBlock Text="// LOOK" Style="{StaticResource BoxTitle}"/>
-                        <TextBlock Text="STYLE" Style="{StaticResource SliderLabel}"/>
-                        <ComboBox x:Name="LookBox" MinWidth="0" HorizontalAlignment="Stretch" SelectionChanged="Changed">
-                            <ComboBoxItem Content="None" Tag="none"/>
-                            <ComboBoxItem Content="Black &amp; white" Tag="bw"/>
-                            <ComboBoxItem Content="Sepia / old film" Tag="sepia"/>
-                            <ComboBoxItem Content="Night mode (less blue)" Tag="night"/>
-                            <ComboBoxItem Content="Color blind: red weakness" Tag="protan"/>
-                            <ComboBoxItem Content="Color blind: green weakness" Tag="deutan"/>
-                            <ComboBoxItem Content="Color blind: blue weakness" Tag="tritan"/>
-                        </ComboBox>
-                        <TextBlock Text="STRENGTH" Style="{StaticResource SliderLabel}"/>
-                        <local:NumberSlider x:Name="LookSlider" Minimum="0" Maximum="100" Step="1" ValueChanged="Changed"/>
+                        <Button Style="{StaticResource SectionHeader}" Content="Digital Vibrance (NVIDIA)" Tag="{Binding ElementName=DvcBody}" Click="Section_Click"/>
+                        <StackPanel x:Name="DvcBody" Margin="16,0,16,14">
+                            <TextBlock Text="INTENSITY (%)" Style="{StaticResource SliderLabel}"/>
+                            <local:NumberSlider x:Name="DvcSlider" Minimum="0" Maximum="100" Step="1" ValueChanged="Changed"/>
+                            <TextBlock x:Name="DvcNote" Style="{StaticResource RowDesc}" Margin="0,8,0,0"
+                                       Text="Set by your NVIDIA driver, costs no performance. Only while Roblox is in front – your normal setting comes back right after."/>
+                        </StackPanel>
                     </StackPanel>
                 </Border>
 
-                <Border Style="{StaticResource Box}">
+                <!-- Details -->
+                <Border Style="{StaticResource Section2}">
                     <StackPanel>
-                        <TextBlock Text="// FRAME" Style="{StaticResource BoxTitle}"/>
-                        <TextBlock Text="VIGNETTE  ·  DARK EDGES" Style="{StaticResource SliderLabel}"/>
-                        <local:NumberSlider x:Name="VignetteSlider" Minimum="0" Maximum="100" Step="1" ValueChanged="Changed"/>
-                        <TextBlock Text="LETTERBOX  ·  CINEMA BARS" Style="{StaticResource SliderLabel}"/>
-                        <ComboBox x:Name="LetterboxBox" MinWidth="0" HorizontalAlignment="Stretch" SelectionChanged="Changed">
-                            <ComboBoxItem Content="Off" Tag="none"/>
-                            <ComboBoxItem Content="Wide (1.85 : 1)" Tag="1.85"/>
-                            <ComboBoxItem Content="Cinema (2.39 : 1)" Tag="2.39"/>
-                        </ComboBox>
+                        <Button Style="{StaticResource SectionHeader}" Content="Details  ·  ENHANCED" Tag="{Binding ElementName=DetailsBody}" Click="Section_Click"/>
+                        <StackPanel x:Name="DetailsBody" Margin="16,0,16,14">
+                            <TextBlock Text="SHARPEN" Style="{StaticResource SliderLabel}"/>
+                            <local:NumberSlider x:Name="SharpenSlider" Minimum="0" Maximum="100" Step="1" ValueChanged="Changed"/>
+                            <TextBlock Text="CLARITY" Style="{StaticResource SliderLabel}"/>
+                            <local:NumberSlider x:Name="ClaritySlider" Minimum="0" Maximum="100" Step="1" ValueChanged="Changed"/>
+                            <TextBlock Text="HDR TONING" Style="{StaticResource SliderLabel}"/>
+                            <local:NumberSlider x:Name="HdrSlider" Minimum="0" Maximum="100" Step="1" ValueChanged="Changed"/>
+                            <TextBlock Text="BLOOM" Style="{StaticResource SliderLabel}"/>
+                            <local:NumberSlider x:Name="BloomSlider" Minimum="0" Maximum="100" Step="1" ValueChanged="Changed"/>
+                        </StackPanel>
+                    </StackPanel>
+                </Border>
+
+                <!-- Look -->
+                <Border Style="{StaticResource Section2}">
+                    <StackPanel>
+                        <Button Style="{StaticResource SectionHeader}" Content="Look" Tag="{Binding ElementName=LookBody}" Click="Section_Click"/>
+                        <StackPanel x:Name="LookBody" Margin="16,0,16,14">
+                            <TextBlock Text="STYLE" Style="{StaticResource SliderLabel}"/>
+                            <ComboBox x:Name="LookBox" MinWidth="0" HorizontalAlignment="Stretch" SelectionChanged="Changed">
+                                <ComboBoxItem Content="None" Tag="none"/>
+                                <ComboBoxItem Content="Black &amp; white" Tag="bw"/>
+                                <ComboBoxItem Content="Sepia / old film" Tag="sepia"/>
+                                <ComboBoxItem Content="Night mode (less blue)" Tag="night"/>
+                                <ComboBoxItem Content="Color blind: red weakness" Tag="protan"/>
+                                <ComboBoxItem Content="Color blind: green weakness" Tag="deutan"/>
+                                <ComboBoxItem Content="Color blind: blue weakness" Tag="tritan"/>
+                            </ComboBox>
+                            <TextBlock Text="STRENGTH" Style="{StaticResource SliderLabel}"/>
+                            <local:NumberSlider x:Name="LookSlider" Minimum="0" Maximum="100" Step="1" ValueChanged="Changed"/>
+                        </StackPanel>
+                    </StackPanel>
+                </Border>
+
+                <!-- Frame -->
+                <Border Style="{StaticResource Section2}">
+                    <StackPanel>
+                        <Button Style="{StaticResource SectionHeader}" Content="Frame" Tag="{Binding ElementName=FrameBody}" Click="Section_Click"/>
+                        <StackPanel x:Name="FrameBody" Margin="16,0,16,14">
+                            <TextBlock Text="VIGNETTE  ·  DARK EDGES" Style="{StaticResource SliderLabel}"/>
+                            <local:NumberSlider x:Name="VignetteSlider" Minimum="0" Maximum="100" Step="1" ValueChanged="Changed"/>
+                            <TextBlock Text="LETTERBOX  ·  CINEMA BARS" Style="{StaticResource SliderLabel}"/>
+                            <ComboBox x:Name="LetterboxBox" MinWidth="0" HorizontalAlignment="Stretch" SelectionChanged="Changed">
+                                <ComboBoxItem Content="Off" Tag="none"/>
+                                <ComboBoxItem Content="Wide (1.85 : 1)" Tag="1.85"/>
+                                <ComboBoxItem Content="Cinema (2.39 : 1)" Tag="2.39"/>
+                            </ComboBox>
+                        </StackPanel>
                     </StackPanel>
                 </Border>
             </StackPanel>
