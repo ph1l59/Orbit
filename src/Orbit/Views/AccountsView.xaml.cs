@@ -316,7 +316,7 @@ public partial class AccountsView : UserControl
             LaunchProgress.Visibility = Visibility.Collapsed;
             LaunchText.Text = "Cancel";
 
-            var delay = Math.Clamp(s.LaunchDelaySeconds, 1, 120);
+            var delay = Math.Clamp(s.LaunchDelaySeconds, 0, 120);
             var launched = 0;
             for (var i = 0; i < accounts.Count; i++)
             {

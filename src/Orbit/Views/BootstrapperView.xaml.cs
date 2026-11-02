@@ -17,7 +17,7 @@ public partial class BootstrapperView : UserControl, IPage
 
         DelayCombo.ItemsSource = new List<Option>
         {
-            new("3 seconds", 3), new("5 seconds", 5), new("8 seconds", 8), new("10 seconds", 10),
+            new("No wait (all at once)", 0), new("1 second", 1), new("3 seconds", 3), new("5 seconds", 5), new("8 seconds", 8), new("10 seconds", 10),
             new("15 seconds", 15), new("20 seconds", 20), new("30 seconds", 30),
         };
         CleanerCombo.ItemsSource = new List<Option>
