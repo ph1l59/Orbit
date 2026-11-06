@@ -16,14 +16,14 @@ public sealed class WhatsNewWindow : Window
     /// <summary>The changes of this version. Edit this list for every release.</summary>
     private static readonly Change[] Changes =
     {
-        new("\uE790", "New: Game Filter",
-            "Color filters for Roblox, like NVIDIA's: exposure, contrast, saturation, temperature, tint, looks, color blind modes, vignette and letterbox – with profiles and a live preview. Only while Roblox is in front."),
-        new("\uE945", "Enhanced mode",
-            "Orbit's own GPU filter adds sharpen, clarity, HDR toning, bloom, vibrance and highlight and shadow curves. Roblox itself is never touched."),
-        new("\uE706", "Digital vibrance",
-            "On NVIDIA cards, Orbit turns up the driver's digital vibrance while you play and puts your own setting back right after."),
-        new("\uE765", "Hotkeys in game",
-            "Ctrl + Alt + F turns the filter on or off, Ctrl + Alt + G switches to the next profile."),
+        new("\uE771", "New: Outfits",
+            "The Outfits button next to Launch shows all your saved Roblox outfits with the whole avatar. One click puts it on – your 3D avatar and account picture update."),
+        new("\uE768", "Faster launching",
+            "New delays between accounts: no wait at all, or 1 second. If a launch fails, the reason now shows right under the launch button."),
+        new("\uE962", "Auto clicker hotkey",
+            "Works now even while you hold other keys – like running with W and Shift in game."),
+        new("\uE90F", "Fixes",
+            "No more empty account pictures after an avatar change, and the avatar on the Play page waits longer for Roblox to finish drawing it."),
     };
 
     private static T R<T>(string key) => (T)Application.Current.FindResource(key);
