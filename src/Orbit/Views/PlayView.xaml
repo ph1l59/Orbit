@@ -549,8 +549,8 @@
                             MouseLeftButtonDown="Avatar_MouseDown" MouseMove="Avatar_MouseMove" MouseLeftButtonUp="Avatar_MouseUp"
                             LostMouseCapture="Avatar_LostCapture"/>
 
-                    <TextBlock x:Name="AvatarHint" Text="Loading avatar…" Style="{StaticResource RowDesc}"
-                               HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                    <TextBlock x:Name="AvatarHint" Text="Loading avatar…" Style="{StaticResource RowDesc}" Cursor="Hand"
+                               HorizontalAlignment="Center" VerticalAlignment="Center" MouseLeftButtonUp="AvatarHint_Click"/>
 
                 </Grid>
 

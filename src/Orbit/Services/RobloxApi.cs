@@ -179,19 +179,26 @@ public static class RobloxApi
     public static async Task<string?> GetFullBodyAvatarAsync(long userId)
     {
         var url = $"https://thumbnails.roblox.com/v1/users/avatar?userIds={userId}&size=720x720&format=Png&isCircular=false";
-        for (var attempt = 0; attempt < 4; attempt++)
+        string? last = null;
+        for (var attempt = 0; attempt < 15; attempt++)
         {
             using var doc = await GetJsonAsync(url).ConfigureAwait(false);
             var item = doc?.RootElement.GetProperty("data").EnumerateArray().FirstOrDefault();
             if (item is { ValueKind: JsonValueKind.Object } it)
             {
                 var state = it.TryGetProperty("state", out var st) ? st.GetString() : null;
+                last = state;
                 if (state == "Completed" && it.TryGetProperty("imageUrl", out var img) && img.ValueKind == JsonValueKind.String)
                     return img.GetString();
-                if (state is "Blocked" or "Error") return null;
+                if (state is "Blocked" or "Error")
+                {
+                    Avatar3D.Log($"user {userId}: 2D picture state {state}");
+                    return null;
+                }
             }
-            await Task.Delay(1200).ConfigureAwait(false); // Roblox is still rendering it
+            await Task.Delay(2000).ConfigureAwait(false); // Roblox is still rendering it
         }
+        Avatar3D.Log($"user {userId}: 2D picture still not ready (state {last ?? "none"})");
         return null;
     }
 
@@ -203,7 +210,7 @@ public static class RobloxApi
     public static async Task<(string? Url, string? Problem)> GetAvatar3DManifestAsync(long userId, string cookie)
     {
         var url = $"https://thumbnails.roblox.com/v1/users/avatar-3d?userId={userId}";
-        for (var attempt = 0; attempt < 8; attempt++)
+        for (var attempt = 0; attempt < 20; attempt++)
         {
             using var response = await SendAsync(() => Request(HttpMethod.Get, url), cookie).ConfigureAwait(false);
             if (!response.IsSuccessStatusCode)
@@ -278,6 +285,7 @@ public static class RobloxApi
         // The simple way: Roblox's own "wear" for saved outfits.
         using (var wear = await Post($"https://avatar.roblox.com/v1/outfits/{outfitId}/wear", "{}"))
         {
+            Avatar3D.Log($"outfit {outfitId}: wear = HTTP {(int)wear.StatusCode} {await wear.Content.ReadAsStringAsync()}");
             if (!wear.IsSuccessStatusCode)
             {
                 // Otherwise: read what's in the outfit and put it on piece by piece.
@@ -292,7 +300,10 @@ public static class RobloxApi
                             : $"{{\"id\":{x.GetProperty("id").GetInt64()}}}"))
                     : "";
                 using (var r = await Post("https://avatar.roblox.com/v2/avatar/set-wearing-assets", $"{{\"assets\":[{assets}]}}"))
+                {
+                    Avatar3D.Log($"outfit {outfitId}: set-wearing-assets = HTTP {(int)r.StatusCode} {await r.Content.ReadAsStringAsync()}");
                     if (!r.IsSuccessStatusCode) throw new RobloxApiException($"Roblox didn't accept the items (HTTP {(int)r.StatusCode}).");
+                }
 
                 if (root.TryGetProperty("bodyColors", out var colors) && colors.ValueKind == JsonValueKind.Object)
                     using (await Post("https://avatar.roblox.com/v1/avatar/set-body-colors", colors.GetRawText())) { }
@@ -303,7 +314,8 @@ public static class RobloxApi
             }
         }
 
-        using (await Post("https://avatar.roblox.com/v1/avatar/redraw-thumbnail", "{}")) { }
+        using (var redraw = await Post("https://avatar.roblox.com/v1/avatar/redraw-thumbnail", "{}"))
+            Avatar3D.Log($"outfit {outfitId}: redraw = HTTP {(int)redraw.StatusCode}");
     }
 
     // ---------------- Friends ----------------

@@ -165,7 +165,7 @@ public partial class PlayView : UserControl, IPage
         }
         else
         {
-            AvatarHint.Text = "Avatar couldn't be loaded";
+            AvatarHint.Text = "Roblox didn't send your avatar yet – click to try again";
             AvatarHint.Visibility = Visibility.Visible;
         }
     }
@@ -403,6 +403,15 @@ public partial class PlayView : UserControl, IPage
     {
         PickerPopup.IsOpen = false;
         if ((sender as FrameworkElement)?.Tag is Account account) Select(account, save: true);
+    }
+
+    private void AvatarHint_Click(object sender, System.Windows.Input.MouseButtonEventArgs e)
+    {
+        if (_account is not { } account) return;
+        Avatar3D.Forget(account.UserId);
+        FullBodyCache.Remove(account.UserId);
+        AvatarHint.Text = "Loading avatar…";
+        _ = LoadFullBodyAsync(account);
     }
 
     // ---------- Outfits ----------

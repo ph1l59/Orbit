@@ -57,7 +57,7 @@ public static class Avatar3D
         Log($"user {userId}: {problem}");
     }
 
-    private static void Log(string line)
+    public static void Log(string line)
     {
         try
         {
