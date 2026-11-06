@@ -122,7 +122,7 @@
         <Style x:Key="OutfitTile" TargetType="Button">
             <Setter Property="Cursor" Value="Hand"/>
             <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
-            <Setter Property="Width" Value="138"/>
+            <Setter Property="Width" Value="128"/>
             <Setter Property="Margin" Value="0,0,8,8"/>
             <Setter Property="Template">
                 <Setter.Value>

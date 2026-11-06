@@ -450,46 +450,61 @@ public partial class PlayView : UserControl, IPage
 
     private Button OutfitTile(Account account, Outfit outfit, string? picture)
     {
-        var image = new Image { Height = 124, Source = Load(picture), Stretch = Stretch.Uniform };
+        var image = new Image { Height = 112, Source = Load(picture), Stretch = Stretch.Uniform };
         RenderOptions.SetBitmapScalingMode(image, BitmapScalingMode.HighQuality);
         var content = new StackPanel();
         content.Children.Add(new Border
         {
-            CornerRadius = new CornerRadius(8), Height = 124, ClipToBounds = true, Child = image,
+            CornerRadius = new CornerRadius(8), Height = 112, ClipToBounds = true, Child = image,
             Background = new RadialGradientBrush(Color.FromArgb(0x40, 0xA8, 0x55, 0xF7), Colors.Transparent),
         });
         content.Children.Add(new TextBlock
         {
-            Text = outfit.Name, FontSize = 12, FontWeight = FontWeights.SemiBold, Margin = new Thickness(2, 6, 2, 1),
-            TextTrimming = TextTrimming.CharacterEllipsis, HorizontalAlignment = HorizontalAlignment.Center,
+            Text = outfit.Name.Length > 0 ? outfit.Name : "Outfit", FontSize = 12.5, FontWeight = FontWeights.SemiBold, Margin = new Thickness(4, 7, 4, 2),
+            Foreground = (Brush)FindResource("TextBrush"), TextTrimming = TextTrimming.CharacterEllipsis, HorizontalAlignment = HorizontalAlignment.Center,
         });
         var button = new Button { Style = (Style)FindResource("OutfitTile"), Content = content, ToolTip = "Put on \"" + outfit.Name + "\"" };
-        button.Click += async (_, _) => await WearAsync(account, outfit);
+        button.Click += async (_, _) => await WearAsync(account, outfit, picture);
         return button;
     }
 
-    private async Task WearAsync(Account account, Outfit outfit)
+    private async Task WearAsync(Account account, Outfit outfit, string? picture)
     {
         OutfitsPopup.IsOpen = false;
-        StatusText.Text = $"Putting on \"{outfit.Name}\"…";
+        OutfitsButton.IsEnabled = false;
         try
         {
             await RobloxApi.WearOutfitAsync(outfit.Id, account.Cookie);
         }
         catch (Exception ex)
         {
-            StatusText.Text = "Couldn't change the outfit: " + ex.Message;
+            Toast.Show("Outfit not changed", ex.Message);
+            OutfitsButton.IsEnabled = true;
             return;
         }
 
+        Toast.Show("Outfit changed", $"Now wearing \"{outfit.Name}\" – Roblox is drawing your avatar.", picture, null, null);
+
         // Roblox draws the new avatar first – then show it.
-        StatusText.Text = $"Wearing \"{outfit.Name}\" – loading your avatar…";
+        var oldHeadshot = account.AvatarUrl;
         Avatar3D.Forget(account.UserId);
         FullBodyCache.Remove(account.UserId);
         await Task.Delay(2500);
-        if (account != _account) return;
-        await LoadFullBodyAsync(account);
-        StatusText.Text = $"Now wearing \"{outfit.Name}\" ✓";
+        if (account == _account) await LoadFullBodyAsync(account);
+        OutfitsButton.IsEnabled = true;
+
+        // The small picture (account picker, accounts list) gets a new address once Roblox drew it.
+        for (var attempt = 0; attempt < 15; attempt++)
+        {
+            var headshots = await RobloxApi.GetHeadshotsAsync(new[] { account.UserId });
+            if (headshots.TryGetValue(account.UserId, out var url) && url != oldHeadshot)
+            {
+                account.AvatarUrl = url;
+                AppState.SaveAccounts();
+                return;
+            }
+            await Task.Delay(2000);
+        }
     }
 
     private void GoToAccounts_Click(object sender, RoutedEventArgs e) => (Owner as MainWindow)?.Navigate("accounts");
