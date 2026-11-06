@@ -461,6 +461,28 @@
 
                     <TextBlock x:Name="AvatarHint" Text="Loading avatar…" Style="{StaticResource RowDesc}"
                                HorizontalAlignment="Center" VerticalAlignment="Center"/>
+
+                    <!-- Change outfit -->
+                    <Button x:Name="OutfitsButton" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,4,0,0" Height="32" Padding="10,0"
+                            Click="Outfits_Click" ToolTip="Put on one of your saved outfits" Tag="Change avatar|outfit clothes costume avatar">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="&#xE771;" Style="{StaticResource Icon}" FontSize="13" VerticalAlignment="Center"/>
+                            <TextBlock Text="Outfits" Margin="7,0,0,0" VerticalAlignment="Center"/>
+                        </StackPanel>
+                    </Button>
+                    <Popup x:Name="OutfitsPopup" PlacementTarget="{Binding ElementName=OutfitsButton}" Placement="Bottom"
+                           HorizontalOffset="-250" StaysOpen="False" AllowsTransparency="True" PopupAnimation="Fade">
+                        <Border Margin="0,6,0,0" Padding="10" Background="{StaticResource RaisedBrush}" BorderBrush="{StaticResource LineStrongBrush}"
+                                BorderThickness="1" CornerRadius="14" Width="340" MaxHeight="420">
+                            <DockPanel>
+                                <TextBlock DockPanel.Dock="Top" Text="YOUR OUTFITS" Style="{StaticResource Crumb}" Margin="4,0,0,8"/>
+                                <TextBlock x:Name="OutfitsInfo" DockPanel.Dock="Top" Style="{StaticResource RowDesc}" Margin="4,0,4,8" TextWrapping="Wrap"/>
+                                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                                    <WrapPanel x:Name="OutfitsList"/>
+                                </ScrollViewer>
+                            </DockPanel>
+                        </Border>
+                    </Popup>
                 </Grid>
 
                 <StackPanel Grid.Row="2" HorizontalAlignment="Center" Margin="0,8,0,0">

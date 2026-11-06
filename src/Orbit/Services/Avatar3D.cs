@@ -23,6 +23,12 @@ public static class Avatar3D
     /// <summary>Why the last load failed (also written to %AppData%\Orbit\avatar3d.log).</summary>
     public static string? LastProblem { get; private set; }
 
+    /// <summary>The avatar changed (e.g. another outfit): load it again next time.</summary>
+    public static void Forget(long userId)
+    {
+        lock (Cache) Cache.Remove(userId);
+    }
+
     public static async Task<AvatarModel?> LoadAsync(long userId, string cookie)
     {
         lock (Cache)

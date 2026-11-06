@@ -405,6 +405,82 @@ public partial class PlayView : UserControl, IPage
         if ((sender as FrameworkElement)?.Tag is Account account) Select(account, save: true);
     }
 
+    // ---------- Outfits ----------
+
+    private async void Outfits_Click(object sender, RoutedEventArgs e)
+    {
+        if (_account is not { } account) return;
+        OutfitsPopup.IsOpen = !OutfitsPopup.IsOpen;
+        if (!OutfitsPopup.IsOpen) return;
+
+        OutfitsList.Children.Clear();
+        OutfitsInfo.Text = "Loading your outfits…";
+        OutfitsInfo.Visibility = Visibility.Visible;
+        try
+        {
+            var outfits = await RobloxApi.GetOutfitsAsync(account.UserId, account.Cookie);
+            if (account != _account) return;
+            if (outfits.Count == 0)
+            {
+                OutfitsInfo.Text = "No saved outfits yet. Create one on roblox.com in the avatar editor (Creations → Create outfit).";
+                return;
+            }
+            OutfitsInfo.Visibility = Visibility.Collapsed;
+            var pictures = await RobloxApi.GetOutfitThumbnailsAsync(outfits.Select(o => o.Id));
+            if (account != _account) return;
+            foreach (var outfit in outfits)
+                OutfitsList.Children.Add(OutfitTile(account, outfit, pictures.GetValueOrDefault(outfit.Id)));
+        }
+        catch (Exception ex)
+        {
+            OutfitsInfo.Text = "Couldn't load the outfits: " + ex.Message;
+        }
+    }
+
+    private Button OutfitTile(Account account, Outfit outfit, string? picture)
+    {
+        var image = new Image { Width = 88, Height = 88, Source = Load(picture), Stretch = Stretch.Uniform };
+        RenderOptions.SetBitmapScalingMode(image, BitmapScalingMode.HighQuality);
+        var content = new StackPanel { Width = 92 };
+        content.Children.Add(new Border { CornerRadius = new CornerRadius(10), Background = (Brush)FindResource("InputBrush"), Child = image, Padding = new Thickness(2) });
+        content.Children.Add(new TextBlock
+        {
+            Text = outfit.Name, FontSize = 11.5, Margin = new Thickness(2, 5, 2, 0), TextTrimming = TextTrimming.CharacterEllipsis,
+            HorizontalAlignment = HorizontalAlignment.Center,
+        });
+        var button = new Button
+        {
+            Content = content, Margin = new Thickness(3), Padding = new Thickness(4), Cursor = System.Windows.Input.Cursors.Hand,
+            ToolTip = "Put on \"" + outfit.Name + "\"",
+        };
+        button.Click += async (_, _) => await WearAsync(account, outfit);
+        return button;
+    }
+
+    private async Task WearAsync(Account account, Outfit outfit)
+    {
+        OutfitsPopup.IsOpen = false;
+        StatusText.Text = $"Putting on \"{outfit.Name}\"…";
+        try
+        {
+            await RobloxApi.WearOutfitAsync(outfit.Id, account.Cookie);
+        }
+        catch (Exception ex)
+        {
+            StatusText.Text = "Couldn't change the outfit: " + ex.Message;
+            return;
+        }
+
+        // Roblox draws the new avatar first – then show it.
+        StatusText.Text = $"Wearing \"{outfit.Name}\" – loading your avatar…";
+        Avatar3D.Forget(account.UserId);
+        FullBodyCache.Remove(account.UserId);
+        await Task.Delay(2500);
+        if (account != _account) return;
+        await LoadFullBodyAsync(account);
+        StatusText.Text = $"Now wearing \"{outfit.Name}\" ✓";
+    }
+
     private void GoToAccounts_Click(object sender, RoutedEventArgs e) => (Owner as MainWindow)?.Navigate("accounts");
 
     // ---------- Launch ----------

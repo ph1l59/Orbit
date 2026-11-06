@@ -28,6 +28,9 @@ public sealed record GameInfo(long UniverseId, string Name, string Creator, stri
 
 public sealed class RobloxApiException(string message) : Exception(message);
 
+/// <summary>A saved Roblox outfit.</summary>
+public sealed record Outfit(long Id, string Name);
+
 /// <summary>Small wrapper around the public Roblox web APIs that Orbit needs.</summary>
 public static class RobloxApi
 {
@@ -214,6 +217,81 @@ public static class RobloxApi
             await Task.Delay(1500).ConfigureAwait(false); // still rendering
         }
         return (null, "avatar-3d still pending");
+    }
+
+    // ---------------- Outfits ----------------
+
+    /// <summary>The outfits a user saved on Roblox (avatar editor → "Creations" / "Costumes").</summary>
+    public static async Task<List<Outfit>> GetOutfitsAsync(long userId, string cookie)
+    {
+        var result = new List<Outfit>();
+        string[] urls =
+        {
+            $"https://avatar.roblox.com/v2/avatar/users/{userId}/outfits?outfitType=Avatar&page=1&itemsPerPage=50&isEditable=true",
+            $"https://avatar.roblox.com/v1/users/{userId}/outfits?page=1&itemsPerPage=50&isEditable=true",
+        };
+        foreach (var url in urls)
+        {
+            using var doc = await GetJsonAsync(url, cookie).ConfigureAwait(false);
+            if (doc == null || !doc.RootElement.TryGetProperty("data", out var data)) continue;
+            foreach (var item in data.EnumerateArray())
+                result.Add(new Outfit(item.GetProperty("id").GetInt64(), item.TryGetProperty("name", out var n) ? n.GetString() ?? "" : ""));
+            return result;
+        }
+        throw new RobloxApiException("Roblox didn't send the outfits.");
+    }
+
+    /// <summary>Pictures of outfits (outfit id → image url).</summary>
+    public static async Task<Dictionary<long, string>> GetOutfitThumbnailsAsync(IEnumerable<long> outfitIds)
+    {
+        var result = new Dictionary<long, string>();
+        foreach (var chunk in outfitIds.Distinct().Chunk(50))
+        {
+            var url = "https://thumbnails.roblox.com/v1/users/outfits?userOutfitIds=" + string.Join(",", chunk) + "&size=150x150&format=Png&isCircular=false";
+            using var doc = await GetJsonAsync(url).ConfigureAwait(false);
+            if (doc == null) continue;
+            foreach (var item in doc.RootElement.GetProperty("data").EnumerateArray())
+                if (item.TryGetProperty("imageUrl", out var img) && img.ValueKind == JsonValueKind.String)
+                    result[item.GetProperty("targetId").GetInt64()] = img.GetString()!;
+        }
+        return result;
+    }
+
+    /// <summary>Puts an outfit on the account's avatar, then asks Roblox to draw the avatar again.</summary>
+    public static async Task WearOutfitAsync(long outfitId, string cookie)
+    {
+        async Task<HttpResponseMessage> Post(string url, string body) =>
+            await SendAsync(() => Request(HttpMethod.Post, url, body), cookie).ConfigureAwait(false);
+
+        // The simple way: Roblox's own "wear" for saved outfits.
+        using (var wear = await Post($"https://avatar.roblox.com/v1/outfits/{outfitId}/wear", "{}"))
+        {
+            if (!wear.IsSuccessStatusCode)
+            {
+                // Otherwise: read what's in the outfit and put it on piece by piece.
+                using var doc = await GetJsonAsync($"https://avatar.roblox.com/v1/outfits/{outfitId}/details", cookie).ConfigureAwait(false)
+                                ?? throw new RobloxApiException($"Roblox didn't send the outfit (HTTP {(int)wear.StatusCode}).");
+                var root = doc.RootElement;
+
+                var assets = root.TryGetProperty("assets", out var a)
+                    ? string.Join(",", a.EnumerateArray().Select(x =>
+                        x.TryGetProperty("meta", out var meta) && meta.ValueKind == JsonValueKind.Object
+                            ? $"{{\"id\":{x.GetProperty("id").GetInt64()},\"meta\":{meta.GetRawText()}}}"
+                            : $"{{\"id\":{x.GetProperty("id").GetInt64()}}}"))
+                    : "";
+                using (var r = await Post("https://avatar.roblox.com/v2/avatar/set-wearing-assets", $"{{\"assets\":[{assets}]}}"))
+                    if (!r.IsSuccessStatusCode) throw new RobloxApiException($"Roblox didn't accept the items (HTTP {(int)r.StatusCode}).");
+
+                if (root.TryGetProperty("bodyColors", out var colors) && colors.ValueKind == JsonValueKind.Object)
+                    using (await Post("https://avatar.roblox.com/v1/avatar/set-body-colors", colors.GetRawText())) { }
+                if (root.TryGetProperty("scale", out var scale) && scale.ValueKind == JsonValueKind.Object)
+                    using (await Post("https://avatar.roblox.com/v1/avatar/set-scales", scale.GetRawText())) { }
+                if (root.TryGetProperty("playerAvatarType", out var type) && type.ValueKind == JsonValueKind.String)
+                    using (await Post("https://avatar.roblox.com/v1/avatar/set-player-avatar-type", $"{{\"playerAvatarType\":\"{type.GetString()}\"}}")) { }
+            }
+        }
+
+        using (await Post("https://avatar.roblox.com/v1/avatar/redraw-thumbnail", "{}")) { }
     }
 
     // ---------------- Friends ----------------
