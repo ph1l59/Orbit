@@ -28,12 +28,16 @@ public static class ClickerHotkey
 
     private static bool Down(int vk) => (AutoClicker.Native.GetAsyncKeyState(vk) & 0x8000) != 0;
 
+    /// <summary>
+    /// The hotkey is down. Only the modifiers that belong to it must be held – other keys don't matter,
+    /// so it also works while you walk (W), sprint (Shift), crouch (Ctrl) or press anything else in game.
+    /// </summary>
     private static bool IsPressed(int vk, int mods)
     {
         if (vk == 0 || !Down(vk)) return false;
-        if (Down(0x11) != ((mods & ModCtrl) != 0)) return false;  // Ctrl
-        if (Down(0x12) != ((mods & ModAlt) != 0)) return false;   // Alt
-        if (Down(0x10) != ((mods & ModShift) != 0)) return false; // Shift
+        if ((mods & ModCtrl) != 0 && !Down(0x11)) return false;
+        if ((mods & ModAlt) != 0 && !Down(0x12)) return false;
+        if ((mods & ModShift) != 0 && !Down(0x10)) return false;
         return true;
     }
 
