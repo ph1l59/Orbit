@@ -159,20 +159,32 @@ public static class RobloxApi
     public static async Task<Dictionary<long, string>> GetHeadshotsAsync(IEnumerable<long> userIds)
     {
         var result = new Dictionary<long, string>();
-        foreach (var chunk in userIds.Distinct().Chunk(90))
+        var ids = userIds.Distinct().ToList();
+        // A picture Roblox is still drawing (e.g. right after an outfit change) comes back empty – ask again for those.
+        for (var attempt = 0; attempt < 3 && ids.Count > 0; attempt++)
         {
-            var url = "https://thumbnails.roblox.com/v1/users/avatar-headshot?userIds=" +
-                      string.Join(",", chunk) + "&size=150x150&format=Png&isCircular=false";
-            using var doc = await GetJsonAsync(url).ConfigureAwait(false);
-            if (doc == null) continue;
-
-            foreach (var item in doc.RootElement.GetProperty("data").EnumerateArray())
+            if (attempt > 0) await Task.Delay(1500).ConfigureAwait(false);
+            foreach (var chunk in ids.Chunk(90))
             {
-                if (item.TryGetProperty("imageUrl", out var img) && img.ValueKind == JsonValueKind.String)
-                    result[item.GetProperty("targetId").GetInt64()] = img.GetString()!;
+                var url = "https://thumbnails.roblox.com/v1/users/avatar-headshot?userIds=" +
+                          string.Join(",", chunk) + "&size=150x150&format=Png&isCircular=false";
+                using var doc = await GetJsonAsync(url).ConfigureAwait(false);
+                if (doc == null) continue;
+
+                foreach (var item in doc.RootElement.GetProperty("data").EnumerateArray())
+                    if (ReadyPicture(item) is { } picture)
+                        result[item.GetProperty("targetId").GetInt64()] = picture;
             }
+            ids = ids.Where(id => !result.ContainsKey(id)).ToList();
         }
         return result;
+    }
+
+    /// <summary>The picture's address – only when Roblox finished drawing it (otherwise it's empty or a placeholder).</summary>
+    private static string? ReadyPicture(JsonElement item)
+    {
+        if (item.TryGetProperty("state", out var state) && state.GetString() != "Completed") return null;
+        return item.TryGetProperty("imageUrl", out var img) && img.ValueKind == JsonValueKind.String && img.GetString() is { Length: > 0 } url ? url : null;
     }
 
     /// <summary>Full-body avatar picture of one user (null if Roblox has none ready).</summary>
@@ -271,8 +283,8 @@ public static class RobloxApi
             using var doc = await GetJsonAsync(url).ConfigureAwait(false);
             if (doc == null) continue;
             foreach (var item in doc.RootElement.GetProperty("data").EnumerateArray())
-                if (item.TryGetProperty("imageUrl", out var img) && img.ValueKind == JsonValueKind.String)
-                    result[item.GetProperty("targetId").GetInt64()] = img.GetString()!;
+                if (ReadyPicture(item) is { } picture)
+                    result[item.GetProperty("targetId").GetInt64()] = picture;
         }
     }
 

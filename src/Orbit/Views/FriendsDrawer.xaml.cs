@@ -583,8 +583,22 @@ public partial class FriendsDrawer : UserControl
 
     // ---------- Your profile + privacy ----------
 
+    private void ProfileAccountChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName != nameof(Account.AvatarUrl) || sender is not Account account) return;
+        Dispatcher.InvokeAsync(() =>
+            ProfileAvatar.ImageSource = string.IsNullOrEmpty(account.AvatarUrl) ? null : new System.Windows.Media.Imaging.BitmapImage(new Uri(account.AvatarUrl)));
+    }
+
+    private Account? _profileAccount;
+
     private async Task LoadProfileAsync(Account account)
     {
+        // Keep the picture up to date (e.g. after changing the outfit on the Play page).
+        if (_profileAccount != null) _profileAccount.PropertyChanged -= ProfileAccountChanged;
+        _profileAccount = account;
+        account.PropertyChanged += ProfileAccountChanged;
+
         ProfileName.Text = account.Title;
         ProfileUser.Text = "@" + account.Username.ToUpperInvariant();
         ProfileAvatar.ImageSource = string.IsNullOrEmpty(account.AvatarUrl) ? null : new System.Windows.Media.Imaging.BitmapImage(new Uri(account.AvatarUrl));
