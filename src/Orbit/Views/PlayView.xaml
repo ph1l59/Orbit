@@ -51,6 +51,96 @@
         </Style>
 
         <!-- The big launch button -->
+        <!-- Square button next to LAUNCH: change outfit -->
+        <Style x:Key="OutfitsButton" TargetType="Button">
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+            <Setter Property="Width" Value="84"/>
+            <Setter Property="Height" Value="78"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Grid RenderTransformOrigin="0.5,0.5">
+                            <Grid.RenderTransform>
+                                <ScaleTransform x:Name="grow" ScaleX="1" ScaleY="1"/>
+                            </Grid.RenderTransform>
+                            <Border x:Name="body" CornerRadius="18" BorderThickness="1" Background="#B3140F1F">
+                                <Border.BorderBrush>
+                                    <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
+                                        <GradientStop Color="#99C084FC" Offset="0"/>
+                                        <GradientStop Color="#33D946EF" Offset="1"/>
+                                    </LinearGradientBrush>
+                                </Border.BorderBrush>
+                            </Border>
+                            <Border CornerRadius="18,18,30,30" Margin="1,1,1,38" IsHitTestVisible="False">
+                                <Border.Background>
+                                    <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
+                                        <GradientStop Color="#1AFFFFFF" Offset="0"/>
+                                        <GradientStop Color="#00FFFFFF" Offset="1"/>
+                                    </LinearGradientBrush>
+                                </Border.Background>
+                            </Border>
+                            <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
+                                <Path Data="M 12,2 a 3,3 0 1 1 3,3 l 0,2 L 24,13 a 1.5,1.5 0 0 1 -1,2.7 L 1,15.7 A 1.5,1.5 0 0 1 0,13 L 9,7"
+                                      Stroke="White" StrokeThickness="1.8" StrokeLineJoin="Round" StrokeStartLineCap="Round" StrokeEndLineCap="Round"
+                                      HorizontalAlignment="Center" Margin="0,2,0,0"/>
+                                <TextBlock Text="OUTFITS" FontFamily="{StaticResource DisplayFont}" FontSize="11.5" FontWeight="Bold" Margin="0,8,0,0"
+                                           HorizontalAlignment="Center"/>
+                            </StackPanel>
+                        </Grid>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="body" Property="Background" Value="#CC2A1747"/>
+                                <Trigger.EnterActions>
+                                    <BeginStoryboard>
+                                        <Storyboard>
+                                            <DoubleAnimation Storyboard.TargetName="grow" Storyboard.TargetProperty="ScaleX" To="1.06" Duration="0:0:0.15"/>
+                                            <DoubleAnimation Storyboard.TargetName="grow" Storyboard.TargetProperty="ScaleY" To="1.06" Duration="0:0:0.15"/>
+                                        </Storyboard>
+                                    </BeginStoryboard>
+                                </Trigger.EnterActions>
+                                <Trigger.ExitActions>
+                                    <BeginStoryboard>
+                                        <Storyboard>
+                                            <DoubleAnimation Storyboard.TargetName="grow" Storyboard.TargetProperty="ScaleX" To="1" Duration="0:0:0.15"/>
+                                            <DoubleAnimation Storyboard.TargetName="grow" Storyboard.TargetProperty="ScaleY" To="1" Duration="0:0:0.15"/>
+                                        </Storyboard>
+                                    </BeginStoryboard>
+                                </Trigger.ExitActions>
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter Property="Opacity" Value="0.45"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- One outfit in the outfits popup: the whole avatar, name below -->
+        <Style x:Key="OutfitTile" TargetType="Button">
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+            <Setter Property="Width" Value="138"/>
+            <Setter Property="Margin" Value="0,0,8,8"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="card" CornerRadius="12" BorderThickness="1" BorderBrush="{StaticResource LineBrush}" Background="{StaticResource InputBrush}" Padding="6">
+                            <ContentPresenter/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="card" Property="BorderBrush" Value="{StaticResource SignalBrush}"/>
+                                <Setter TargetName="card" Property="Background" Value="#1FA855F7"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
         <Style x:Key="LaunchButton" TargetType="Button">
             <Setter Property="Foreground" Value="White"/>
             <Setter Property="Cursor" Value="Hand"/>
@@ -462,32 +552,31 @@
                     <TextBlock x:Name="AvatarHint" Text="Loading avatar…" Style="{StaticResource RowDesc}"
                                HorizontalAlignment="Center" VerticalAlignment="Center"/>
 
-                    <!-- Change outfit -->
-                    <Button x:Name="OutfitsButton" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,4,0,0" Height="32" Padding="10,0"
-                            Click="Outfits_Click" ToolTip="Put on one of your saved outfits" Tag="Change avatar|outfit clothes costume avatar">
-                        <StackPanel Orientation="Horizontal">
-                            <TextBlock Text="&#xE771;" Style="{StaticResource Icon}" FontSize="13" VerticalAlignment="Center"/>
-                            <TextBlock Text="Outfits" Margin="7,0,0,0" VerticalAlignment="Center"/>
-                        </StackPanel>
-                    </Button>
-                    <Popup x:Name="OutfitsPopup" PlacementTarget="{Binding ElementName=OutfitsButton}" Placement="Bottom"
-                           HorizontalOffset="-250" StaysOpen="False" AllowsTransparency="True" PopupAnimation="Fade">
-                        <Border Margin="0,6,0,0" Padding="10" Background="{StaticResource RaisedBrush}" BorderBrush="{StaticResource LineStrongBrush}"
-                                BorderThickness="1" CornerRadius="14" Width="340" MaxHeight="420">
+                </Grid>
+
+                <StackPanel Grid.Row="2" HorizontalAlignment="Center" Margin="0,8,0,0">
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                        <Button x:Name="LaunchButton" Style="{StaticResource LaunchButton}" Content="Roblox app" Click="Launch_Click"
+                                Tag="Launch Roblox|play start app"/>
+                        <Button x:Name="OutfitsButton" Style="{StaticResource OutfitsButton}" Margin="12,0,0,0" Click="Outfits_Click"
+                                ToolTip="Change your avatar – put on one of your saved outfits" Tag="Change avatar|outfit clothes costume avatar"/>
+                    </StackPanel>
+                    <Popup x:Name="OutfitsPopup" PlacementTarget="{Binding ElementName=LaunchButton}" Placement="Top"
+                           VerticalOffset="-10" HorizontalOffset="-110" StaysOpen="False" AllowsTransparency="True" PopupAnimation="Fade">
+                        <Border Padding="14" Background="{StaticResource RaisedBrush}" BorderBrush="{StaticResource LineStrongBrush}"
+                                BorderThickness="1" CornerRadius="16" Width="460" MaxHeight="520">
                             <DockPanel>
-                                <TextBlock DockPanel.Dock="Top" Text="YOUR OUTFITS" Style="{StaticResource Crumb}" Margin="4,0,0,8"/>
-                                <TextBlock x:Name="OutfitsInfo" DockPanel.Dock="Top" Style="{StaticResource RowDesc}" Margin="4,0,4,8" TextWrapping="Wrap"/>
-                                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                                <DockPanel DockPanel.Dock="Top" Margin="2,0,2,10">
+                                    <TextBlock x:Name="OutfitsCount" DockPanel.Dock="Right" Style="{StaticResource Crumb}" VerticalAlignment="Center"/>
+                                    <TextBlock Text="Your outfits" FontSize="15" FontWeight="SemiBold"/>
+                                </DockPanel>
+                                <TextBlock x:Name="OutfitsInfo" DockPanel.Dock="Top" Style="{StaticResource RowDesc}" Margin="2,0,2,10" TextWrapping="Wrap"/>
+                                <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="0,0,4,0">
                                     <WrapPanel x:Name="OutfitsList"/>
                                 </ScrollViewer>
                             </DockPanel>
                         </Border>
                     </Popup>
-                </Grid>
-
-                <StackPanel Grid.Row="2" HorizontalAlignment="Center" Margin="0,8,0,0">
-                    <Button x:Name="LaunchButton" Style="{StaticResource LaunchButton}" Content="Roblox app" Click="Launch_Click"
-                            Tag="Launch Roblox|play start app"/>
                     <TextBlock x:Name="StatusText" Style="{StaticResource RowDesc}" HorizontalAlignment="Center" Margin="0,10,0,0"/>
                 </StackPanel>
             </Grid>

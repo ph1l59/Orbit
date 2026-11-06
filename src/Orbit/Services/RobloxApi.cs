@@ -245,16 +245,28 @@ public static class RobloxApi
     public static async Task<Dictionary<long, string>> GetOutfitThumbnailsAsync(IEnumerable<long> outfitIds)
     {
         var result = new Dictionary<long, string>();
-        foreach (var chunk in outfitIds.Distinct().Chunk(50))
+        var ids = outfitIds.Distinct().ToList();
+        // Roblox draws pictures it doesn't have yet on request – ask again for those a moment later.
+        for (var attempt = 0; attempt < 3 && ids.Count > 0; attempt++)
         {
-            var url = "https://thumbnails.roblox.com/v1/users/outfits?userOutfitIds=" + string.Join(",", chunk) + "&size=150x150&format=Png&isCircular=false";
+            if (attempt > 0) await Task.Delay(1500).ConfigureAwait(false);
+            await FetchOutfitPicturesAsync(ids, result).ConfigureAwait(false);
+            ids = ids.Where(id => !result.ContainsKey(id)).ToList();
+        }
+        return result;
+    }
+
+    private static async Task FetchOutfitPicturesAsync(List<long> outfitIds, Dictionary<long, string> result)
+    {
+        foreach (var chunk in outfitIds.Chunk(50))
+        {
+            var url = "https://thumbnails.roblox.com/v1/users/outfits?userOutfitIds=" + string.Join(",", chunk) + "&size=420x420&format=Png&isCircular=false";
             using var doc = await GetJsonAsync(url).ConfigureAwait(false);
             if (doc == null) continue;
             foreach (var item in doc.RootElement.GetProperty("data").EnumerateArray())
                 if (item.TryGetProperty("imageUrl", out var img) && img.ValueKind == JsonValueKind.String)
                     result[item.GetProperty("targetId").GetInt64()] = img.GetString()!;
         }
-        return result;
     }
 
     /// <summary>Puts an outfit on the account's avatar, then asks Roblox to draw the avatar again.</summary>

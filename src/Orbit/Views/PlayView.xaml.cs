@@ -414,6 +414,7 @@ public partial class PlayView : UserControl, IPage
         if (!OutfitsPopup.IsOpen) return;
 
         OutfitsList.Children.Clear();
+        OutfitsCount.Text = "";
         OutfitsInfo.Text = "Loading your outfits…";
         OutfitsInfo.Visibility = Visibility.Visible;
         try
@@ -426,6 +427,7 @@ public partial class PlayView : UserControl, IPage
                 return;
             }
             OutfitsInfo.Visibility = Visibility.Collapsed;
+            OutfitsCount.Text = outfits.Count == 1 ? "1 OUTFIT" : $"{outfits.Count} OUTFITS";
             var pictures = await RobloxApi.GetOutfitThumbnailsAsync(outfits.Select(o => o.Id));
             if (account != _account) return;
             foreach (var outfit in outfits)
@@ -439,20 +441,20 @@ public partial class PlayView : UserControl, IPage
 
     private Button OutfitTile(Account account, Outfit outfit, string? picture)
     {
-        var image = new Image { Width = 88, Height = 88, Source = Load(picture), Stretch = Stretch.Uniform };
+        var image = new Image { Height = 124, Source = Load(picture), Stretch = Stretch.Uniform };
         RenderOptions.SetBitmapScalingMode(image, BitmapScalingMode.HighQuality);
-        var content = new StackPanel { Width = 92 };
-        content.Children.Add(new Border { CornerRadius = new CornerRadius(10), Background = (Brush)FindResource("InputBrush"), Child = image, Padding = new Thickness(2) });
+        var content = new StackPanel();
+        content.Children.Add(new Border
+        {
+            CornerRadius = new CornerRadius(8), Height = 124, ClipToBounds = true, Child = image,
+            Background = new RadialGradientBrush(Color.FromArgb(0x40, 0xA8, 0x55, 0xF7), Colors.Transparent),
+        });
         content.Children.Add(new TextBlock
         {
-            Text = outfit.Name, FontSize = 11.5, Margin = new Thickness(2, 5, 2, 0), TextTrimming = TextTrimming.CharacterEllipsis,
-            HorizontalAlignment = HorizontalAlignment.Center,
+            Text = outfit.Name, FontSize = 12, FontWeight = FontWeights.SemiBold, Margin = new Thickness(2, 6, 2, 1),
+            TextTrimming = TextTrimming.CharacterEllipsis, HorizontalAlignment = HorizontalAlignment.Center,
         });
-        var button = new Button
-        {
-            Content = content, Margin = new Thickness(3), Padding = new Thickness(4), Cursor = System.Windows.Input.Cursors.Hand,
-            ToolTip = "Put on \"" + outfit.Name + "\"",
-        };
+        var button = new Button { Style = (Style)FindResource("OutfitTile"), Content = content, ToolTip = "Put on \"" + outfit.Name + "\"" };
         button.Click += async (_, _) => await WearAsync(account, outfit);
         return button;
     }
