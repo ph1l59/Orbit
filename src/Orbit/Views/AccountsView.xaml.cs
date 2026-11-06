@@ -355,10 +355,14 @@ public partial class AccountsView : UserControl
                 return;
             }
 
-            var failed = accounts.Count(a => a.Status.StartsWith("Error"));
+            var failedAccounts = accounts.Where(a => a.Status.StartsWith("Error")).ToList();
+            var failed = failedAccounts.Count;
+            // Say why right here – the reason of the first failed account (all reasons stay on the account cards).
+            var reason = failed > 0 ? $" {failedAccounts[0].Title}: {failedAccounts[0].Status["Error: ".Length..]}" : "";
             ShowStatus(failed == 0
                 ? (accounts.Count == 1 ? "Roblox is starting ✓" : $"{accounts.Count} accounts launched ✓")
-                : $"{accounts.Count - failed} launched, {failed} failed – see the account card for details.", failed > 0);
+                : accounts.Count == 1 ? "Couldn't launch –" + reason
+                : $"{accounts.Count - failed} launched, {failed} failed –{reason}", failed > 0);
         }
         finally
         {

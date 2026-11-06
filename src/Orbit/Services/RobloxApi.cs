@@ -143,7 +143,12 @@ public static class RobloxApi
             if (!string.IsNullOrEmpty(ticket)) return ticket;
         }
 
-        throw new RobloxApiException($"Roblox did not return a login ticket (HTTP {(int)response.StatusCode}).");
+        throw new RobloxApiException((int)response.StatusCode switch
+        {
+            429 => "Roblox is limiting launches right now (too many in a short time). Wait 10–15 minutes and use a longer delay between accounts.",
+            403 => "Roblox wants a security check for this account. Log in once on roblox.com in your browser, then add the account to Orbit again.",
+            _ => $"Roblox did not return a login ticket (HTTP {(int)response.StatusCode}).",
+        });
     }
 
     /// <summary>Robux balance of the logged-in account (null if Roblox didn't say).</summary>
