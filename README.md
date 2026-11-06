@@ -26,7 +26,7 @@
 
 | | |
 |---|---|
-| **Play** | Start page: pick an account (with its Robux balance), turn its 3D avatar with the mouse and launch the Roblox app with one click. Shows your playtime today, this week and in total. Friends panel with online status, search, Join, and friend requests. |
+| **Play** | Start page: pick an account (with its Robux balance), turn its 3D avatar with the mouse, switch between your saved outfits and launch the Roblox app with one click. Shows your playtime today, this week and in total. Friends panel with online status, search, Join, and friend requests. |
 | **Accounts** | Log in on the real roblox.com page. Orbit only keeps the login cookie, encrypted with Windows DPAPI. Every account shows its avatar and whether it's online. |
 | **Create accounts** | Set birthday and gender once, paste a list of `Username:Password`, and Orbit fills out the sign up page for each one. You click Sign Up yourself. |
 | **Joining** | Place ID, game link, private server link, share link, share code or Job ID. Orbit figures it out. |
@@ -41,7 +41,7 @@
 | **Mods** | Custom cursor, custom font and a mods folder that mirrors Roblox's files. Originals get backed up. |
 | **Bootstrapper** | Orbit installs and updates its own copy of Roblox and can take over the Play button on the website. Includes a cleaner for cache, logs and old versions. |
 | **Integrations** | Discord Rich Presence, server location, activity tracking and programs that start and stop with Roblox. |
-| **Auto clicker** | 1 to 100 CPS, hotkey (toggle or hold), click limit, Roblox only mode. |
+| **Auto clicker** | 1 to 100 CPS, hotkey (toggle or hold) that also works while you hold other keys, click limit, Roblox only mode. |
 | **Updates** | When a new version is out, a notice slides in. One click downloads it, checks it and restarts Orbit. |
 
 Can't find a setting? There's a search bar in the sidebar.
